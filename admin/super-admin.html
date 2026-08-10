@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Super Admin: Nkobazambogo Students' Association</title>
+  <link rel="stylesheet" href="../assets/css/style.css" />
+  <style>
+    :root { --forest: #1b4332; --gold: #d4af37; --border: #e2e8f0; --radius: 8px; --text-muted: #64748b; }
+    .admin-container { padding: 2rem; max-width: 1200px; margin: 0 auto; }
+    .super-banner { background: linear-gradient(135deg, #1b4332, #16233a); color: #fff; border-radius: 8px; padding: 1rem 1.5rem; margin-bottom: 1.5rem; }
+    .super-banner a { color: var(--gold); font-weight: 600; text-decoration: none; }
+    .tab-nav { display: flex; gap: 0.5rem; border-bottom: 2px solid var(--border); margin-bottom: 1.5rem; flex-wrap: wrap; }
+    .tab-btn { padding: 0.6rem 1.2rem; border: none; background: none; font-weight: 600; cursor: pointer; color: var(--text-muted); border-bottom: 3px solid transparent; }
+    .tab-btn.active { color: var(--forest); border-bottom-color: var(--gold); }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+    .card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    .admin-table { width: 100%; border-collapse: collapse; margin-top: 1rem; font-size: 0.9rem; }
+    .admin-table th, .admin-table td { padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--border); }
+    .admin-table th { background: #f8fafc; font-weight: 600; }
+    .pill { padding: 0.2rem 0.6rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600; text-transform: capitalize; }
+    .pill-active, .pill-approved { background: #dcfce7; color: #15803d; }
+    .pill-pending { background: #fef9c3; color: #a16207; }
+    .pill-rejected, .pill-suspended { background: #fee2e2; color: #b91c1c; }
+    .form-group { margin-bottom: 1rem; }
+    .form-group label { display: block; font-weight: 600; margin-bottom: 0.35rem; font-size: 0.88rem; }
+    .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 0.55rem 0.75rem; border: 1px solid var(--border); border-radius: 4px; font-family: inherit; }
+    .form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    @media (max-width: 640px) { .form-row-2 { grid-template-columns: 1fr; } }
+    .mini-btn { padding: 0.35rem 0.7rem; font-size: 0.8rem; border-radius: 4px; border: none; cursor: pointer; font-weight: 600; }
+    .mini-btn.good { background: var(--forest); color: #fff; }
+    .mini-btn.bad { background: #b91c1c; color: #fff; }
+    .action-select { padding: 0.35rem; border-radius: 4px; border: 1px solid var(--border); font-size: 0.85rem; }
+  </style>
+</head>
+<body>
+  <div id="app-nav"></div>
+
+  <main class="admin-container">
+    <div class="super-banner">
+      <strong>Super Admin</strong>: highest priority access to club settings, admin assignment, and elections closure.
+      <a href="./index.html">← Admin Dashboard</a>
+    </div>
+
+    <div class="tab-nav">
+      <button class="tab-btn active" data-tab="access">Admin Access</button>
+      <button class="tab-btn" data-tab="add-member">Add Member (Any Domain)</button>
+      <button class="tab-btn" data-tab="settings">Club Settings</button>
+      <button class="tab-btn" data-tab="elections">Close Elections</button>
+      <button class="tab-btn" data-tab="feedback">Feedback (edit/delete)</button>
+      <button class="tab-btn" data-tab="danger">Danger Zone</button>
+    </div>
+
+    <!-- ADMIN ACCESS -->
+    <div class="tab-panel active" id="tab-access">
+      <div class="card">
+        <h3 style="margin-top:0;">Assign / revoke Admin access</h3>
+        <p style="font-size:0.85rem;color:var(--text-muted);">Only the Super Admin can promote a member to Admin, or demote an Admin back to Member. This is enforced by the database, not just this screen.</p>
+        <table class="admin-table">
+          <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Assigned by</th><th>Action</th></tr></thead>
+          <tbody id="access-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ADD MEMBER ANY DOMAIN -->
+    <div class="tab-panel" id="tab-add-member">
+      <div class="card">
+        <h3 style="margin-top:0;">Add a member directly</h3>
+        <p style="font-size:0.85rem;color:var(--text-muted);">Bypasses the @umu.ac.ug self-registration restriction: use this for anyone who should have an account on a different email domain. The account is created active and approved immediately.</p>
+        <div id="add-member-alert"></div>
+        <form id="add-member-form">
+          <div class="form-row-2">
+            <div class="form-group"><label>Full name</label><input type="text" id="am-name" required /></div>
+            <div class="form-group"><label>Email (any domain)</label><input type="email" id="am-email" required /></div>
+          </div>
+          <div class="form-row-2">
+            <div class="form-group"><label>Temporary password</label><input type="text" id="am-password" required minlength="8" /></div>
+            <div class="form-group"><label>Role</label>
+              <select id="am-role"><option value="member">Member</option><option value="admin">Admin</option></select>
+            </div>
+          </div>
+          <div class="form-row-2">
+            <div class="form-group"><label>Phone (optional)</label><input type="text" id="am-phone" /></div>
+            <div class="form-group"><label>Programme (optional)</label><input type="text" id="am-programme" /></div>
+          </div>
+          <button type="submit" class="mini-btn good" id="am-submit">Create Account</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- CLUB SETTINGS -->
+    <div class="tab-panel" id="tab-settings">
+      <div class="card">
+        <h3 style="margin-top:0;">Club Settings</h3>
+        <p style="font-size:0.85rem;color:var(--text-muted);">Shown on the public About page and elsewhere. Only the Super Admin can edit these.</p>
+        <div id="settings-alert"></div>
+        <form id="settings-form"></form>
+        <button type="submit" form="settings-form" class="mini-btn good" style="margin-top:0.75rem;">Save Settings</button>
+      </div>
+    </div>
+
+    <!-- ELECTIONS CLOSE -->
+    <div class="tab-panel" id="tab-elections">
+      <div class="card">
+        <h3 style="margin-top:0;">Close an election &amp; promote winners</h3>
+        <p style="font-size:0.85rem;color:var(--text-muted);">Closing an election locks in the vote counts and promotes the top candidate per position to the public Leadership page. This can't be undone from the UI.</p>
+        <div id="close-election-list"></div>
+      </div>
+    </div>
+
+    <!-- FEEDBACK EDIT/DELETE -->
+    <div class="tab-panel" id="tab-feedback">
+      <div class="card">
+        <h3 style="margin-top:0;">Feedback forms</h3>
+        <p style="font-size:0.85rem;color:var(--text-muted);">Deactivating or deleting an existing survey is restricted to the Super Admin to protect data already collected.</p>
+        <div id="feedback-manage-list"></div>
+      </div>
+    </div>
+
+    <!-- DANGER ZONE -->
+    <div class="tab-panel" id="tab-danger">
+      <div class="card">
+        <h3 style="margin-top:0;color:#b91c1c;">Permanently delete a member account</h3>
+        <p style="font-size:0.85rem;color:var(--text-muted);">This removes the person's login and profile entirely. It cannot be undone.</p>
+        <div id="delete-alert"></div>
+        <table class="admin-table">
+          <thead><tr><th>Name</th><th>Email</th><th></th></tr></thead>
+          <tbody id="delete-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <script type="module">
+    import { supabase, SUPABASE_URL } from '../assets/js/supabase-client.js';
+    import { requireSuperAdmin } from '../assets/js/admin-guard.js';
+    import { mountNav, mountFooter } from '../assets/js/nav.js';
+
+    mountNav();
+    mountFooter();
+
+    const me = await requireSuperAdmin();
+    if (!me) throw new Error('redirecting');
+
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str ?? '';
+      return div.innerHTML;
+    }
+
+    document.querySelectorAll('.tab-btn[data-tab]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn[data-tab]').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById(`tab-${btn.dataset.tab}`).classList.add('active');
+      });
+    });
+
+    // ---------- Admin access ----------
+    async function loadAccess() {
+      const { data } = await supabase.from('profiles').select('id, full_name, email, role, assigned_admin_by, membership_status').eq('membership_status', 'active').order('full_name');
+      const byId = {};
+      (data || []).forEach(p => byId[p.id] = p);
+
+      document.getElementById('access-tbody').innerHTML = (data || []).map(p => `
+        <tr>
+          <td>${escapeHtml(p.full_name)}</td>
+          <td>${escapeHtml(p.email)}</td>
+          <td><span class="pill pill-${p.role === 'super_admin' ? 'active' : (p.role === 'admin' ? 'active' : 'pending')}">${escapeHtml(p.role)}</span></td>
+          <td>${p.assigned_admin_by ? escapeHtml(byId[p.assigned_admin_by]?.full_name || '—') : '—'}</td>
+          <td>
+            ${p.role === 'super_admin' ? '<em style="color:var(--text-muted);font-size:0.85rem;">Super Admin</em>' : p.role === 'admin'
+              ? `<button class="mini-btn bad" data-demote="${p.id}">Revoke Admin</button>`
+              : `<button class="mini-btn good" data-promote="${p.id}">Make Admin</button>`}
+          </td>
+        </tr>`).join('') || '<tr><td colspan="5" style="text-align:center;">No active members yet.</td></tr>';
+
+      document.querySelectorAll('[data-promote]').forEach(btn => btn.addEventListener('click', async () => {
+        const { error } = await supabase.from('profiles').update({ role: 'admin', assigned_admin_by: me.id, assigned_admin_at: new Date().toISOString() }).eq('id', btn.dataset.promote);
+        if (error) alert(error.message); else await loadAccess();
+      }));
+      document.querySelectorAll('[data-demote]').forEach(btn => btn.addEventListener('click', async () => {
+        if (!confirm('Revoke admin access for this member?')) return;
+        const { error } = await supabase.from('profiles').update({ role: 'member', assigned_admin_by: null, assigned_admin_at: null }).eq('id', btn.dataset.demote);
+        if (error) alert(error.message); else await loadAccess();
+      }));
+    }
+
+    // ---------- Add member (any domain) ----------
+    document.getElementById('add-member-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('am-submit');
+      const alertBox = document.getElementById('add-member-alert');
+      btn.disabled = true; btn.textContent = 'Creating...';
+
+      const { data: { session } } = await supabase.auth.getSession();
+
+      try {
+        const res = await fetch(`${SUPABASE_URL}/functions/v1/admin-create-user`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+          body: JSON.stringify({
+            fullName: document.getElementById('am-name').value.trim(),
+            email: document.getElementById('am-email').value.trim(),
+            password: document.getElementById('am-password').value,
+            role: document.getElementById('am-role').value,
+            phone: document.getElementById('am-phone').value.trim() || null,
+            programme: document.getElementById('am-programme').value.trim() || null,
+          }),
+        });
+        const result = await res.json();
+        if (!res.ok) throw new Error(result.error || 'Failed to create account');
+
+        alertBox.innerHTML = `<div class="alert alert-success">Account created for ${escapeHtml(document.getElementById('am-email').value)}.</div>`;
+        e.target.reset();
+        await loadAccess();
+      } catch (err) {
+        alertBox.innerHTML = `<div class="alert alert-error">${escapeHtml(err.message)}</div>`;
+      }
+      btn.disabled = false; btn.textContent = 'Create Account';
+    });
+
+    // ---------- Club settings ----------
+    async function loadSettings() {
+      const { data } = await supabase.from('club_settings').select('*').order('key');
+      const form = document.getElementById('settings-form');
+      form.innerHTML = (data || []).map(row => {
+        const val = typeof row.value === 'string' ? row.value : JSON.stringify(row.value);
+        return `<div class="form-group"><label>${escapeHtml(row.key)}</label><textarea data-key="${escapeHtml(row.key)}" rows="2">${escapeHtml(val)}</textarea></div>`;
+      }).join('');
+    }
+
+    document.getElementById('settings-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const alertBox = document.getElementById('settings-alert');
+      const updates = [...document.querySelectorAll('#settings-form textarea')].map(t => ({
+        key: t.dataset.key,
+        value: t.value,
+        updated_by: me.id,
+      }));
+      let hadError = false;
+      for (const u of updates) {
+        const { error } = await supabase.from('club_settings').update({ value: u.value, updated_by: u.updated_by }).eq('key', u.key);
+        if (error) hadError = true;
+      }
+      alertBox.innerHTML = hadError
+        ? `<div class="alert alert-error">Some settings failed to save.</div>`
+        : `<div class="alert alert-success">Settings saved.</div>`;
+    });
+
+    // ---------- Close elections ----------
+    async function loadCloseElections() {
+      const { data } = await supabase.from('elections').select('*').order('start_date', { ascending: false });
+      document.getElementById('close-election-list').innerHTML = (data || []).map(el => `
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:1rem;padding:0.75rem 0;border-bottom:1px solid var(--border);">
+          <div><strong>${escapeHtml(el.title)}</strong><div style="font-size:0.8rem;color:var(--text-muted);">${escapeHtml(el.status)}</div></div>
+          ${el.status === 'closed'
+            ? '<span class="pill pill-active">Closed &amp; promoted</span>'
+            : `<button class="mini-btn bad" data-close-election="${el.id}">Close &amp; Promote Winners</button>`}
+        </div>`).join('') || '<p style="color:var(--text-muted);">No elections yet.</p>';
+
+      document.querySelectorAll('[data-close-election]').forEach(btn => btn.addEventListener('click', async () => {
+        if (!confirm('Close this election and promote winners to Leadership? This cannot be undone.')) return;
+        const { error } = await supabase.rpc('promote_election_winners', { p_election_id: btn.dataset.closeElection });
+        if (error) alert(error.message); else await loadCloseElections();
+      }));
+    }
+
+    // ---------- Feedback manage ----------
+    async function loadFeedbackManage() {
+      const { data } = await supabase.from('feedback_forms').select('id, title, is_active').order('created_at', { ascending: false });
+      document.getElementById('feedback-manage-list').innerHTML = (data || []).map(f => `
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:1rem;padding:0.75rem 0;border-bottom:1px solid var(--border);">
+          <strong>${escapeHtml(f.title)}</strong>
+          <div style="display:flex;gap:0.4rem;">
+            <button class="mini-btn ${f.is_active ? 'bad' : 'good'}" data-toggle-form="${f.id}" data-active="${f.is_active}">${f.is_active ? 'Deactivate' : 'Activate'}</button>
+            <button class="mini-btn bad" data-del-form="${f.id}">Delete</button>
+          </div>
+        </div>`).join('') || '<p style="color:var(--text-muted);">No feedback forms yet.</p>';
+
+      document.querySelectorAll('[data-toggle-form]').forEach(btn => btn.addEventListener('click', async () => {
+        const active = btn.dataset.active === 'true';
+        await supabase.from('feedback_forms').update({ is_active: !active }).eq('id', btn.dataset.toggleForm);
+        await loadFeedbackManage();
+      }));
+      document.querySelectorAll('[data-del-form]').forEach(btn => btn.addEventListener('click', async () => {
+        if (!confirm('Delete this feedback form and all its responses?')) return;
+        await supabase.from('feedback_forms').delete().eq('id', btn.dataset.delForm);
+        await loadFeedbackManage();
+      }));
+    }
+
+    // ---------- Danger zone: delete member ----------
+    async function loadDeleteList() {
+      const { data } = await supabase.from('profiles').select('id, full_name, email, role').neq('role', 'super_admin').order('full_name');
+      document.getElementById('delete-tbody').innerHTML = (data || []).map(p => `
+        <tr>
+          <td>${escapeHtml(p.full_name)}</td>
+          <td>${escapeHtml(p.email)}</td>
+          <td><button class="mini-btn bad" data-delete-user="${p.id}">Delete permanently</button></td>
+        </tr>`).join('') || '<tr><td colspan="3" style="text-align:center;">No members to show.</td></tr>';
+
+      document.querySelectorAll('[data-delete-user]').forEach(btn => btn.addEventListener('click', async () => {
+        if (!confirm('This will permanently delete this member\'s account. Continue?')) return;
+        const alertBox = document.getElementById('delete-alert');
+        const { data: { session } } = await supabase.auth.getSession();
+        try {
+          const res = await fetch(`${SUPABASE_URL}/functions/v1/admin-delete-user`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+            body: JSON.stringify({ userId: btn.dataset.deleteUser }),
+          });
+          const result = await res.json();
+          if (!res.ok) throw new Error(result.error || 'Failed to delete');
+          alertBox.innerHTML = `<div class="alert alert-success">Account deleted.</div>`;
+          await loadDeleteList();
+          await loadAccess();
+        } catch (err) {
+          alertBox.innerHTML = `<div class="alert alert-error">${escapeHtml(err.message)}</div>`;
+        }
+      }));
+    }
+
+    await Promise.all([loadAccess(), loadSettings(), loadCloseElections(), loadFeedbackManage(), loadDeleteList()]);
+  </script>
+</body>
+</html>

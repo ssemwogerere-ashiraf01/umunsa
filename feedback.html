@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex, nofollow" />
+<title>Feedback: Nkobazambogo Students' Association</title>
+<link rel="stylesheet" href="assets/css/style.css" />
+<style>
+  .page-header { background: var(--paper); border-bottom: 1px solid var(--border); padding: 2.5rem 2rem; text-align: center; }
+  .page-header h1 { margin: 0 0 0.25rem; font-size: 1.8rem; }
+  .page-header p { color: var(--text-muted); margin: 0; }
+  .forms-list { max-width: 720px; margin: 2rem auto 0; }
+  .feedback-form-card { background: var(--paper); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 1.75rem; margin-bottom: 1.5rem; }
+  .feedback-form-card h3 { margin: 0 0 0.3rem; }
+  .feedback-form-card p.desc { color: var(--text-muted); font-size: 0.9rem; margin: 0 0 1.25rem; }
+  .rating-row { display: flex; gap: 0.5rem; }
+  .rating-row label { flex: 1; text-align: center; border: 1px solid var(--border); border-radius: 6px; padding: 0.5rem; cursor: pointer; font-weight: 600; }
+  .rating-row input { display: none; }
+  .rating-row input:checked + span, .rating-row label:has(input:checked) { background: var(--forest); color: #fff; border-color: var(--forest); }
+  .empty { text-align: center; color: var(--text-muted); padding: 2rem 0; }
+  .already-submitted { background: #eaf4ec; color: #1f4b3f; border: 1px solid #b9d8c0; border-radius: var(--radius); padding: 1rem 1.25rem; font-size: 0.9rem; }
+</style>
+</head>
+<body>
+<div id="app-nav"></div>
+
+<div class="page-header">
+  <span class="eyebrow">Association</span>
+  <h1>Feedback</h1>
+  <p>Share your thoughts: active surveys from admins appear below.</p>
+</div>
+
+<div class="section" style="padding-top:0;">
+  <div id="alert-box" class="forms-list"></div>
+  <div id="forms-container" class="forms-list">
+    <div class="empty">Loading feedback forms...</div>
+  </div>
+</div>
+
+<div id="app-footer"></div>
+
+<script type="module">
+  import { supabase } from './assets/js/supabase-client.js';
+  import { mountNav, mountFooter } from './assets/js/nav.js';
+  import { requireApprovedMember } from './assets/js/session-guard.js';
+
+  mountNav('feedback');
+  mountFooter();
+
+  const profile = await requireApprovedMember();
+  if (!profile) throw new Error('redirecting');
+
+  const container = document.getElementById('forms-container');
+  const alertBox = document.getElementById('alert-box');
+
+  const { data: forms, error } = await supabase
+    .from('feedback_forms')
+    .select('id, title, description, feedback_questions(id, question_text, question_type, options, is_required, display_order)')
+    .eq('is_active', true)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    alertBox.innerHTML = `<div class="alert alert-error">${escapeHtml(error.message)}</div>`;
+    container.innerHTML = '';
+    throw new Error('load failed');
+  }
+
+  if (!forms || !forms.length) {
+    container.innerHTML = `<div class="empty">No feedback forms are open right now.</div>`;
+    throw new Error('nothing to show');
+  }
+
+  // Which forms has this member already answered?
+  const { data: mine } = await supabase.from('feedback_responses').select('form_id').eq('user_id', profile.id);
+  const answeredFormIds = new Set((mine || []).map(r => r.form_id));
+
+  container.innerHTML = forms.map(form => renderForm(form, answeredFormIds.has(form.id))).join('');
+
+  forms.forEach(form => {
+    if (answeredFormIds.has(form.id)) return;
+    const formEl = document.getElementById(`fb-form-${form.id}`);
+    formEl?.addEventListener('submit', (e) => submitForm(e, form));
+  });
+
+  function renderForm(form, alreadyAnswered) {
+    if (alreadyAnswered) {
+      return `
+        <div class="feedback-form-card">
+          <h3>${escapeHtml(form.title)}</h3>
+          ${form.description ? `<p class="desc">${escapeHtml(form.description)}</p>` : ''}
+          <div class="already-submitted">Thanks: you've already submitted a response to this form.</div>
+        </div>`;
+    }
+
+    const questions = (form.feedback_questions || []).slice().sort((a, b) => a.display_order - b.display_order);
+    return `
+      <div class="feedback-form-card">
+        <h3>${escapeHtml(form.title)}</h3>
+        ${form.description ? `<p class="desc">${escapeHtml(form.description)}</p>` : ''}
+        <form id="fb-form-${form.id}">
+          ${questions.map(q => renderQuestion(q)).join('')}
+          <button type="submit" class="btn btn-gold btn-block">Submit Feedback</button>
+        </form>
+      </div>`;
+  }
+
+  function renderQuestion(q) {
+    const req = q.is_required ? 'required' : '';
+    if (q.question_type === 'rating') {
+      return `
+        <div class="form-group">
+          <label>${escapeHtml(q.question_text)}</label>
+          <div class="rating-row">
+            ${[1,2,3,4,5].map(n => `<label><input type="radio" name="q-${q.id}" value="${n}" ${req} /><span>${n}</span></label>`).join('')}
+          </div>
+        </div>`;
+    }
+    if (q.question_type === 'multiple_choice') {
+      const options = Array.isArray(q.options) ? q.options : [];
+      return `
+        <div class="form-group">
+          <label for="q-${q.id}">${escapeHtml(q.question_text)}</label>
+          <select id="q-${q.id}" name="q-${q.id}" ${req}>
+            <option value="">Select...</option>
+            ${options.map(opt => `<option value="${escapeHtml(opt)}">${escapeHtml(opt)}</option>`).join('')}
+          </select>
+        </div>`;
+    }
+    return `
+      <div class="form-group">
+        <label for="q-${q.id}">${escapeHtml(q.question_text)}</label>
+        <input type="text" id="q-${q.id}" name="q-${q.id}" ${req} />
+      </div>`;
+  }
+
+  async function submitForm(e, form) {
+    e.preventDefault();
+    const btn = e.target.querySelector('button[type="submit"]');
+    btn.disabled = true; btn.textContent = 'Submitting...';
+
+    const { data: { session } } = await supabase.auth.getSession();
+
+    const { data: response, error: respErr } = await supabase
+      .from('feedback_responses')
+      .insert({ form_id: form.id, user_id: profile.id, submitted_email: profile.email, submitted_username: profile.full_name })
+      .select('id')
+      .single();
+
+    if (respErr) {
+      alertBox.innerHTML = `<div class="alert alert-error">${escapeHtml(respErr.message)}</div>`;
+      btn.disabled = false; btn.textContent = 'Submit Feedback';
+      return;
+    }
+
+    const answers = (form.feedback_questions || []).map(q => {
+      const el = document.getElementById(`q-${q.id}`) || e.target.querySelector(`[name="q-${q.id}"]:checked`);
+      return { response_id: response.id, question_id: q.id, answer_text: el ? el.value : null };
+    }).filter(a => a.answer_text !== null && a.answer_text !== '');
+
+    if (answers.length) {
+      await supabase.from('feedback_answers').insert(answers);
+    }
+
+    alertBox.innerHTML = `<div class="alert alert-success">Thanks! Your feedback has been submitted.</div>`;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    e.target.closest('.feedback-form-card').innerHTML = `
+      <h3>${escapeHtml(form.title)}</h3>
+      <div class="already-submitted">Thanks: your response has been recorded.</div>`;
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str ?? '';
+    return div.innerHTML;
+  }
+</script>
+</body>
+</html>

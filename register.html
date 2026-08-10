@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Apply for Membership: Nkobazambogo Students' Association</title>
+<link rel="icon" href="favicon.ico" sizes="any" />
+<link rel="icon" type="image/png" href="assets/img/favicon-32.png" />
+<meta property="og:site_name" content="Nkobazambogo Students' Association" />
+<meta property="og:type" content="website" />
+<meta property="og:title" content="Become a Member: Nkobazambogo Students' Association" />
+<meta property="og:description" content="Register with your @umu.ac.ug email to join the Nkobazambogo Students' Association." />
+<meta property="og:url" content="https://nkobazambogo-nsa.netlify.app/register.html" />
+<meta property="og:image" content="https://nkobazambogo-nsa.netlify.app/assets/img/og-default.png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta name="twitter:card" content="summary_large_image" />
+<link rel="stylesheet" href="assets/css/style.css" />
+</head>
+<body>
+<div id="app-nav"></div>
+
+<div class="auth-wrap">
+  <div class="auth-card" style="max-width:460px;">
+    <h2>Apply for membership</h2>
+    <p class="subtitle">Registration is open to university email addresses on the <strong>umu.ac.ug</strong> domain (for example <code>name@umu.ac.ug</code>). Every application is reviewed by an admin before you can sign in. Don't have a umu.ac.ug email? Ask a Super Admin to add you directly.</p>
+
+    <div id="alert-box"></div>
+
+    <form id="register-form">
+      <div class="form-group">
+        <label for="full_name">Full name</label>
+        <input type="text" id="full_name" required />
+      </div>
+      <div class="form-group">
+        <label for="phone">Phone number</label>
+        <input type="tel" id="phone" required autocomplete="tel" placeholder="e.g. 07XXXXXXXX or +2567XXXXXXXX" />
+      </div>
+      <div class="form-group">
+        <label for="email">University email</label>
+        <input type="email" id="email" required autocomplete="username" placeholder="yourname@umu.ac.ug" pattern=".+@([a-zA-Z0-9-]+\.)*umu\.ac\.ug$" title="Must be a university email on umu.ac.ug (or a subdomain)" />
+      </div>
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" required minlength="8" autocomplete="new-password" />
+        <small style="color:var(--text-muted);">At least 8 characters.</small>
+      </div>
+      <button type="submit" class="btn btn-gold btn-block" id="submit-btn">Submit Application</button>
+    </form>
+
+    <p class="form-footer">Already have an account? <a href="login.html">Sign in</a><br /><a href="privacy">Privacy</a> &middot; <a href="terms">Terms</a></p>
+  </div>
+</div>
+
+<div id="app-footer"></div>
+
+<script type="module">
+  import { registerWithEmail, redirectIfAlreadyLoggedIn } from './assets/js/auth.js';
+  import { mountNav, mountFooter } from './assets/js/nav.js';
+  await redirectIfAlreadyLoggedIn();
+
+  mountNav();
+  mountFooter();
+
+  document.getElementById('register-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('submit-btn');
+    btn.disabled = true; btn.textContent = 'Submitting...';
+
+    const result = await registerWithEmail({
+      fullName: document.getElementById('full_name').value.trim(),
+      phone: document.getElementById('phone').value.trim(),
+      email: document.getElementById('email').value.trim(),
+      password: document.getElementById('password').value,
+    });
+
+    const alertBox = document.getElementById('alert-box');
+    if (result.error) {
+      alertBox.innerHTML = `<div class="alert alert-error">${String(result.error)}</div>`;
+      btn.disabled = false; btn.textContent = 'Submit Application';
+    } else {
+      alertBox.innerHTML = `<div class="alert alert-success">${result.message}</div>`;
+      document.getElementById('register-form').style.display = 'none';
+    }
+  });
+</script>
+</body>
+</html>

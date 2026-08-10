@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex, nofollow" />
+<title>Projects — Nkobazambogo Students' Association</title>
+<link rel="stylesheet" href="assets/css/style.css" />
+<style>
+  .page-header { background: var(--paper); border-bottom: 1px solid var(--border); padding: 2.5rem 2rem; text-align: center; }
+  .page-header h1 { margin: 0 0 0.25rem; font-size: 1.8rem; }
+  .page-header p { color: var(--text-muted); margin: 0; }
+  .projects-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:1.5rem; margin-top:1.5rem; }
+  .project-card { background: var(--paper); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 1.5rem; }
+  .project-card h3 { margin: 0 0 0.4rem; }
+  .project-meta { font-size: 0.82rem; color: var(--text-muted); margin-bottom: 0.6rem; }
+  .pill { display:inline-block; padding:0.15rem 0.6rem; border-radius:12px; font-size:0.75rem; font-weight:600; }
+  .pill-planned { background:#eef1f5; color:#55605c; }
+  .pill-ongoing { background:#fdf3e0; color:#8a6100; }
+  .pill-completed { background:#eaf4ec; color:#1f4b3f; }
+  .pill-lead { background:#eaf0fd; color:#2a4d9c; margin-left: 0.4rem; }
+  .projects-empty { text-align:center; color:var(--text-muted); padding:3rem 0; }
+  .section-toggle { display:flex; gap:0.5rem; margin: 1.5rem 0 0; }
+  .section-toggle button { padding:0.5rem 1rem; border:1px solid var(--border); background:var(--paper); border-radius:20px; cursor:pointer; font-weight:600; font-size:0.85rem; }
+  .section-toggle button.active { background:var(--forest); color:#fff; border-color:var(--forest); }
+</style>
+</head>
+<body>
+<div id="app-nav"></div>
+
+<div class="page-header">
+  <span class="eyebrow">Association</span>
+  <h1>Projects</h1>
+  <p>Club projects and your own assignments: see what you're working on and what else is in motion.</p>
+</div>
+
+<div class="section" style="padding-top:0;">
+  <div class="section-toggle">
+    <button type="button" class="active" data-view="mine">My Projects</button>
+    <button type="button" data-view="all">All Projects</button>
+  </div>
+  <div id="alert-box" style="margin-top:1rem;"></div>
+  <div id="projects-container" class="projects-grid">
+    <div class="projects-empty">Loading projects...</div>
+  </div>
+</div>
+
+<div id="app-footer"></div>
+
+<script type="module">
+  import { supabase } from './assets/js/supabase-client.js';
+  import { mountNav, mountFooter } from './assets/js/nav.js';
+  import { requireApprovedMember } from './assets/js/session-guard.js';
+
+  mountNav('projects');
+  mountFooter();
+
+  const profile = await requireApprovedMember();
+  if (!profile) throw new Error('redirecting');
+
+  const container = document.getElementById('projects-container');
+  const alertBox = document.getElementById('alert-box');
+  let currentView = 'mine';
+
+  document.querySelectorAll('.section-toggle button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.section-toggle button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentView = btn.dataset.view;
+      load();
+    });
+  });
+
+  await load();
+
+  async function load() {
+    container.innerHTML = `<div class="projects-empty">Loading projects...</div>`;
+    if (currentView === 'mine') {
+      await loadMine();
+    } else {
+      await loadAll();
+    }
+  }
+
+  async function loadMine() {
+    const { data, error } = await supabase
+      .from('project_members')
+      .select('role_in_project, assigned_at, projects(id, title, description, status, start_date, end_date)')
+      .eq('user_id', profile.id)
+      .order('assigned_at', { ascending: false });
+
+    if (error) {
+      alertBox.innerHTML = `<div class="alert alert-error">${escapeHtml(error.message)}</div>`;
+      container.innerHTML = '';
+      return;
+    }
+
+    const rows = data || [];
+    if (!rows.length) {
+      container.innerHTML = `<div class="projects-empty">You're not assigned to any project yet. Switch to "All Projects" to see what's running, or ask an admin to add you to one.</div>`;
+      return;
+    }
+
+    container.innerHTML = rows.map(r => projectCard(r.projects, r.role_in_project)).join('');
+  }
+
+  async function loadAll() {
+    const { data, error } = await supabase
+      .from('projects')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      alertBox.innerHTML = `<div class="alert alert-error">${escapeHtml(error.message)}</div>`;
+      container.innerHTML = '';
+      return;
+    }
+
+    const rows = data || [];
+    if (!rows.length) {
+      container.innerHTML = `<div class="projects-empty">No projects have been added yet.</div>`;
+      return;
+    }
+
+    container.innerHTML = rows.map(p => projectCard(p)).join('');
+  }
+
+  function projectCard(p, myRole) {
+    if (!p) return '';
+    const dates = [p.start_date, p.end_date].filter(Boolean).map(d => new Date(d).toLocaleDateString()).join(' – ');
+    return `
+      <div class="project-card">
+        <h3>${escapeHtml(p.title)}</h3>
+        <div class="project-meta">
+          <span class="pill pill-${p.status}">${escapeHtml(p.status)}</span>
+          ${myRole === 'lead' ? '<span class="pill pill-lead">Project Lead</span>' : ''}
+          ${dates ? ` · ${dates}` : ''}
+        </div>
+        ${p.description ? `<p style="font-size:0.9rem;color:var(--text);margin:0;">${escapeHtml(p.description)}</p>` : ''}
+      </div>`;
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str ?? '';
+    return div.innerHTML;
+  }
+</script>
+</body>
+</html>

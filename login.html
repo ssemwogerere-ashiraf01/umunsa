@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sign In: Nkobazambogo Students' Association</title>
+<link rel="icon" href="favicon.ico" sizes="any" />
+<link rel="icon" type="image/png" href="assets/img/favicon-32.png" />
+<meta property="og:site_name" content="Nkobazambogo Students' Association" />
+<meta property="og:type" content="website" />
+<meta property="og:title" content="Sign In: Nkobazambogo Students' Association" />
+<meta property="og:description" content="Member sign in for the Nkobazambogo Students' Association." />
+<meta property="og:url" content="https://nkobazambogo-nsa.netlify.app/login.html" />
+<meta property="og:image" content="https://nkobazambogo-nsa.netlify.app/assets/img/og-default.png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Sign In: Nkobazambogo Students' Association" />
+<meta name="twitter:description" content="Member sign in for the Nkobazambogo Students' Association." />
+<meta name="twitter:image" content="https://nkobazambogo-nsa.netlify.app/assets/img/og-default.png" />
+<link rel="stylesheet" href="assets/css/style.css" />
+</head>
+<body>
+<div id="app-nav"></div>
+
+<div class="auth-wrap">
+  <div class="auth-card">
+    <h2>Welcome back</h2>
+    <p class="subtitle">Sign in to your member account.</p>
+
+    <div id="alert-box"></div>
+
+    <form id="login-form">
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input type="email" id="email" required autocomplete="username" />
+      </div>
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" required autocomplete="current-password" />
+      </div>
+      <button type="submit" class="btn btn-gold btn-block" id="submit-btn">Sign In</button>
+    </form>
+
+    <div class="divider">or</div>
+
+    <button type="button" class="btn btn-google" id="google-login-btn">
+      Continue with Google
+    </button>
+
+    <form id="otp-form" style="display:none;">
+      <p style="font-size:0.9rem;color:var(--text-muted);margin-top:-0.5rem;">
+        We sent a 6-digit code to <strong id="otp-email-label"></strong>. Enter it below to finish signing in.
+      </p>
+      <div id="otp-timer" style="font-size:0.85rem;font-weight:600;color:var(--forest);text-align:center;margin-bottom:0.75rem;">
+        Code expires in <span id="otp-countdown">60</span> seconds
+      </div>
+      <div class="form-group">
+        <label for="otp-code">Verification code</label>
+        <input type="text" id="otp-code" inputmode="numeric" pattern="[0-9]*" maxlength="6" required autocomplete="one-time-code" placeholder="123456" />
+      </div>
+      <button type="submit" class="btn btn-gold btn-block" id="otp-submit-btn">Verify & Sign In</button>
+      <button type="button" id="resend-otp-btn" style="background:none;border:none;color:var(--forest);font-size:0.85rem;margin-top:0.75rem;cursor:pointer;text-decoration:underline;" disabled>Resend code (<span id="login-resend-countdown">60</span>s)</button>
+    </form>
+
+    <p class="form-footer" id="login-footer-links">
+      Don't have an account? <a href="register.html">Apply for membership</a><br />
+      <a href="reset-password.html">Forgot your password?</a>
+      <br /><a href="privacy">Privacy</a> &middot; <a href="terms">Terms</a>
+    </p>
+  </div>
+</div>
+
+<div id="app-footer"></div>
+
+<script type="module">
+  import { completeGoogleLoginFromUrl, loginWithEmail, loginWithGoogle, redirectIfAlreadyLoggedIn, verifyLoginOtp, resendLoginOtp } from './assets/js/auth.js';
+  import { mountNav, mountFooter } from './assets/js/nav.js';
+
+  const params = new URLSearchParams(window.location.search);
+  const alertBox = document.getElementById('alert-box');
+  const messages = {
+    timeout: 'You were signed out after 10 minutes of inactivity.',
+    expired: 'Your session expired. Please sign in again.',
+    denied: 'Your account is not currently active. Contact an admin for details.',
+  };
+  for (const key of Object.keys(messages)) {
+    if (params.has(key)) showAlert(messages[key], 'error');
+  }
+
+  const googleResult = await completeGoogleLoginFromUrl();
+  if (googleResult.error) {
+    showAlert(googleResult.error, 'error');
+  }
+
+  await redirectIfAlreadyLoggedIn();
+
+  mountNav();
+  mountFooter();
+
+  let pendingEmail = '';
+  let otpTimer = null;
+  let otpSecondsLeft = 60;
+
+  function startOtpCountdown() {
+    otpSecondsLeft = 60;
+    document.getElementById('otp-countdown').textContent = '60';
+    document.getElementById('otp-timer').style.display = 'block';
+    document.getElementById('otp-timer').style.color = 'var(--forest)';
+    document.getElementById('resend-otp-btn').disabled = true;
+
+    clearInterval(otpTimer);
+    otpTimer = setInterval(() => {
+      otpSecondsLeft--;
+      document.getElementById('otp-countdown').textContent = String(otpSecondsLeft);
+      document.getElementById('login-resend-countdown').textContent = String(otpSecondsLeft);
+
+      if (otpSecondsLeft <= 10) {
+        document.getElementById('otp-timer').style.color = '#9c2b2b';
+      }
+
+      if (otpSecondsLeft <= 0) {
+        clearInterval(otpTimer);
+        document.getElementById('otp-timer').innerHTML = 'Code expired. <span style="color:#9c2b2b;">Request a new one below.</span>';
+        document.getElementById('resend-otp-btn').disabled = false;
+        document.getElementById('resend-otp-btn').textContent = 'Resend code';
+      }
+    }, 1000);
+  }
+
+  function cleanupOtpCountdown() {
+    clearInterval(otpTimer);
+  }
+
+  document.getElementById('google-login-btn').addEventListener('click', async () => {
+    const btn = document.getElementById('google-login-btn');
+    btn.disabled = true;
+    btn.textContent = 'Redirecting to Google...';
+
+    const result = await loginWithGoogle();
+    if (result.error) {
+      showAlert(result.error, 'error');
+      btn.disabled = false;
+      btn.textContent = 'Continue with Google';
+    }
+  });
+
+  function resetResendCooldown() {
+    let cooldown = 60;
+    document.getElementById('resend-otp-btn').disabled = true;
+    document.getElementById('resend-otp-btn').textContent = 'Resend code (60s)';
+    document.getElementById('login-resend-countdown').textContent = '60';
+
+    const cdTimer = setInterval(() => {
+      cooldown--;
+      document.getElementById('login-resend-countdown').textContent = String(cooldown);
+      document.getElementById('resend-otp-btn').textContent = `Resend code (${cooldown}s)`;
+      if (cooldown <= 0) {
+        clearInterval(cdTimer);
+        document.getElementById('resend-otp-btn').disabled = false;
+        document.getElementById('resend-otp-btn').textContent = 'Resend code';
+      }
+    }, 1000);
+  }
+
+  document.getElementById('login-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('submit-btn');
+    btn.disabled = true; btn.textContent = 'Signing in...';
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+
+    const result = await loginWithEmail({ email, password });
+    if (result.error) {
+      showAlert(result.error, 'error');
+      btn.disabled = false; btn.textContent = 'Sign In';
+      return;
+    }
+
+    if (result.requireOtp) {
+      pendingEmail = email;
+      document.getElementById('otp-email-label').textContent = email;
+      document.getElementById('login-form').style.display = 'none';
+      document.getElementById('login-footer-links').style.display = 'none';
+      document.getElementById('otp-form').style.display = 'block';
+      alertBox.innerHTML = '';
+      document.getElementById('otp-code').focus();
+      startOtpCountdown();
+    }
+  });
+
+  document.getElementById('otp-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('otp-submit-btn');
+    btn.disabled = true; btn.textContent = 'Verifying...';
+    const token = document.getElementById('otp-code').value.trim();
+
+    // Check if the code has expired on the client side
+    if (otpSecondsLeft <= 0) {
+      showAlert('This code has expired. Please request a new one.', 'error');
+      btn.disabled = false; btn.textContent = 'Verify & Sign In';
+      return;
+    }
+
+    const result = await verifyLoginOtp({ email: pendingEmail, token });
+    if (result.error) {
+      showAlert(result.error, 'error');
+      btn.disabled = false; btn.textContent = 'Verify & Sign In';
+    } else {
+      cleanupOtpCountdown();
+    }
+  });
+
+  document.getElementById('resend-otp-btn').addEventListener('click', async () => {
+    const btn = document.getElementById('resend-otp-btn');
+    btn.disabled = true; btn.textContent = 'Sending...';
+    const result = await resendLoginOtp({ email: pendingEmail });
+    if (result.error) {
+      showAlert(result.error, 'error');
+      btn.disabled = false; btn.textContent = 'Resend code';
+    } else {
+      showAlert('A new code has been sent.', 'success');
+      // Reset the countdown and start resend cooldown
+      document.getElementById('otp-timer').style.display = 'block';
+      startOtpCountdown();
+      resetResendCooldown();
+    }
+  });
+
+  function showAlert(msg, type) {
+    alertBox.innerHTML = `<div class="alert alert-${type}">${msg}</div>`;
+  }
+</script>
+</body>
+</html>

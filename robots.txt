@@ -1,0 +1,23 @@
+User-agent: *
+Disallow: /admin/
+Disallow: /elections/
+Disallow: /forum/
+Disallow: /dashboard.html
+Disallow: /profile.html
+Disallow: /activities.html
+Disallow: /projects.html
+Disallow: /feedback.html
+Disallow: /pending-approval.html
+Disallow: /onboarding.html
+Disallow: /reset-password.html
+Disallow: /reset-password-confirm.html
+
+# Public marketing pages ARE allowed to be indexed:
+Allow: /index.html
+Allow: /about.html
+Allow: /contact.html
+Allow: /rules.html
+Allow: /leadership.html
+Allow: /news.html
+Allow: /login.html
+Allow: /register.html

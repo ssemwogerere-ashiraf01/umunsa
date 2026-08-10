@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Apply: Nkobazambogo Students' Association</title>
+<link rel="icon" href="favicon.ico" sizes="any" />
+<link rel="icon" type="image/png" href="assets/img/favicon-32.png" />
+<meta property="og:site_name" content="Nkobazambogo Students' Association" />
+<meta property="og:type" content="website" />
+<meta property="og:title" content="Apply for Membership: Nkobazambogo Students' Association" />
+<meta property="og:description" content="Quick application for UMU students and staff. Apply with your @umu.ac.ug email." />
+<meta property="og:url" content="https://nkobazambogo-nsa.netlify.app/apply.html" />
+<meta property="og:image" content="https://nkobazambogo-nsa.netlify.app/assets/img/og-default.png" />
+<link rel="stylesheet" href="assets/css/style.css" />
+<style>
+  .hero-apply { padding: 3.25rem 1rem; max-width: 980px; margin: 0 auto 2rem; }
+  .apply-grid { display:grid; grid-template-columns: 1fr 420px; gap: 2rem; align-items:start; }
+  @media (max-width:900px){ .apply-grid{grid-template-columns:1fr} }
+  .feature { color:var(--text-muted); }
+  .auth-card { box-shadow:var(--shadow); }
+</style>
+</head>
+<body>
+
+<div id="app-nav"></div>
+
+<main class="hero-apply">
+  <div class="apply-grid">
+    <div>
+      <h1>Join the Nkobazambogo Students' Association</h1>
+      <p class="feature">Apply using your university email (must be on the <strong>umu.ac.ug</strong> domain). Applications are reviewed by an admin: approved members will receive sign-in instructions via email.</p>
+      <ul style="margin-top:1rem;">
+        <li>Fast review by admins</li>
+        <li>Secure membership tied to your UMU account</li>
+        <li>Access to elections, projects, and member-only discussions</li>
+      </ul>
+      <p style="margin-top:1.25rem;"><a href="rules.html" class="btn btn-outline">Members' Code</a></p>
+    </div>
+
+    <div class="auth-card" style="padding:1.25rem;">
+      <h2 style="margin-top:0;margin-bottom:0.35rem;">Quick application</h2>
+      <p style="margin-top:0;margin-bottom:0.75rem;color:var(--text-muted);font-size:0.95rem;">Fill this form and we'll notify you when your membership is approved.</p>
+
+      <div id="alert-box"></div>
+
+      <form id="apply-form">
+        <div class="form-group"><label for="full_name">Full name</label><input id="full_name" type="text" required /></div>
+        <div class="form-group"><label for="email">University email</label><input id="email" type="email" required placeholder="name@umu.ac.ug" pattern=".+@([a-zA-Z0-9-]+\.)*umu\.ac\.ug$" /></div>
+        <div class="form-group"><label for="phone">Phone number</label><input id="phone" type="tel" placeholder="e.g. +2567XXXXXXXX" /></div>
+        <div class="form-group"><label for="role">I am a</label>
+          <select id="role">
+            <option value="student">Student</option>
+            <option value="staff">Staff / Faculty</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div class="form-group"><label for="department">Department / Faculty (optional)</label><input id="department" type="text" /></div>
+        <button type="submit" id="submit-btn" class="btn btn-gold btn-block">Apply now</button>
+      </form>
+
+      <p style="margin-top:0.75rem;font-size:0.9rem;color:var(--text-muted)">Already applied? <a href="login.html">Sign in</a> · <a href="privacy">Privacy</a> · <a href="terms">Terms</a></p>
+    </div>
+  </div>
+</main>
+
+<div id="app-footer"></div>
+
+<script type="module">
+  import { mountNav, mountFooter } from './assets/js/nav.js';
+  import { registerWithEmail, redirectIfAlreadyLoggedIn } from './assets/js/auth.js';
+
+  await redirectIfAlreadyLoggedIn();
+  mountNav();
+  mountFooter();
+
+  const form = document.getElementById('apply-form');
+  const alertBox = document.getElementById('alert-box');
+  const btn = document.getElementById('submit-btn');
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    alertBox.innerHTML = '';
+    btn.disabled = true; btn.textContent = 'Submitting...';
+
+    const payload = {
+      fullName: document.getElementById('full_name').value.trim(),
+      email: document.getElementById('email').value.trim(),
+      phone: document.getElementById('phone').value.trim(),
+      // password is required for registerWithEmail; generate a temporary random password
+      password: Math.random().toString(36).slice(-10) + 'A1!',
+    };
+
+    const result = await registerWithEmail(payload);
+    if (result.error) {
+      alertBox.innerHTML = `<div class="alert alert-error">${String(result.error)}</div>`;
+      btn.disabled = false; btn.textContent = 'Apply now';
+      return;
+    }
+
+    alertBox.innerHTML = `<div class="alert alert-success">${result.message || 'Application submitted. An admin will review your request.'}</div>`;
+    form.style.display = 'none';
+  });
+</script>
+</body>
+</html>

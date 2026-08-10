@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Uganda Martyrs University Nkobazambogo Students' Association</title>
+<link rel="icon" href="favicon.ico" sizes="any" />
+<link rel="icon" type="image/png" href="assets/img/favicon-32.png" sizes="32x32" />
+<link rel="apple-touch-icon" href="assets/img/nsa-seal.png" />
+<meta name="description" content="The official home of the Nkobazambogo Students' Association at Uganda Martyrs University, Nkozi: news, activities, projects, elections, and discussions for our members." />
+<meta property="og:site_name" content="Nkobazambogo Students' Association" />
+<meta property="og:type" content="website" />
+<meta property="og:title" content="Uganda Martyrs University Nkobazambogo Students' Association" />
+<meta property="og:description" content="Obumu Geemaanyi: Togetherness is Power. Membership news, club activities, projects, and elections for UMU Nkozi's Nkobazambogo Students' Association." />
+<meta property="og:url" content="https://nkobazambogo-nsa.netlify.app/" />
+<meta property="og:image" content="https://nkobazambogo-nsa.netlify.app/assets/img/og-default.png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Uganda Martyrs University Nkobazambogo Students' Association" />
+<meta name="twitter:description" content="Obumu Geemaanyi: Togetherness is Power. Membership news, club activities, projects, and elections for UMU Nkozi's Nkobazambogo Students' Association." />
+<meta name="twitter:image" content="https://nkobazambogo-nsa.netlify.app/assets/img/og-default.png" />
+<link rel="stylesheet" href="assets/css/style.css" />
+<style>
+  a.card-link {
+    display: block; text-decoration: none; color: inherit;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  a.card-link:hover {
+    transform: translateY(-3px); box-shadow: 0 8px 24px rgba(22,35,58,0.12);
+    text-decoration: none;
+  }
+  a.card-link .card-cta {
+    display: inline-block; margin-top: 0.85rem; font-size: 0.85rem;
+    font-weight: 600; color: var(--forest);
+  }
+  a.card-link:hover .card-cta { text-decoration: underline; }
+  .hero {
+    position: relative;
+    min-height: 72vh;
+    overflow: hidden;
+  }
+  .hero-carousel {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+  }
+  .hero-carousel::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(11,20,33,0.82), rgba(27,67,50,0.74));
+  }
+  .hero-slide {
+    position: absolute;
+    inset: 0;
+    background-position: center;
+    background-size: cover;
+    opacity: 0;
+    transform: scale(1.04);
+    transition: opacity 900ms ease, transform 4000ms ease;
+  }
+  .hero-slide.is-active {
+    opacity: 1;
+    transform: scale(1);
+  }
+  .hero-carousel-ui {
+    position: absolute;
+    left: 50%;
+    bottom: 1.25rem;
+    transform: translateX(-50%);
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.55rem;
+    width: calc(100% - 2rem);
+    max-width: 560px;
+  }
+  .hero-carousel-label {
+    font-size: 0.75rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #f3e6b3;
+    background: rgba(8, 18, 26, 0.44);
+    border: 1px solid rgba(255,255,255,0.12);
+    padding: 0.4rem 0.75rem;
+    border-radius: 999px;
+    backdrop-filter: blur(6px);
+  }
+  .hero-carousel-dots {
+    display: flex;
+    gap: 0.45rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .hero-carousel-dots button {
+    width: 12px;
+    height: 12px;
+    border-radius: 999px;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+    background: rgba(255,255,255,0.45);
+    box-shadow: 0 0 0 2px rgba(0,0,0,0.08);
+  }
+  .hero-carousel-dots button.is-active {
+    background: var(--gold);
+    width: 30px;
+  }
+  .hero .hero-inner {
+    position: relative;
+    z-index: 1;
+    color: #fff;
+  }
+  .hero .eyebrow { color: var(--gold); }
+  .culture-strip {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.25rem;
+    max-width: 1000px; margin: 2rem auto 0; padding: 0 1rem;
+  }
+  .culture-strip figure { margin: 0; border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+  .culture-strip img { width: 100%; height: 180px; object-fit: cover; display: block; }
+  .culture-strip figcaption { font-size: 0.78rem; color: var(--text-muted); padding: 0.5rem 0.75rem; background: var(--paper); }
+</style>
+</head>
+<body>
+
+<div id="app-nav"></div>
+
+<header class="hero hero-with-photo">
+  <div class="hero-carousel" id="hero-carousel" aria-hidden="true"></div>
+  <div class="hero-inner">
+    <span class="eyebrow">Uganda Martyrs University, Nkozi</span>
+    <h1>Obumu Geemaanyi - Togetherness is Power.</h1>
+    <p>The Nkobazambogo Students' Association brings together UMU students around shared activities, projects, discussions, and fair leadership elections: built for our members.</p>
+    <div class="hero-actions">
+      <a href="register.html" class="btn btn-gold">Become a Member</a>
+      <a href="login.html" class="btn btn-outline-light">Member Sign In</a>
+    </div>
+  </div>
+  <div class="hero-carousel-ui" aria-hidden="true">
+    <div class="hero-carousel-label" id="hero-carousel-label">Loading campus stories</div>
+    <div class="hero-carousel-dots" id="hero-carousel-dots"></div>
+  </div>
+</header>
+
+<div class="roll-call">
+  <div class="stat"><strong>@umu.ac.ug</strong><span>Membership by university email</span></div>
+  <div class="stat"><strong>29</strong><span>Executive &amp; representative positions</span></div>
+  <div class="stat"><strong>Every Term</strong><span>Leadership elections</span></div>
+</div>
+
+<section class="section" id="about">
+  <div class="section-head">
+    <span class="eyebrow">Who we are</span>
+    <h2>A home away from home at UMU Nkozi</h2>
+  </div>
+  <p style="max-width:680px;margin:0 auto;color:var(--text-muted);text-align:center;">
+    The Nkobazambogo Students' Association exists to keep UMU students connected:
+    through club activities, shared projects, mentorship, and a say
+    in who leads the association each term. Membership is by approval: every application
+    from a <strong>umu.ac.ug</strong> email is reviewed by an admin before an account becomes active.
+  </p>
+  <div class="culture-strip">
+    <figure>
+      <img src="assets/img/kasubi.jpg" alt="Kasubi Tombs, seat of the Buganda Kingdom" loading="lazy" />
+      <figcaption>Kasubi Tombs - Buganda Kingdom heritage site, Kampala</figcaption>
+    </figure>
+    <figure>
+      <img src="assets/img/dancers.jpg" alt="Traditional Buganda cultural dancers" loading="lazy" />
+      <figcaption>Traditional Buganda cultural dance</figcaption>
+    </figure>
+  </div>
+  <div style="max-width:900px;margin:2rem auto 0;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1rem;">
+    <div class="card" style="margin:0;">
+      <h3 style="margin-top:0;font-size:1.05rem;">Vision</h3>
+      <p style="margin:0;">A lasting community of UMU students who show up for one another, on and off campus.</p>
+    </div>
+    <div class="card" style="margin:0;">
+      <h3 style="margin-top:0;font-size:1.05rem;">Mission</h3>
+      <p style="margin:0;">Connect and empower members through club activities, projects, mentorship, and fair elections.</p>
+    </div>
+    <div class="card" style="margin:0;">
+      <h3 style="margin-top:0;font-size:1.05rem;">Principles</h3>
+      <p style="margin:0;">Integrity, solidarity, and respect - set out in our Members' Code for everyone to read.</p>
+    </div>
+  </div>
+  <p style="text-align:center;margin-top:1.75rem;">
+    <a href="about.html" class="btn btn-gold">Read the full About Us</a>
+    <a href="rules.html" style="margin-left:0.75rem;font-weight:600;">Members' Code →</a>
+  </p>
+</section>
+
+<section class="section" id="activities" style="background:var(--paper);border-top:1px solid var(--border);border-bottom:1px solid var(--border);">
+  <div class="section-head">
+    <span class="eyebrow">What members get</span>
+    <h2>Activities &amp; member benefits</h2>
+  </div>
+  <div class="card-grid">
+    <a class="card card-link" href="activities.html">
+      <h3>Club Activities</h3>
+      <p>Browse and RSVP to activities run by the association: meetups, socials, and campus events.</p>
+      <span class="card-cta">See activities →</span>
+    </a>
+    <a class="card card-link" href="projects.html">
+      <h3>Projects</h3>
+      <p>See the club projects underway and the ones you've been assigned to.</p>
+      <span class="card-cta">View projects →</span>
+    </a>
+    <a class="card card-link" href="forum/index.html">
+      <h3>Discussions</h3>
+      <p>Start conversations, ask for advice, and stay in the loop between official announcements.</p>
+      <span class="card-cta">Join discussions →</span>
+    </a>
+    <a class="card card-link" href="elections/index.html">
+      <h3>Leadership Elections</h3>
+      <p>Apply for one of 29 executive and representative positions, or vote for your executive committee.</p>
+      <span class="card-cta">View elections →</span>
+    </a>
+    <a class="card card-link" href="news.html">
+      <h3>News &amp; Announcements</h3>
+      <p>Stay current with what's happening across the association.</p>
+      <span class="card-cta">Read news →</span>
+    </a>
+    <a class="card card-link" href="feedback.html">
+      <h3>Feedback</h3>
+      <p>Tell us what's working and what isn't through member surveys.</p>
+      <span class="card-cta">Give feedback →</span>
+    </a>
+  </div>
+</section>
+
+<section class="section" id="leaders">
+  <div class="section-head">
+    <span class="eyebrow">Leadership</span>
+    <h2>Executive committee</h2>
+  </div>
+  <div class="card-grid" id="leaders-grid">
+    <p style="text-align:center;color:var(--text-muted);grid-column:1/-1;">Leadership profiles load here once published by an admin.</p>
+  </div>
+  <p style="text-align:center;margin-top:1.5rem;"><a href="leadership.html">View full leadership history &rarr;</a></p>
+</section>
+
+<div id="app-footer"></div>
+
+<script type="module">
+  import { supabase } from './assets/js/supabase-client.js';
+  import { mountNav, mountFooter } from './assets/js/nav.js';
+  mountNav();
+  mountFooter();
+
+  const heroSlides = [
+    { src: 'assets/img/team.jpg', label: 'Association members at a cultural gathering' },
+    { src: 'assets/img/campus-bg.jpg', label: 'Uganda Martyrs University campus life' },
+    { src: 'assets/img/culture-bg.jpg', label: 'Campus culture and student events' },
+    { src: 'assets/img/kasubi.jpg', label: 'Buganda heritage and identity' },
+    { src: 'assets/img/dancers.jpg', label: 'Traditional cultural performance' },
+  ];
+
+  const carousel = document.getElementById('hero-carousel');
+  const dots = document.getElementById('hero-carousel-dots');
+  const label = document.getElementById('hero-carousel-label');
+  let activeSlide = 0;
+  let heroTimer = null;
+
+  function renderHeroCarousel() {
+    if (!carousel || !dots || !label) return;
+    carousel.innerHTML = heroSlides.map((slide, index) => `
+      <div class="hero-slide ${index === activeSlide ? 'is-active' : ''}" style="background-image:url('${slide.src}')"></div>
+    `).join('');
+    dots.innerHTML = heroSlides.map((_, index) => `
+      <button type="button" class="${index === activeSlide ? 'is-active' : ''}" aria-label="Show slide ${index + 1}"></button>
+    `).join('');
+    label.textContent = heroSlides[activeSlide].label;
+    dots.querySelectorAll('button').forEach((button, index) => {
+      button.addEventListener('click', () => {
+        activeSlide = index;
+        renderHeroCarousel();
+        restartHeroTimer();
+      });
+    });
+  }
+
+  function restartHeroTimer() {
+    clearInterval(heroTimer);
+    heroTimer = setInterval(() => {
+      activeSlide = (activeSlide + 1) % heroSlides.length;
+      renderHeroCarousel();
+    }, 5500);
+  }
+
+  renderHeroCarousel();
+  restartHeroTimer();
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str ?? '';
+    return div.innerHTML;
+  }
+
+  const grid = document.getElementById('leaders-grid');
+  try {
+    const { data: leaders } = await supabase
+      .from('leaders')
+      .select('position, bio, is_current')
+      .eq('is_current', true)
+      .order('display_order');
+    if (leaders && leaders.length) {
+      grid.innerHTML = leaders.map(l => `
+        <div class="card"><h3>${escapeHtml(l.position)}</h3><p>${escapeHtml(l.bio || '')}</p></div>
+      `).join('');
+    }
+  } catch (err) {
+    console.warn('Leaders load failed', err);
+  }
+</script>
+</body>
+</html>

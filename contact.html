@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Contact Us: Nkobazambogo Students' Association</title>
+<link rel="icon" href="favicon.ico" sizes="any" />
+<link rel="icon" type="image/png" href="assets/img/favicon-32.png" />
+<meta property="og:site_name" content="Nkobazambogo Students' Association" />
+<meta property="og:type" content="website" />
+<meta property="og:title" content="Contact Us: Nkobazambogo Students' Association" />
+<meta property="og:description" content="Contact the Nkobazambogo Students' Association for membership questions or general enquiries." />
+<meta property="og:url" content="https://nkobazambogo-nsa.netlify.app/contact.html" />
+<meta property="og:image" content="https://nkobazambogo-nsa.netlify.app/assets/img/og-default.png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta name="twitter:card" content="summary_large_image" />
+<link rel="stylesheet" href="assets/css/style.css" />
+<style>
+  .page-header { background: var(--paper); border-bottom: 1px solid var(--border); padding: 2.5rem 2rem; text-align: center; }
+  .page-header h1 { margin: 0 0 0.25rem; font-size: 1.8rem; }
+  .contact-grid { display:grid; grid-template-columns: 1fr 1fr; gap:2rem; max-width:1000px; margin:2rem auto 0; align-items:start; }
+  @media (max-width: 780px) { .contact-grid { grid-template-columns: 1fr; } }
+  .faq-item { border-bottom:1px solid var(--border); padding:0.9rem 0; }
+  .faq-item:last-child { border-bottom:none; }
+  .faq-item strong { display:block; margin-bottom:0.3rem; }
+</style>
+</head>
+<body>
+<div id="app-nav"></div>
+
+<div class="page-header">
+  <span class="eyebrow">Association</span>
+  <h1>Contact Us</h1>
+  <p>Ask about membership, activities, projects, or elections. Instant answers from our knowledge base below: not a substitute for admin decisions.</p>
+</div>
+
+<div class="section" style="padding-top:0;">
+  <div class="contact-grid">
+    <div class="card" style="margin:0;">
+      <h3 style="margin-top:0;">Send us a message</h3>
+      <div id="alert-box"></div>
+      <form id="contact-form">
+        <div class="form-group"><label for="c-name">Name</label><input type="text" id="c-name" required /></div>
+        <div class="form-group"><label for="c-email">Email</label><input type="email" id="c-email" required /></div>
+        <div class="form-group">
+          <label for="c-topic">Topic</label>
+          <select id="c-topic">
+            <option value="membership">Membership</option>
+            <option value="activities">Activities</option>
+            <option value="projects">Projects</option>
+            <option value="elections">Elections</option>
+            <option value="general">General enquiry</option>
+          </select>
+        </div>
+        <div class="form-group"><label for="c-message">Message</label><textarea id="c-message" rows="5" required></textarea></div>
+        <button type="submit" class="btn btn-gold btn-block" id="c-submit-btn">Send Message</button>
+      </form>
+    </div>
+
+    <div class="card" style="margin:0;">
+      <h3 style="margin-top:0;">Quick answers</h3>
+      <div id="faq-search-wrap" style="margin-bottom:1rem;">
+        <input type="text" id="faq-search" placeholder="Type a question... e.g. how do I join?" style="width:100%;padding:0.7rem 0.9rem;border:1px solid var(--border);border-radius:var(--radius);font-family:inherit;" />
+      </div>
+      <div id="faq-results"></div>
+      <p style="font-size:0.85rem;color:var(--text-muted);margin-top:1rem;">Association email: <a href="mailto:nsa@umu.ac.ug">nsa@umu.ac.ug</a><br />Campus: Uganda Martyrs University, Nkozi, Mpigi District, Uganda</p>
+    </div>
+  </div>
+</div>
+
+<div id="app-footer"></div>
+
+<script type="module">
+  import { supabase } from './assets/js/supabase-client.js';
+  import { mountNav, mountFooter } from './assets/js/nav.js';
+
+  mountNav('contact');
+  mountFooter();
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str ?? '';
+    return div.innerHTML;
+  }
+
+  document.getElementById('contact-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('c-submit-btn');
+    const alertBox = document.getElementById('alert-box');
+    btn.disabled = true; btn.textContent = 'Sending...';
+
+    const { error } = await supabase.from('contact_messages').insert({
+      name: document.getElementById('c-name').value.trim(),
+      email: document.getElementById('c-email').value.trim(),
+      topic: document.getElementById('c-topic').value,
+      message: document.getElementById('c-message').value.trim(),
+    });
+
+    if (error) {
+      alertBox.innerHTML = `<div class="alert alert-error">${escapeHtml(error.message)}</div>`;
+      btn.disabled = false; btn.textContent = 'Send Message';
+    } else {
+      alertBox.innerHTML = `<div class="alert alert-success">Thanks: your message has been sent. An admin will get back to you.</div>`;
+      document.getElementById('contact-form').reset();
+      btn.disabled = false; btn.textContent = 'Send Message';
+    }
+  });
+
+  const faqs = [
+    { keys: ['join', 'register', 'member', 'membership', 'sign up', 'signup'], a: 'To join: (1) Register with your @umu.ac.ug email, (2) wait for admin approval, (3) complete your profile. Then you can join activities, projects, and discussions, and take part in elections.' },
+    { keys: ['domain', 'email', 'gmail', 'non-umu', 'not umu'], a: "Self-registration is restricted to @umu.ac.ug emails. If you don't have one, ask a Super Admin to add your account directly: they can add any member regardless of email domain." },
+    { keys: ['activity', 'activities', 'event', 'rsvp'], a: 'Browse upcoming activities on the Activities page and RSVP once you\u2019re an approved member.' },
+    { keys: ['project', 'projects'], a: 'Club projects and your own assignments are on the Projects page. Admins assign members to projects.' },
+    { keys: ['election', 'vote', 'candidate', 'position', 'apply'], a: 'Elections open with 29 executive and representative positions. Apply from the Elections page once an election is open, and vote once candidates are approved and voting is active.' },
+    { keys: ['forum', 'discussion', 'post', 'reply'], a: 'Approved members can start and reply to discussions on the Discussions (forum) page.' },
+    { keys: ['feedback', 'survey'], a: 'Active members can respond to feedback forms on the Feedback page whenever admins have one open.' },
+    { keys: ['admin', 'super admin', 'role'], a: 'Admins handle day-to-day approvals and content. Only the Super Admin can assign admin access, edit club settings, or add a member outside the @umu.ac.ug domain.' },
+    { keys: ['password', 'forgot', 'reset'], a: 'Use "Forgot your password?" on the sign-in page to reset it by email.' },
+  ];
+
+  const searchInput = document.getElementById('faq-search');
+  const resultsEl = document.getElementById('faq-results');
+
+  function renderFaqs(list) {
+    resultsEl.innerHTML = list.map(f => `<div class="faq-item"><strong>${escapeHtml(f.keys[0])}</strong><span style="color:var(--text-muted);font-size:0.9rem;">${escapeHtml(f.a)}</span></div>`).join('')
+      || '<p style="color:var(--text-muted);font-size:0.9rem;">No matches: try a different word, or send us a message.</p>';
+  }
+  renderFaqs(faqs);
+
+  searchInput.addEventListener('input', () => {
+    const q = searchInput.value.trim().toLowerCase();
+    if (!q) { renderFaqs(faqs); return; }
+    renderFaqs(faqs.filter(f => f.keys.some(k => k.includes(q)) || f.a.toLowerCase().includes(q)));
+  });
+</script>
+</body>
+</html>
