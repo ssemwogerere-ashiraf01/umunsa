@@ -35,8 +35,8 @@ create type election_status as enum ('draft', 'upcoming', 'active', 'closed');
 
 -- -------------------------------------------------------------------------
 -- 2. CLUB SETTINGS  (flexible key/value table the Super Admin edits from
---    the Super Admin dashboard — about-us copy, motto, contact info, hero
---    tagline — without needing a code change)
+--    the Super Admin dashboard - about-us copy, motto, contact info, hero
+--    tagline - without needing a code change)
 -- -------------------------------------------------------------------------
 create table public.club_settings (
   key         text primary key,
@@ -55,7 +55,7 @@ insert into public.club_settings (key, value) values
   ('campus_location', '"Uganda Martyrs University, Nkozi, Mpigi District, Uganda"');
 
 -- -------------------------------------------------------------------------
--- 3. PROFILES  (extends auth.users — Supabase Auth already stores
+-- 3. PROFILES  (extends auth.users - Supabase Auth already stores
 --    email/password identity; this table holds everything else)
 -- -------------------------------------------------------------------------
 create table public.profiles (
@@ -97,7 +97,7 @@ comment on table public.profiles is 'One row per user. Sensitive fields (role, m
 -- Auto-create a profile row whenever someone signs up (email/password).
 -- Reads the flag set by the admin-create-user Edge Function so we know
 -- whether this account was added by a super admin (any email domain
--- allowed) or is a normal self-registration (@umu.ac.ug only — enforced
+-- allowed) or is a normal self-registration (@umu.ac.ug only - enforced
 -- in 004_email_domain_and_roles.sql).
 create or replace function public.handle_new_user()
 returns trigger as $$
@@ -151,7 +151,7 @@ create table public.news (
 );
 
 -- -------------------------------------------------------------------------
--- 6. CLUB ACTIVITIES  (events run by the association — members "join" by
+-- 6. CLUB ACTIVITIES  (events run by the association - members "join" by
 --    RSVPing; each member's own participation is what they see on their
 --    dashboard).
 -- -------------------------------------------------------------------------
@@ -177,7 +177,7 @@ create table public.activity_participants (
 );
 
 -- -------------------------------------------------------------------------
--- 7. PROJECTS  (club projects — members see only the projects they are
+-- 7. PROJECTS  (club projects - members see only the projects they are
 --    assigned to; admins/super admin manage all projects and assignments).
 -- -------------------------------------------------------------------------
 create table public.projects (
@@ -202,7 +202,7 @@ create table public.project_members (
 );
 
 -- -------------------------------------------------------------------------
--- 8. DISCUSSIONS (FORUM)  — any active member can start topics/reply;
+-- 8. DISCUSSIONS (FORUM)  - any active member can start topics/reply;
 --    admins/super admin moderate.
 -- -------------------------------------------------------------------------
 create table public.forum_topics (
@@ -224,7 +224,7 @@ create table public.forum_replies (
 );
 
 -- -------------------------------------------------------------------------
--- 9. CONTACT MESSAGES  (public "Contact Us" form — no login required to
+-- 9. CONTACT MESSAGES  (public "Contact Us" form - no login required to
 --    send one; admins/super admin read and reply from the admin panel)
 -- -------------------------------------------------------------------------
 create table public.contact_messages (
@@ -253,7 +253,7 @@ create table public.site_announcements (
 );
 
 -- -------------------------------------------------------------------------
--- 9b. LEADERSHIP POSITIONS  (the fixed list of electable offices — seeded
+-- 9b. LEADERSHIP POSITIONS  (the fixed list of electable offices - seeded
 --     below with the real BANKOSA / Nkobazambogo Students' Association
 --     position list so the Elections module has something to attach
 --     candidates to out of the box. Edit/add rows any time.)

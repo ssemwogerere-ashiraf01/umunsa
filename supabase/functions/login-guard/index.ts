@@ -2,43 +2,110 @@
 // login-guard Edge Function
 // Deploy with: supabase functions deploy login-guard
 // Enforces: 4 failed attempts -> 20 minute lockout, per email.
-// The client calls THIS instead of supabase.auth.signInWithPassword()
-// directly, so the rule can't be bypassed by calling the SDK straight.
-//
-// NOTE: this only verifies the password is correct and the account isn't
-// locked/pending — it does NOT establish a session anymore. The client
-// follows a successful response here by sending a one-time email code via
-// supabase.auth.signInWithOtp(), and ONLY verifying that code actually logs
-// the person in. This makes email OTP a mandatory second factor on every
-// password login, not just an optional extra.
+// Requires a server-issued math CAPTCHA on every password attempt.
 // =========================================================================
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
-const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!; // set as a secret, never in frontend code
+const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
+const CAPTCHA_SECRET = Deno.env.get('CAPTCHA_SECRET') || SERVICE_ROLE_KEY;
 
 const MAX_ATTEMPTS = 4;
 const LOCKOUT_MINUTES = 20;
 
+function json(body: unknown, status: number, headers: Record<string, string>) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...headers, 'Content-Type': 'application/json' },
+  });
+}
+
+function b64url(bytes: Uint8Array | string): string {
+  const raw = typeof bytes === 'string' ? new TextEncoder().encode(bytes) : bytes;
+  let s = btoa(String.fromCharCode(...raw));
+  return s.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+function fromB64url(s: string): string {
+  const pad = s.length % 4 === 0 ? '' : '='.repeat(4 - (s.length % 4));
+  const b64 = s.replace(/-/g, '+').replace(/_/g, '/') + pad;
+  return atob(b64);
+}
+
+async function hmacSign(secret: string, message: string): Promise<string> {
+  const key = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  );
+  const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(message));
+  return b64url(new Uint8Array(sig));
+}
+
+async function verifyCaptcha(
+  secret: string,
+  token: unknown,
+  answer: unknown,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const t = String(token || '').trim();
+  const ans = String(answer ?? '').trim();
+  if (!t || !ans) return { ok: false, error: 'CAPTCHA is required.' };
+  if (!/^\d+$/.test(ans)) return { ok: false, error: 'CAPTCHA answer must be a number.' };
+
+  const parts = t.split('.');
+  if (parts.length !== 2) return { ok: false, error: 'Invalid CAPTCHA. Refresh and try again.' };
+
+  let payload: string;
+  try {
+    payload = fromB64url(parts[0]);
+  } catch {
+    return { ok: false, error: 'Invalid CAPTCHA. Refresh and try again.' };
+  }
+
+  const expectedSig = await hmacSign(secret, payload);
+  if (expectedSig !== parts[1]) {
+    return { ok: false, error: 'Invalid CAPTCHA. Refresh and try again.' };
+  }
+
+  const segs = payload.split('|');
+  if (segs.length !== 3) return { ok: false, error: 'Invalid CAPTCHA. Refresh and try again.' };
+  const expectedAnswer = segs[1];
+  const exp = Number(segs[2]);
+  if (!Number.isFinite(exp) || Date.now() > exp) {
+    return { ok: false, error: 'CAPTCHA expired. Refresh and try again.' };
+  }
+  if (String(Number(ans)) !== expectedAnswer) {
+    return { ok: false, error: 'Incorrect CAPTCHA answer.' };
+  }
+  return { ok: true };
+}
+
 Deno.serve(async (req) => {
   const corsHeaders = {
-    'Access-Control-Allow-Origin': '*', // tighten to your real domain in production
+    'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'authorization, apikey, content-type, x-client-info',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
   };
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
   try {
-    const { email, password } = await req.json();
+    const body = await req.json();
+    const { email, password, captcha_token, captcha_answer } = body;
     const cleanEmail = String(email || '').trim().toLowerCase();
     if (!cleanEmail || !password) {
       return json({ error: 'Email and password are required.' }, 400, corsHeaders);
     }
 
+    const captchaCheck = await verifyCaptcha(CAPTCHA_SECRET, captcha_token, captcha_answer);
+    if (!captchaCheck.ok) {
+      return json({ error: captchaCheck.error }, 400, corsHeaders);
+    }
+
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
-    // 1. Check existing lockout on the profile
     const { data: profile } = await admin
       .from('profiles')
       .select('id, locked_until, failed_login_count, membership_status')
@@ -50,7 +117,6 @@ Deno.serve(async (req) => {
       return json({ error: `Account locked. Try again in ${minsLeft} minute(s).` }, 423, corsHeaders);
     }
 
-    // 2. Attempt the actual password sign-in against GoTrue directly
     const tokenRes = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
       method: 'POST',
       headers: { apikey: ANON_KEY, 'Content-Type': 'application/json' },
@@ -59,7 +125,6 @@ Deno.serve(async (req) => {
     const tokenData = await tokenRes.json();
     const success = tokenRes.ok && tokenData.access_token;
 
-    // 3. Log the attempt (service role bypasses RLS)
     await admin.from('login_attempts').insert({
       email: cleanEmail,
       success,
@@ -78,7 +143,6 @@ Deno.serve(async (req) => {
       return json({ error: 'Incorrect email or password.' }, 401, corsHeaders);
     }
 
-    // 4. Success — reset the counter and lockout
     if (profile) {
       await admin.from('profiles').update({ failed_login_count: 0, locked_until: null }).eq('id', profile.id);
     }
@@ -89,13 +153,7 @@ Deno.serve(async (req) => {
 
     return json({ success: true }, 200, corsHeaders);
   } catch (e) {
+    console.error(e);
     return json({ error: 'Unexpected error. Please try again.' }, 500, corsHeaders);
   }
 });
-
-function json(body: unknown, status: number, headers: Record<string, string>) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...headers, 'Content-Type': 'application/json' },
-  });
-}

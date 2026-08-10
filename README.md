@@ -6,7 +6,7 @@ JS) backed by Supabase (Postgres + Auth + Storage + Edge Functions).
 
 Public pages (landing, About, Contact, Rules, Leadership, News) are open to
 everyone. Everything else: Dashboard, Activities, Projects, Discussions,
-Elections, Feedback, Profile, and both Admin dashboards — requires sign-in
+Elections, Feedback, Profile, and both Admin dashboards - requires sign-in
 and an **active** membership status.
 
 ## Membership model
@@ -28,8 +28,8 @@ and an **active** membership status.
 
 ## What's included
 
-  `news.html` — public pages
-  `reset-password.html`, `reset-password-confirm.html` — auth flow
+  `news.html` - public pages
+  `reset-password.html`, `reset-password-confirm.html` - auth flow
   (a member's own assignments, plus a browsable list for all active members)
   reply; admins moderate)
   vote while an election is active, and view results once closed. Seeded
@@ -47,7 +47,7 @@ newsletter: keeping only what's relevant to this brief.
    `001_schema.sql` → `002_rls_policies.sql` → `003_storage.sql` →
    `004_email_domain_and_roles.sql`.
 3. Register your own account through `register.html` with your
-   `@umu.ac.ug` email (once the site is deployed and wired up — step 4).
+   `@umu.ac.ug` email (once the site is deployed and wired up - step 4).
 4. In `sql/004_email_domain_and_roles.sql`, uncomment the bootstrap
    `UPDATE` statement, put in your real email, and run just that statement
    to make yourself the first Super Admin.
@@ -77,5 +77,5 @@ drop in your own crest image if you have one.
 
 ## Deploying
 
-This is a static site — deploy the folder as-is to Netlify (a `netlify.toml`
+This is a static site - deploy the folder as-is to Netlify (a `netlify.toml`
 and `_headers` file are included), Vercel, GitHub Pages, or any static host.

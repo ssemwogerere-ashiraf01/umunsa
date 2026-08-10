@@ -1,5 +1,5 @@
 -- =========================================================================
--- AVATAR STORAGE — run in Supabase SQL Editor after 001/002.
+-- AVATAR STORAGE - run in Supabase SQL Editor after 001/002.
 -- Safe to re-run: drops each policy first if it already exists.
 -- =========================================================================
 insert into storage.buckets (id, name, public)
@@ -16,7 +16,7 @@ create policy "avatar_public_read" on storage.objects
   for select using (bucket_id = 'avatars');
 
 -- A user may only upload/replace/delete files inside a folder named after
--- their own user id, e.g. avatars/<user_id>/photo.jpg — this stops one
+-- their own user id, e.g. avatars/<user_id>/photo.jpg - this stops one
 -- member from overwriting another member's photo. Admins may manage any
 -- avatar (e.g. removing an inappropriate photo).
 create policy "avatar_insert_own" on storage.objects

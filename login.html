@@ -39,6 +39,7 @@
         <label for="password">Password</label>
         <input type="password" id="password" required autocomplete="current-password" />
       </div>
+      <div id="captcha-container"></div>
       <button type="submit" class="btn btn-gold btn-block" id="submit-btn">Sign In</button>
     </form>
 
@@ -65,7 +66,7 @@
 
     <p class="form-footer" id="login-footer-links">
       Don't have an account? <a href="register.html">Apply for membership</a><br />
-      <a href="reset-password.html">Forgot your password?</a>
+      <a href="reset-password.html">Forgot your password? Reset using security question</a>
       <br /><a href="privacy">Privacy</a> &middot; <a href="terms">Terms</a>
     </p>
   </div>
@@ -75,6 +76,7 @@
 
 <script type="module">
   import { completeGoogleLoginFromUrl, loginWithEmail, loginWithGoogle, redirectIfAlreadyLoggedIn, verifyLoginOtp, resendLoginOtp } from './assets/js/auth.js';
+  import { mountCaptcha } from './assets/js/captcha.js';
   import { mountNav, mountFooter } from './assets/js/nav.js';
 
   const params = new URLSearchParams(window.location.search);
@@ -163,6 +165,12 @@
     }, 1000);
   }
 
+  
+  let captcha;
+  (async () => {
+    captcha = await mountCaptcha(document.getElementById('captcha-container'), { label: 'Security check' });
+  })();
+
   document.getElementById('login-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = document.getElementById('submit-btn');
@@ -170,7 +178,14 @@
     const email = document.getElementById('email').value.trim();
     const password = document.getElementById('password').value;
 
-    const result = await loginWithEmail({ email, password });
+    const captchaPayload = captcha ? captcha.getPayload() : null;
+    if (!captchaPayload) {
+      alertBox.innerHTML = `<div class="alert alert-error">Please complete the CAPTCHA.</div>`;
+      btn.disabled = false; btn.textContent = 'Sign In';
+      return;
+    }
+    const result = await loginWithEmail({ email, password, ...captchaPayload });
+    if (result.error && captcha) captcha.refresh();
     if (result.error) {
       showAlert(result.error, 'error');
       btn.disabled = false; btn.textContent = 'Sign In';

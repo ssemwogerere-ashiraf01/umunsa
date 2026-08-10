@@ -4,7 +4,7 @@
 // with it via `profiles.id references auth.users(id) on delete cascade`).
 //
 // Only the designated super admin (profiles.role = 'super_admin') may
-// call this — regular admins are rejected even though they can call the
+// call this - regular admins are rejected even though they can call the
 // function endpoint, because authorization is re-checked here against the
 // database, not just against a role claimed by the client.
 //
@@ -34,7 +34,7 @@ Deno.serve(async (req) => {
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    // Client scoped to the CALLER's JWT — used only to figure out who is calling.
+    // Client scoped to the CALLER's JWT - used only to figure out who is calling.
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) return jsonResponse({ error: "Missing Authorization header." }, 401);
 
@@ -47,7 +47,7 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: "Could not verify caller identity." }, 401);
     }
 
-    // Confirm the caller is THE super admin — not just any admin.
+    // Confirm the caller is THE super admin - not just any admin.
     const { data: callerProfile, error: profileLookupErr } = await callerClient
       .from("profiles")
       .select("role")

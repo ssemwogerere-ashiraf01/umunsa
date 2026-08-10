@@ -1,13 +1,13 @@
 // supabase/functions/admin-create-user/index.ts
 //
-// Lets the SUPER ADMIN add a member directly — on ANY email domain,
+// Lets the SUPER ADMIN add a member directly - on ANY email domain,
 // bypassing the @umu.ac.ug self-registration restriction (see
 // sql/004_email_domain_and_roles.sql). Only a super_admin may call this.
 //
 // Deploy with:
 //   supabase functions deploy admin-create-user
 //
-// No extra secrets to set — SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are
+// No extra secrets to set - SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are
 // already injected automatically into every Edge Function's environment.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -44,7 +44,7 @@ Deno.serve(async (req) => {
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    // Client scoped to the CALLER's JWT — used only to figure out who is calling.
+    // Client scoped to the CALLER's JWT - used only to figure out who is calling.
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) return jsonResponse({ error: "Missing Authorization header." }, 401);
 
@@ -85,7 +85,7 @@ Deno.serve(async (req) => {
     // privileged work: create the auth user, then insert the profile row.
     const adminClient = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
-    // 1. Create the auth user directly, flagged as added by a super admin —
+    // 1. Create the auth user directly, flagged as added by a super admin -
     //    this is what the enforce_email_domain trigger checks to allow any
     //    email domain through.
     const { data: created, error: createErr } = await adminClient.auth.admin.createUser({
@@ -107,7 +107,7 @@ Deno.serve(async (req) => {
     }
 
     // 2. The on_auth_user_created trigger already inserted a profile row
-    //    (active, onboarding_completed) — update it with the extra details
+    //    (active, onboarding_completed) - update it with the extra details
     //    and requested role.
     const nowIso = new Date().toISOString();
     const { error: profileErr } = await adminClient

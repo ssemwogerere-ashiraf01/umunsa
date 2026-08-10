@@ -48,6 +48,7 @@
         <div class="form-group"><label for="full_name">Full name</label><input id="full_name" type="text" required /></div>
         <div class="form-group"><label for="email">University email</label><input id="email" type="email" required placeholder="name@umu.ac.ug" pattern=".+@([a-zA-Z0-9-]+\.)*umu\.ac\.ug$" /></div>
         <div class="form-group"><label for="phone">Phone number</label><input id="phone" type="tel" placeholder="e.g. +2567XXXXXXXX" /></div>
+        <div class="form-group"><label for="registration_number">Registration number</label><input id="registration_number" type="text" placeholder="e.g. 2026-B101-10000" /></div>
         <div class="form-group"><label for="role">I am a</label>
           <select id="role">
             <option value="student">Student</option>
@@ -87,6 +88,7 @@
       fullName: document.getElementById('full_name').value.trim(),
       email: document.getElementById('email').value.trim(),
       phone: document.getElementById('phone').value.trim(),
+      registrationNumber: document.getElementById('registration_number').value.trim(),
       // password is required for registerWithEmail; generate a temporary random password
       password: Math.random().toString(36).slice(-10) + 'A1!',
     };

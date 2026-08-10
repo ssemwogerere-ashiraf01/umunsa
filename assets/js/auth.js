@@ -15,7 +15,7 @@ function normalizeEmail(email) {
 // Self-registration is restricted to @umu.ac.ug addresses. The super admin
 // can still add any member on any domain from the Super Admin dashboard
 // (that path uses the admin-create-user Edge Function, not this one).
-export async function registerWithEmail({ email, password, fullName, phone }) {
+export async function registerWithEmail({ email, password, fullName, phone, registrationNumber }) {
   const cleanEmail = normalizeEmail(email);
   if (!cleanEmail || !password) {
     return { error: 'Email and password are required.' };
@@ -39,10 +39,12 @@ export async function registerWithEmail({ email, password, fullName, phone }) {
     return { error: 'An account already exists for that email. Use Sign In or reset your password instead of registering again.' };
   }
 
+  const cleanRegistrationNumber = String(registrationNumber || '').trim() || null;
+
   const { data, error } = await supabase.auth.signUp({
     email: cleanEmail,
     password,
-    options: { data: { full_name: fullName, phone: cleanPhone } },
+    options: { data: { full_name: fullName, phone: cleanPhone, registration_number: cleanRegistrationNumber } },
   });
   if (error) return { error: error.message };
 
@@ -65,15 +67,18 @@ function normalizePhoneForRegister(phone) {
   return '';
 }
 
-export async function loginWithEmail({ email, password }) {
+export async function loginWithEmail({ email, password, captcha_token, captcha_answer }) {
   const cleanEmail = normalizeEmail(email);
   if (!cleanEmail || !password) {
     return { error: 'Email and password are required.' };
   }
+  if (!captcha_token || !captcha_answer) {
+    return { error: 'Please complete the CAPTCHA.' };
+  }
   const res = await fetch(LOGIN_GUARD_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email: cleanEmail, password }),
+    body: JSON.stringify({ email: cleanEmail, password, captcha_token, captcha_answer }),
   });
   const result = await res.json();
   if (!res.ok) return { error: result.error || 'Login failed.' };

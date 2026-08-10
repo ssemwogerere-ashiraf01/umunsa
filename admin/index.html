@@ -246,7 +246,7 @@ Preferred meeting day (multiple_choice: Monday, Wednesday, Friday)"></textarea>
           <td>${m.avatar_url ? `<img class="member-avatar-img" src="${m.avatar_url}" />` : `<span class="member-avatar-fallback">${escapeHtml((m.full_name || '?').split(' ').map(w=>w[0]).slice(0,2).join(''))}</span>`}</td>
           <td>${escapeHtml(m.full_name)}</td>
           <td>${escapeHtml(m.email)}</td>
-          <td>${escapeHtml(m.programme || '—')}</td>
+          <td>${escapeHtml(m.programme || '-')}</td>
           <td>${pill(m.membership_status)}</td>
           <td>${escapeHtml(m.role)}</td>
           <td style="display:flex;gap:0.4rem;flex-wrap:wrap;">

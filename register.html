@@ -37,6 +37,10 @@
         <input type="tel" id="phone" required autocomplete="tel" placeholder="e.g. 07XXXXXXXX or +2567XXXXXXXX" />
       </div>
       <div class="form-group">
+        <label for="registration_number">Registration number</label>
+        <input type="text" id="registration_number" placeholder="e.g. 2026-B101-10000" />
+      </div>
+      <div class="form-group">
         <label for="email">University email</label>
         <input type="email" id="email" required autocomplete="username" placeholder="yourname@umu.ac.ug" pattern=".+@([a-zA-Z0-9-]+\.)*umu\.ac\.ug$" title="Must be a university email on umu.ac.ug (or a subdomain)" />
       </div>
@@ -70,6 +74,7 @@
     const result = await registerWithEmail({
       fullName: document.getElementById('full_name').value.trim(),
       phone: document.getElementById('phone').value.trim(),
+      registrationNumber: document.getElementById('registration_number').value.trim(),
       email: document.getElementById('email').value.trim(),
       password: document.getElementById('password').value,
     });

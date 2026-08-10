@@ -1,5 +1,5 @@
 -- =========================================================================
--- ROW LEVEL SECURITY — this is what actually enforces:
+-- ROW LEVEL SECURITY - this is what actually enforces:
 --   "members access their OWN info; admins manage day-to-day content;
 --    only the super admin controls club settings, admin assignment, and
 --    can add members outside the @umu.ac.ug domain."
@@ -44,7 +44,7 @@ create policy "profiles_select_own_or_admin"
   on public.profiles for select
   using (id = auth.uid() or public.is_admin());
 
--- Members may update their own row (name, phone, programme, bio, avatar) —
+-- Members may update their own row (name, phone, programme, bio, avatar) -
 -- but NOT their own role/membership_status, blocked by the trigger below.
 create policy "profiles_update_own"
   on public.profiles for update
@@ -104,7 +104,7 @@ create policy "profiles_delete_super_admin_only"
   using (public.is_super_admin());
 
 -- =========================================================================
--- CLUB SETTINGS — public read (landing/about pages need it before login),
+-- CLUB SETTINGS - public read (landing/about pages need it before login),
 -- ONLY the super admin can write. This is "the super admin should have
 -- highest priority access to the club information."
 -- =========================================================================
@@ -114,7 +114,7 @@ create policy "club_settings_super_admin_write" on public.club_settings for all
   using (public.is_super_admin()) with check (public.is_super_admin());
 
 -- =========================================================================
--- LEADERS / NEWS — public read, admin (or super admin) write.
+-- LEADERS / NEWS - public read, admin (or super admin) write.
 -- =========================================================================
 alter table public.leaders enable row level security;
 create policy "leaders_public_read" on public.leaders for select using (true);
@@ -125,7 +125,7 @@ create policy "news_public_read" on public.news for select using (true);
 create policy "news_admin_write" on public.news for all using (public.is_admin()) with check (public.is_admin());
 
 -- =========================================================================
--- ACTIVITIES — public read (marketing value), admin write. Joining/RSVPing
+-- ACTIVITIES - public read (marketing value), admin write. Joining/RSVPing
 -- requires being an active member; a member sees only their OWN RSVPs
 -- (their own info, per the requirement), admins see everyone's.
 -- =========================================================================
@@ -144,7 +144,7 @@ create policy "activity_participants_delete_own_or_admin" on public.activity_par
   for delete using (user_id = auth.uid() or public.is_admin());
 
 -- =========================================================================
--- PROJECTS — internal club work, NOT public. Only active members can read
+-- PROJECTS - internal club work, NOT public. Only active members can read
 -- project listings; a member's OWN project_members rows are what shows up
 -- as "their" projects. Admins manage projects and assignments.
 -- =========================================================================
@@ -159,7 +159,7 @@ create policy "project_members_admin_write" on public.project_members
   for all using (public.is_admin()) with check (public.is_admin());
 
 -- =========================================================================
--- DISCUSSIONS (FORUM) — active members read/post; admins moderate/delete.
+-- DISCUSSIONS (FORUM) - active members read/post; admins moderate/delete.
 -- =========================================================================
 alter table public.forum_topics enable row level security;
 create policy "forum_topics_read_members" on public.forum_topics for select using (public.is_active_member() or public.is_admin());
@@ -176,7 +176,7 @@ create policy "forum_replies_insert_members" on public.forum_replies for insert 
 create policy "forum_replies_admin_delete" on public.forum_replies for delete using (public.is_admin());
 
 -- =========================================================================
--- CONTACT MESSAGES — anyone (even logged out) can send one; only admins
+-- CONTACT MESSAGES - anyone (even logged out) can send one; only admins
 -- read and reply.
 -- =========================================================================
 alter table public.contact_messages enable row level security;
@@ -186,21 +186,21 @@ create policy "contact_messages_admin_update" on public.contact_messages for upd
 create policy "contact_messages_admin_delete" on public.contact_messages for delete using (public.is_admin());
 
 -- =========================================================================
--- SITE ANNOUNCEMENTS — public read (the homepage ticker), admin write.
+-- SITE ANNOUNCEMENTS - public read (the homepage ticker), admin write.
 -- =========================================================================
 alter table public.site_announcements enable row level security;
 create policy "site_announcements_public_read" on public.site_announcements for select using (true);
 create policy "site_announcements_admin_write" on public.site_announcements for all using (public.is_admin()) with check (public.is_admin());
 
 -- =========================================================================
--- POSITIONS — public read (shown on the elections/apply page), admin write.
+-- POSITIONS - public read (shown on the elections/apply page), admin write.
 -- =========================================================================
 alter table public.positions enable row level security;
 create policy "positions_public_read" on public.positions for select using (true);
 create policy "positions_admin_write" on public.positions for all using (public.is_admin()) with check (public.is_admin());
 
 -- =========================================================================
--- ELECTIONS — visible to active members (and admins). Candidate approval
+-- ELECTIONS - visible to active members (and admins). Candidate approval
 -- and day-to-day management are admin actions; closing an election and
 -- promoting winners is a super-admin-only action (see promote_election_winners
 -- in 001_schema.sql).
@@ -218,7 +218,7 @@ create policy "candidates_admin_delete" on public.candidates for delete using (p
 
 alter table public.votes enable row level security;
 -- Members INSERT their own vote once, and can check *whether* they've
--- voted (select only their own row) — never anyone else's, never tallies.
+-- voted (select only their own row) - never anyone else's, never tallies.
 create policy "votes_insert_own" on public.votes
   for insert with check (voter_id = auth.uid() and public.is_active_member());
 create policy "votes_select_own_only" on public.votes
@@ -226,7 +226,7 @@ create policy "votes_select_own_only" on public.votes
 -- No update/delete policy for anyone (including admins) => votes are immutable.
 
 -- =========================================================================
--- FEEDBACK / SURVEYS — active members read active forms and submit one
+-- FEEDBACK / SURVEYS - active members read active forms and submit one
 -- response each; admins create forms; only the super admin edits or
 -- deletes an EXISTING form/question (protects survey data already in use).
 -- =========================================================================
@@ -271,8 +271,8 @@ create policy "feedback_answers_insert_own" on public.feedback_answers
   );
 
 -- =========================================================================
--- LOGIN ATTEMPTS / AUDIT LOG — super-admin read only. No insert policy for
--- anon/authenticated — only service_role (Edge Functions) writes here,
+-- LOGIN ATTEMPTS / AUDIT LOG - super-admin read only. No insert policy for
+-- anon/authenticated - only service_role (Edge Functions) writes here,
 -- which bypasses RLS entirely.
 -- =========================================================================
 alter table public.login_attempts enable row level security;

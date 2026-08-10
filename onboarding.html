@@ -41,6 +41,10 @@
         <input type="text" id="phone" required placeholder="e.g. 07XXXXXXXX" />
       </div>
       <div class="form-group">
+        <label for="registration_number">Registration number</label>
+        <input type="text" id="registration_number" placeholder="e.g. 2026-B101-10000" />
+      </div>
+      <div class="form-group">
         <label for="bio">A short line about you (optional)</label>
         <input type="text" id="bio" placeholder="e.g. Second-year IT student, loves debate and football" />
       </div>
@@ -71,6 +75,7 @@
   }
 
   document.getElementById('phone').value = profile?.phone || '';
+  document.getElementById('registration_number').value = profile?.registration_number || '';
   document.getElementById('programme').value = profile?.programme || '';
   document.getElementById('year_of_study').value = profile?.year_of_study || '';
   document.getElementById('bio').value = profile?.bio || '';
@@ -129,6 +134,7 @@
       programme,
       year_of_study: document.getElementById('year_of_study').value ? Number(document.getElementById('year_of_study').value) : null,
       phone: document.getElementById('phone').value.trim(),
+      registration_number: document.getElementById('registration_number').value.trim() || null,
       bio: document.getElementById('bio').value.trim() || null,
       avatar_url: uploadedPhotoUrl,
       onboarding_completed: true,

@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta name="robots" content="noindex, nofollow" />
-<title>Projects — Nkobazambogo Students' Association</title>
+<title>Projects - Nkobazambogo Students' Association</title>
 <link rel="stylesheet" href="assets/css/style.css" />
 <style>
   .page-header { background: var(--paper); border-bottom: 1px solid var(--border); padding: 2.5rem 2rem; text-align: center; }
@@ -127,7 +127,7 @@
 
   function projectCard(p, myRole) {
     if (!p) return '';
-    const dates = [p.start_date, p.end_date].filter(Boolean).map(d => new Date(d).toLocaleDateString()).join(' – ');
+    const dates = [p.start_date, p.end_date].filter(Boolean).map(d => new Date(d).toLocaleDateString()).join(' - ');
     return `
       <div class="project-card">
         <h3>${escapeHtml(p.title)}</h3>

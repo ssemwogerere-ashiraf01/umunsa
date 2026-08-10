@@ -171,7 +171,7 @@
           <td>${escapeHtml(p.full_name)}</td>
           <td>${escapeHtml(p.email)}</td>
           <td><span class="pill pill-${p.role === 'super_admin' ? 'active' : (p.role === 'admin' ? 'active' : 'pending')}">${escapeHtml(p.role)}</span></td>
-          <td>${p.assigned_admin_by ? escapeHtml(byId[p.assigned_admin_by]?.full_name || '—') : '—'}</td>
+          <td>${p.assigned_admin_by ? escapeHtml(byId[p.assigned_admin_by]?.full_name || '-') : '-'}</td>
           <td>
             ${p.role === 'super_admin' ? '<em style="color:var(--text-muted);font-size:0.85rem;">Super Admin</em>' : p.role === 'admin'
               ? `<button class="mini-btn bad" data-demote="${p.id}">Revoke Admin</button>`
