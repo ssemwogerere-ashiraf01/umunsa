@@ -1,5 +1,6 @@
 // Client helper for server-issued math CAPTCHA (password-reset get_captcha action).
 import { FUNCTIONS_BASE } from './auth.js';
+import { SUPABASE_PUBLISHABLE_KEY } from './supabase-client.js';
 
 /**
  * Mount a CAPTCHA widget into containerEl.
@@ -7,6 +8,7 @@ import { FUNCTIONS_BASE } from './auth.js';
  *   getPayload() -> { captcha_token, captcha_answer } | null
  *   refresh()    -> Promise<void>
  *   clear()      -> void
+ *   focus()      -> void
  */
 export async function mountCaptcha(containerEl, options = {}) {
   if (!containerEl) throw new Error('CAPTCHA container required');
@@ -37,10 +39,14 @@ export async function mountCaptcha(containerEl, options = {}) {
     try {
       const res = await fetch(`${FUNCTIONS_BASE}/functions/v1/password-reset`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          apikey: SUPABASE_PUBLISHABLE_KEY,
+          Authorization: `Bearer ${SUPABASE_PUBLISHABLE_KEY}`,
+        },
         body: JSON.stringify({ action: 'get_captcha' }),
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.token || !data.question) {
         questionEl.textContent = 'Could not load CAPTCHA';
         return;

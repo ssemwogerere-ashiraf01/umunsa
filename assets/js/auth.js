@@ -1,4 +1,4 @@
-import { supabase } from './supabase-client.js';
+import { supabase, SUPABASE_PUBLISHABLE_KEY } from './supabase-client.js';
 import { BASE_URL, isUmuEmail, REQUIRED_EMAIL_DOMAIN } from './site-config.js';
 
 // Replace with your deployed function URL, e.g.
@@ -7,6 +7,12 @@ const LOGIN_GUARD_URL = 'https://xqxtmfijxjdoiclsbcbj.supabase.co/functions/v1/l
 
 // Expose the functions base so other client code can call Edge Functions
 export const FUNCTIONS_BASE = new URL(LOGIN_GUARD_URL).origin;
+
+const functionHeaders = () => ({
+  'Content-Type': 'application/json',
+  apikey: SUPABASE_PUBLISHABLE_KEY,
+  Authorization: `Bearer ${SUPABASE_PUBLISHABLE_KEY}`,
+});
 
 function normalizeEmail(email) {
   return (email || '').trim().toLowerCase();
@@ -77,7 +83,7 @@ export async function loginWithEmail({ email, password, captcha_token, captcha_a
   }
   const res = await fetch(LOGIN_GUARD_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: functionHeaders(),
     body: JSON.stringify({ email: cleanEmail, password, captcha_token, captcha_answer }),
   });
   const result = await res.json();
@@ -96,10 +102,19 @@ export async function loginWithEmail({ email, password, captcha_token, captcha_a
 }
 
 export async function loginWithGoogle() {
+  // Prefer the real browser origin so local/dev and production both work.
+  // Supabase Dashboard → Authentication → URL Configuration must list this
+  // exact redirect URL (and Site URL must not be a bogus IP like 0.0.11.184).
+  const redirectTo = `${window.location.origin}/login.html`;
+
   const { error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: `${window.location.origin}/login.html`,
+      redirectTo,
+      queryParams: {
+        // Hint for Google; domain restriction is also enforced after callback.
+        hd: REQUIRED_EMAIL_DOMAIN,
+      },
     },
   });
 
@@ -107,23 +122,52 @@ export async function loginWithGoogle() {
   return { started: true };
 }
 
+/**
+ * Finish Google sign-in after OAuth redirect.
+ * Handles both PKCE (?code=) and implicit (#access_token=) return styles.
+ * detectSessionInUrl on the client already parses the hash when present.
+ */
 export async function completeGoogleLoginFromUrl() {
   const url = new URL(window.location.href);
   const code = url.searchParams.get('code');
-  if (!code) return { skipped: true };
+  const hash = window.location.hash || '';
+  const hasHashSession =
+    hash.includes('access_token=') || hash.includes('error=') || hash.includes('refresh_token=');
 
-  const { error } = await supabase.auth.exchangeCodeForSession(code);
-  if (error) return { error: error.message };
+  // Nothing to do if this is a normal page load.
+  if (!code && !hasHashSession) return { skipped: true };
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!isUmuEmail(user?.email)) {
-    await supabase.auth.signOut();
-    window.history.replaceState({}, document.title, window.location.pathname);
-    return { error: `Google sign-in is only allowed for ${REQUIRED_EMAIL_DOMAIN} email addresses. If you don't have a ${REQUIRED_EMAIL_DOMAIN} email, ask a Super Admin to add you or register with a university email.` };
+  // PKCE: exchange the auth code for a session.
+  if (code) {
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    if (error) {
+      window.history.replaceState({}, document.title, window.location.pathname);
+      return { error: error.message };
+    }
+  } else if (hasHashSession) {
+    // Implicit / detectSessionInUrl path: give the client a moment to parse the hash.
+    // If Supabase already stored a session, getUser will succeed.
+    await new Promise((r) => setTimeout(r, 50));
   }
 
-  // Check if this user has a membership profile. If not, sign them out and
-  // return an explanatory error so the login page can show an alert.
+  // Clear sensitive tokens from the address bar either way.
+  window.history.replaceState({}, document.title, window.location.pathname);
+
+  const { data: { user }, error: userErr } = await supabase.auth.getUser();
+  if (userErr || !user) {
+    // Hash may have contained an OAuth error from Google/Supabase.
+    const hashParams = new URLSearchParams(hash.replace(/^#/, ''));
+    const oauthErr = hashParams.get('error_description') || hashParams.get('error');
+    return { error: oauthErr || 'Google sign-in did not complete. Try again.' };
+  }
+
+  if (!isUmuEmail(user.email)) {
+    await supabase.auth.signOut();
+    return {
+      error: `Google sign-in is only allowed for ${REQUIRED_EMAIL_DOMAIN} email addresses. If you don't have a ${REQUIRED_EMAIL_DOMAIN} email, ask a Super Admin to add you or register with a university email.`,
+    };
+  }
+
   const { data: profile, error: profileErr } = await supabase
     .from('profiles')
     .select('membership_status')
@@ -132,29 +176,26 @@ export async function completeGoogleLoginFromUrl() {
 
   if (profileErr) {
     await supabase.auth.signOut();
-    window.history.replaceState({}, document.title, window.location.pathname);
     return { error: 'There was an error checking your membership status. Please try again or contact an admin.' };
   }
 
   if (!profile) {
     await supabase.auth.signOut();
-    window.history.replaceState({}, document.title, window.location.pathname);
-    return { error: `Your Google account uses a ${REQUIRED_EMAIL_DOMAIN} email but you are not registered as a member. Apply for membership or contact an admin to be added.` };
+    return {
+      error: `Your Google account uses a ${REQUIRED_EMAIL_DOMAIN} email but you are not registered as a member. Apply for membership or contact an admin to be added.`,
+    };
   }
 
   if (profile.membership_status === 'pending') {
     await supabase.auth.signOut();
-    window.history.replaceState({}, document.title, window.location.pathname);
     return { error: 'Your membership application is still pending approval. An admin will review your request.' };
   }
 
   if (profile.membership_status === 'rejected' || profile.membership_status === 'suspended') {
     await supabase.auth.signOut();
-    window.history.replaceState({}, document.title, window.location.pathname);
     return { error: 'Your account is not active. Contact an admin for details.' };
   }
 
-  window.history.replaceState({}, document.title, window.location.pathname);
   await routeAfterLogin();
   return { completed: true };
 }
