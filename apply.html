@@ -13,57 +13,88 @@
 <meta property="og:url" content="https://nkobazambogo-nsa.netlify.app/apply.html" />
 <meta property="og:image" content="https://nkobazambogo-nsa.netlify.app/assets/img/og-default.png" />
 <link rel="stylesheet" href="assets/css/style.css" />
-<style>
-  .hero-apply { padding: 3.25rem 1rem; max-width: 980px; margin: 0 auto 2rem; }
-  .apply-grid { display:grid; grid-template-columns: 1fr 420px; gap: 2rem; align-items:start; }
-  @media (max-width:900px){ .apply-grid{grid-template-columns:1fr} }
-  .feature { color:var(--text-muted); }
-  .auth-card { box-shadow:var(--shadow); }
-</style>
 </head>
-<body>
-
+<body class="login-page">
 <div id="app-nav"></div>
 
-<main class="hero-apply">
-  <div class="apply-grid">
-    <div>
-      <h1>Join the Nkobazambogo Students' Association</h1>
-      <p class="feature">Apply using your university email (must be on the <strong>umu.ac.ug</strong> domain). Applications are reviewed by an admin: approved members will receive sign-in instructions via email.</p>
-      <ul style="margin-top:1rem;">
-        <li>Fast review by admins</li>
-        <li>Secure membership tied to your UMU account</li>
-        <li>Access to elections, projects, and member-only discussions</li>
-      </ul>
-      <p style="margin-top:1.25rem;"><a href="rules.html" class="btn btn-outline">Members' Code</a></p>
-    </div>
-
-    <div class="auth-card" style="padding:1.25rem;">
-      <h2 style="margin-top:0;margin-bottom:0.35rem;">Quick application</h2>
-      <p style="margin-top:0;margin-bottom:0.75rem;color:var(--text-muted);font-size:0.95rem;">Fill this form and we'll notify you when your membership is approved.</p>
+<div class="login-portal apply-portal">
+  <!-- Left: application form panel -->
+  <aside class="login-panel apply-panel">
+    <div class="login-panel-inner apply-panel-inner">
+      <h1 class="login-heading">APPLY</h1>
+      <p class="login-panel-sub">Nkobazambogo Students' Association</p>
 
       <div id="alert-box"></div>
 
-      <form id="apply-form">
-        <div class="form-group"><label for="full_name">Full name</label><input id="full_name" type="text" required /></div>
-        <div class="form-group"><label for="email">University email</label><input id="email" type="email" required placeholder="name@umu.ac.ug" pattern=".+@([a-zA-Z0-9-]+\.)*umu\.ac\.ug$" /></div>
-        <div class="form-group"><label for="phone">Phone number</label><input id="phone" type="tel" placeholder="e.g. +2567XXXXXXXX" /></div>
-        <div class="form-group"><label for="registration_number">Registration number</label><input id="registration_number" type="text" placeholder="e.g. 2026-B101-10000" /></div>
-        <div class="form-group"><label for="role">I am a</label>
+      <form id="apply-form" class="apply-form">
+        <div class="form-group">
+          <label for="full_name">Full name</label>
+          <input id="full_name" type="text" required autocomplete="name" />
+        </div>
+        <div class="form-group">
+          <label for="email">University email</label>
+          <input id="email" type="email" required placeholder="name@umu.ac.ug" pattern=".+@([a-zA-Z0-9-]+\.)*umu\.ac\.ug$" title="Must be a university email on umu.ac.ug" autocomplete="username" />
+        </div>
+        <div class="form-group">
+          <label for="phone">Phone number</label>
+          <input id="phone" type="tel" required placeholder="e.g. +2567XXXXXXXX" autocomplete="tel" />
+        </div>
+        <div class="form-group">
+          <label for="registration_number">Registration number</label>
+          <input id="registration_number" type="text" placeholder="e.g. 2026-B101-10000" />
+        </div>
+        <div class="form-group">
+          <label for="role">I am a</label>
           <select id="role">
             <option value="student">Student</option>
             <option value="staff">Staff / Faculty</option>
             <option value="other">Other</option>
           </select>
         </div>
-        <div class="form-group"><label for="department">Department / Faculty (optional)</label><input id="department" type="text" /></div>
-        <button type="submit" id="submit-btn" class="btn btn-gold btn-block">Apply now</button>
+        <div class="form-group">
+          <label for="department">Department / Faculty (optional)</label>
+          <input id="department" type="text" />
+        </div>
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input id="password" type="password" required minlength="8" autocomplete="new-password" />
+          <small class="field-hint">At least 8 characters. You will use this after an admin approves you.</small>
+        </div>
+        <button type="submit" id="submit-btn" class="btn btn-apply-submit btn-block">Apply now</button>
       </form>
 
-      <p style="margin-top:0.75rem;font-size:0.9rem;color:var(--text-muted)">Already applied? <a href="login.html">Sign in</a> · <a href="privacy">Privacy</a> · <a href="terms">Terms</a></p>
+      <p class="login-panel-foot">
+        Already a member? <a href="login.html">Sign in</a>
+        <br /><a href="privacy">Privacy</a> &middot; <a href="terms">Terms</a>
+      </p>
     </div>
-  </div>
-</main>
+  </aside>
+
+  <!-- Right: carousel + info -->
+  <section class="login-showcase">
+    <div class="login-carousel" aria-hidden="true">
+      <div class="login-carousel-slide is-active" style="background-image:url('assets/img/umu.webp')"></div>
+      <div class="login-carousel-slide" style="background-image:url('assets/img/umu%20b.webp')"></div>
+    </div>
+    <div class="login-showcase-overlay"></div>
+
+    <div class="login-showcase-content">
+      <img src="assets/img/nsa-seal.png" alt="Nkobazambogo Students' Association seal" class="login-seal" width="120" height="120" />
+
+      <div class="login-info-card">
+        <h2 class="login-steps-title">Join the association</h2>
+        <p class="login-steps-intro">Apply using your university email on the <strong>umu.ac.ug</strong> domain. Applications are reviewed by an admin.</p>
+        <ol class="login-steps">
+          <li>Fill in your details on the left (university email required).</li>
+          <li>Submit the form. An admin will review your application.</li>
+          <li>Once approved, sign in with <strong>Login with your UMU email</strong> (Google) or your email and password.</li>
+        </ol>
+        <p class="login-note">Only <strong>umu.ac.ug</strong> addresses (including student subdomains) can self-apply. Need another domain? Ask a Super Admin to add you.</p>
+        <p class="login-note" style="margin-bottom:0;"><a href="rules.html" style="color:var(--forest);font-weight:600;">Read the Members' Code →</a></p>
+      </div>
+    </div>
+  </section>
+</div>
 
 <div id="app-footer"></div>
 
@@ -75,6 +106,16 @@
   mountNav();
   mountFooter();
 
+  const slides = document.querySelectorAll('.login-carousel-slide');
+  if (slides.length > 1) {
+    let i = 0;
+    setInterval(() => {
+      slides[i].classList.remove('is-active');
+      i = (i + 1) % slides.length;
+      slides[i].classList.add('is-active');
+    }, 6000);
+  }
+
   const form = document.getElementById('apply-form');
   const alertBox = document.getElementById('alert-box');
   const btn = document.getElementById('submit-btn');
@@ -82,21 +123,21 @@
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     alertBox.innerHTML = '';
-    btn.disabled = true; btn.textContent = 'Submitting...';
+    btn.disabled = true;
+    btn.textContent = 'Submitting...';
 
-    const payload = {
+    const result = await registerWithEmail({
       fullName: document.getElementById('full_name').value.trim(),
       email: document.getElementById('email').value.trim(),
       phone: document.getElementById('phone').value.trim(),
       registrationNumber: document.getElementById('registration_number').value.trim(),
-      // password is required for registerWithEmail; generate a temporary random password
-      password: Math.random().toString(36).slice(-10) + 'A1!',
-    };
+      password: document.getElementById('password').value,
+    });
 
-    const result = await registerWithEmail(payload);
     if (result.error) {
       alertBox.innerHTML = `<div class="alert alert-error">${String(result.error)}</div>`;
-      btn.disabled = false; btn.textContent = 'Apply now';
+      btn.disabled = false;
+      btn.textContent = 'Apply now';
       return;
     }
 

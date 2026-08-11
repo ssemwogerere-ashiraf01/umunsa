@@ -12,48 +12,73 @@
 <meta property="og:description" content="Register with your @umu.ac.ug email to join the Nkobazambogo Students' Association." />
 <meta property="og:url" content="https://nkobazambogo-nsa.netlify.app/register.html" />
 <meta property="og:image" content="https://nkobazambogo-nsa.netlify.app/assets/img/og-default.png" />
-<meta property="og:image:width" content="1200" />
-<meta property="og:image:height" content="630" />
-<meta name="twitter:card" content="summary_large_image" />
 <link rel="stylesheet" href="assets/css/style.css" />
 </head>
-<body>
+<body class="login-page">
 <div id="app-nav"></div>
 
-<div class="auth-wrap">
-  <div class="auth-card" style="max-width:460px;">
-    <h2>Apply for membership</h2>
-    <p class="subtitle">Registration is open to university email addresses on the <strong>umu.ac.ug</strong> domain (for example <code>name@umu.ac.ug</code>). Every application is reviewed by an admin before you can sign in. Don't have a umu.ac.ug email? Ask a Super Admin to add you directly.</p>
+<div class="login-portal apply-portal">
+  <aside class="login-panel apply-panel">
+    <div class="login-panel-inner apply-panel-inner">
+      <h1 class="login-heading">APPLY</h1>
+      <p class="login-panel-sub">Nkobazambogo Students' Association</p>
 
-    <div id="alert-box"></div>
+      <div id="alert-box"></div>
 
-    <form id="register-form">
-      <div class="form-group">
-        <label for="full_name">Full name</label>
-        <input type="text" id="full_name" required />
-      </div>
-      <div class="form-group">
-        <label for="phone">Phone number</label>
-        <input type="tel" id="phone" required autocomplete="tel" placeholder="e.g. 07XXXXXXXX or +2567XXXXXXXX" />
-      </div>
-      <div class="form-group">
-        <label for="registration_number">Registration number</label>
-        <input type="text" id="registration_number" placeholder="e.g. 2026-B101-10000" />
-      </div>
-      <div class="form-group">
-        <label for="email">University email</label>
-        <input type="email" id="email" required autocomplete="username" placeholder="yourname@umu.ac.ug" pattern=".+@([a-zA-Z0-9-]+\.)*umu\.ac\.ug$" title="Must be a university email on umu.ac.ug (or a subdomain)" />
-      </div>
-      <div class="form-group">
-        <label for="password">Password</label>
-        <input type="password" id="password" required minlength="8" autocomplete="new-password" />
-        <small style="color:var(--text-muted);">At least 8 characters.</small>
-      </div>
-      <button type="submit" class="btn btn-gold btn-block" id="submit-btn">Submit Application</button>
-    </form>
+      <form id="register-form" class="apply-form">
+        <div class="form-group">
+          <label for="full_name">Full name</label>
+          <input type="text" id="full_name" required autocomplete="name" />
+        </div>
+        <div class="form-group">
+          <label for="phone">Phone number</label>
+          <input type="tel" id="phone" required autocomplete="tel" placeholder="e.g. 07XXXXXXXX or +2567XXXXXXXX" />
+        </div>
+        <div class="form-group">
+          <label for="registration_number">Registration number</label>
+          <input type="text" id="registration_number" placeholder="e.g. 2026-B101-10000" />
+        </div>
+        <div class="form-group">
+          <label for="email">University email</label>
+          <input type="email" id="email" required autocomplete="username" placeholder="yourname@umu.ac.ug" pattern=".+@([a-zA-Z0-9-]+\.)*umu\.ac\.ug$" title="Must be a university email on umu.ac.ug" />
+        </div>
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" required minlength="8" autocomplete="new-password" />
+          <small class="field-hint">At least 8 characters.</small>
+        </div>
+        <button type="submit" class="btn btn-apply-submit btn-block" id="submit-btn">Submit Application</button>
+      </form>
 
-    <p class="form-footer">Already have an account? <a href="login.html">Sign in</a><br /><a href="privacy">Privacy</a> &middot; <a href="terms">Terms</a></p>
-  </div>
+      <p class="login-panel-foot">
+        Already have an account? <a href="login.html">Sign in</a>
+        <br /><a href="privacy">Privacy</a> &middot; <a href="terms">Terms</a>
+      </p>
+    </div>
+  </aside>
+
+  <section class="login-showcase">
+    <div class="login-carousel" aria-hidden="true">
+      <div class="login-carousel-slide is-active" style="background-image:url('assets/img/umu.webp')"></div>
+      <div class="login-carousel-slide" style="background-image:url('assets/img/umu%20b.webp')"></div>
+    </div>
+    <div class="login-showcase-overlay"></div>
+
+    <div class="login-showcase-content">
+      <img src="assets/img/nsa-seal.png" alt="Nkobazambogo Students' Association seal" class="login-seal" width="120" height="120" />
+
+      <div class="login-info-card">
+        <h2 class="login-steps-title">Join the association</h2>
+        <p class="login-steps-intro">Registration is open to university emails on <strong>umu.ac.ug</strong>. Every application is reviewed by an admin before you can sign in.</p>
+        <ol class="login-steps">
+          <li>Complete the form with your university email and details.</li>
+          <li>Submit and wait for admin approval.</li>
+          <li>After approval, use <strong>Login with your UMU email</strong> on the sign-in page.</li>
+        </ol>
+        <p class="login-note">Don't have a umu.ac.ug email? Ask a Super Admin to add you directly.</p>
+      </div>
+    </div>
+  </section>
 </div>
 
 <div id="app-footer"></div>
@@ -62,14 +87,24 @@
   import { registerWithEmail, redirectIfAlreadyLoggedIn } from './assets/js/auth.js';
   import { mountNav, mountFooter } from './assets/js/nav.js';
   await redirectIfAlreadyLoggedIn();
-
   mountNav();
   mountFooter();
+
+  const slides = document.querySelectorAll('.login-carousel-slide');
+  if (slides.length > 1) {
+    let i = 0;
+    setInterval(() => {
+      slides[i].classList.remove('is-active');
+      i = (i + 1) % slides.length;
+      slides[i].classList.add('is-active');
+    }, 6000);
+  }
 
   document.getElementById('register-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = document.getElementById('submit-btn');
-    btn.disabled = true; btn.textContent = 'Submitting...';
+    btn.disabled = true;
+    btn.textContent = 'Submitting...';
 
     const result = await registerWithEmail({
       fullName: document.getElementById('full_name').value.trim(),
@@ -82,7 +117,8 @@
     const alertBox = document.getElementById('alert-box');
     if (result.error) {
       alertBox.innerHTML = `<div class="alert alert-error">${String(result.error)}</div>`;
-      btn.disabled = false; btn.textContent = 'Submit Application';
+      btn.disabled = false;
+      btn.textContent = 'Submit Application';
     } else {
       alertBox.innerHTML = `<div class="alert alert-success">${result.message}</div>`;
       document.getElementById('register-form').style.display = 'none';
