@@ -60,8 +60,9 @@ export function enableSmoothAnchors() {
   });
 }
 
+// DEFAULT_MARQUEE should be a single copy of the message; renderMarquee duplicates it once
 const DEFAULT_MARQUEE = [
-  "Welcome to the Nkobazambogo Students' Association: Uganda Martyrs University, Nkozi. · Membership is by approval. Register with your .umu.ac.ug email, then wait for admin review. · Join club activities, contribute to projects, and take part in member discussions. · Questions? Visit Contact or reach out from your member dashboard. · Welcome to the Nkobazambogo Students' Association: Uganda Martyrs University, Nkozi. · Membership is by approval. Register with your .umu.ac.ug email, then wait for admin review. · Join club activities, contribute to projects, and take part in member discussions. · Questions? Visit Contact or reach out from your member dashboard."
+  "Welcome to the Nkobazambogo Students' Association: Uganda Martyrs University, Nkozi. · Membership is by approval. Register with your .umu.ac.ug email, then wait for admin review. · Join club activities, contribute to projects, and take part in member discussions. · Questions? Visit Contact or reach out from your member dashboard."
 ];
 
 export async function loadMarqueeItems(supabase) {
@@ -84,39 +85,42 @@ export function renderMarquee(container, items) {
   if (!container) return;
   const list = (items?.length ? items : DEFAULT_MARQUEE).join('   ·   ');
 
-  // Build nodes to avoid HTML injection and to measure sizes reliably
+  // Ensure container is single-line and hidden overflow
   container.innerHTML = '';
+  container.style.overflow = 'hidden';
+  container.style.whiteSpace = 'nowrap';
+  container.style.display = 'block';
+
   const track = document.createElement('div');
   track.className = 'marquee-track';
   track.setAttribute('aria-hidden', 'false');
 
   const span = document.createElement('span');
   span.className = 'marquee-text';
-  // Duplicate content for seamless loop
+  // Duplicate content for seamless loop (only one duplication)
   span.textContent = `${list}   ·   ${list}`;
+  // Force nowrap on the span
+  span.style.whiteSpace = 'nowrap';
+  span.style.display = 'inline-block';
+
   track.appendChild(span);
   container.appendChild(track);
 
   // Measure and compute animation duration so speed is consistent
-  // Target speed in px/sec — adjust if you want faster/slower
   const targetSpeed = 90; // px per second
-  // Wait for layout
   requestAnimationFrame(() => {
     try {
       const textWidth = span.getBoundingClientRect().width;
-      const distance = textWidth / 2; // we translate -50%
-      const duration = Math.max(8, Math.round((distance / targetSpeed) * 10) / 10); // min 8s, 0.1s precision
-      // apply inline animation to override any CSS default
+      const distance = textWidth / 2; // translate -50%
+      const duration = Math.max(8, Math.round((distance / targetSpeed) * 10) / 10);
       track.style.willChange = 'transform';
       track.style.animation = `marquee-scroll ${duration}s linear infinite`;
-      // restart animation cleanly
       track.classList.remove('marquee-play');
       // force reflow
       // eslint-disable-next-line no-unused-expressions
       track.offsetWidth;
       track.classList.add('marquee-play');
     } catch (err) {
-      // fallback: leave CSS animation as-is
       console.warn('marquee measurement failed', err);
     }
   });
