@@ -21,7 +21,7 @@ function normalizeEmail(email) {
 // Self-registration is restricted to @umu.ac.ug addresses. The super admin
 // can still add any member on any domain from the Super Admin dashboard
 // (that path uses the admin-create-user Edge Function, not this one).
-export async function registerWithEmail({ email, password, fullName, phone, registrationNumber }) {
+export async function registerWithEmail({ email, password, fullName, phone, registrationNumber, hostel, faculty }) {
   const cleanEmail = normalizeEmail(email);
   if (!cleanEmail || !password) {
     return { error: 'Email and password are required.' };
@@ -46,11 +46,13 @@ export async function registerWithEmail({ email, password, fullName, phone, regi
   }
 
   const cleanRegistrationNumber = String(registrationNumber || '').trim() || null;
+  const cleanHostel = String(hostel || '').trim() || null;
+  const cleanFaculty = String(faculty || '').trim() || null;
 
   const { data, error } = await supabase.auth.signUp({
     email: cleanEmail,
     password,
-    options: { data: { full_name: fullName, phone: cleanPhone, registration_number: cleanRegistrationNumber } },
+    options: { data: { full_name: fullName, phone: cleanPhone, registration_number: cleanRegistrationNumber, hostel: cleanHostel, faculty: cleanFaculty } },
   });
   if (error) return { error: error.message };
 
