@@ -285,6 +285,16 @@ a:hover { text-decoration: underline; }
   white-space: nowrap;
   padding-right: 2.25rem;
 }
+
+/* Pause on hover so users can read */
+.site-chrome .marquee-track:hover { animation-play-state: paused; }
+
+/* Keyframes: translate the duplicated content left by half so the loop looks continuous */
+@keyframes marquee-scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
 @media (max-width: 520px) {
   .site-chrome {
     flex-direction: column;
