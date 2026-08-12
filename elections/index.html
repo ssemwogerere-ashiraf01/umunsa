@@ -1,1 +1,398 @@
-...
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex, nofollow" />
+<title>Elections: Nkobazambogo Students' Association</title>
+<link rel="stylesheet" href="../assets/css/style.css" />
+<style>
+  .page-header { background: var(--paper); border-bottom: 1px solid var(--border); padding: 2.5rem 2rem; text-align: center; }
+  .page-header h1 { margin: 0 0 0.25rem; font-size: 1.8rem; }
+  .page-header p { color: var(--text-muted); margin: 0; }
+  .elections-wrap { max-width: 900px; margin: 0 auto; }
+  .election-picker { display:flex; gap:0.75rem; flex-wrap:wrap; margin: 1.5rem 0; }
+  .election-picker button { padding:0.55rem 1.1rem; border:1px solid var(--border); background:var(--paper); border-radius:20px; cursor:pointer; font-weight:600; font-size:0.85rem; }
+  .election-picker button.active { background:var(--forest); color:#fff; border-color:var(--forest); }
+  .pill { display:inline-block; padding:0.15rem 0.6rem; border-radius:12px; font-size:0.75rem; font-weight:600; }
+  .pill-draft { background:#eef1f5; color:#55605c; }
+  .pill-upcoming { background:#eaf0fd; color:#2a4d9c; }
+  .pill-active { background:#eaf4ec; color:#1f4b3f; }
+  .pill-closed { background:#fdecec; color:#9c2b2b; }
+  .tab-strip { display:flex; gap:0.5rem; border-bottom: 2px solid var(--border); margin: 1.5rem 0 1.25rem; }
+  .tab-strip button { padding: 0.6rem 1rem; border:none; background:none; font-weight:600; cursor:pointer; color:var(--text-muted); border-bottom: 3px solid transparent; }
+  .tab-strip button.active { color: var(--forest); border-bottom-color: var(--gold); }
+  .tab-pane { display:none; }
+  .tab-pane.active { display:block; }
+  .position-card { background: var(--paper); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1rem; }
+  .position-card h4 { margin: 0 0 0.2rem; }
+  .position-card .luganda { color: var(--text-muted); font-size: 0.85rem; margin: 0 0 0.5rem; }
+  .candidate-row { display:flex; justify-content:space-between; align-items:center; gap:0.75rem; padding: 0.6rem 0; border-top: 1px solid var(--border); }
+  .candidate-row:first-of-type { border-top: none; }
+  .empty { text-align:center; color:var(--text-muted); padding:2.5rem 0; }
+</style>
+</head>
+<body>
+<div id="app-nav"></div>
+
+<div class="page-header">
+  <span class="eyebrow">Association</span>
+  <h1>Elections</h1>
+  <p>Apply for a leadership position or cast your vote when an election is open.</p>
+</div>
+
+<div class="section" style="padding-top:0;">
+  <div class="elections-wrap">
+    <div id="alert-box"></div>
+    <div id="election-picker" class="election-picker"></div>
+
+    <div id="election-detail">
+      <div class="empty">Loading elections...</div>
+    </div>
+  </div>
+</div>
+
+<div id="app-footer"></div>
+
+<script type="module">
+  import { supabase } from '../assets/js/supabase-client.js';
+  import { mountNav, mountFooter } from '../assets/js/nav.js';
+  import { requireApprovedMember } from '../assets/js/session-guard.js';
+
+  mountNav('elections');
+  mountFooter();
+
+  const profile = await requireApprovedMember();
+  if (!profile) throw new Error('redirecting');
+
+  const alertBox = document.getElementById('alert-box');
+  const picker = document.getElementById('election-picker');
+  const detail = document.getElementById('election-detail');
+
+  let elections = [];
+  let positions = [];
+  let selectedElectionId = null;
+  let activeTab = 'positions';
+
+  const { data: positionsData } = await supabase.from('positions').select('*').order('display_order');
+  positions = positionsData || [];
+
+  const { data: electionsData, error: electionsErr } = await supabase
+    .from('elections')
+    .select('*')
+    .order('start_date', { ascending: false });
+
+  if (electionsErr) {
+    detail.innerHTML = `<div class="empty">Could not load elections: ${escapeHtml(electionsErr.message)}</div>`;
+    throw new Error('load failed');
+  }
+
+  elections = electionsData || [];
+
+  if (!elections.length) {
+    detail.innerHTML = `<div class="empty">No elections have been scheduled yet. Check back later.</div>`;
+    throw new Error('nothing to show');
+  }
+
+  selectedElectionId = elections[0].id;
+  renderPicker();
+  await renderDetail();
+
+  function renderPicker() {
+    picker.innerHTML = elections.map(el => `
+      <button type="button" data-id="${el.id}" class="${el.id === selectedElectionId ? 'active' : ''}">
+        ${escapeHtml(el.title)} <span class="pill pill-${el.status}">${escapeHtml(el.status)}</span>
+      </button>
+    `).join('');
+    picker.querySelectorAll('button').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        selectedElectionId = btn.dataset.id;
+        renderPicker();
+        await renderDetail();
+      });
+    });
+  }
+
+  async function renderDetail() {
+    const election = elections.find(e => e.id === selectedElectionId);
+    if (!election) return;
+
+    detail.innerHTML = `
+      <p style="color:var(--text-muted);">${escapeHtml(election.description || '')}</p>
+      <p style="font-size:0.85rem;color:var(--text-muted);">
+        Voting window: ${new Date(election.start_date).toLocaleString()} &rarr; ${new Date(election.end_date).toLocaleString()}
+      </p>
+      <div class="tab-strip">
+        <button type="button" data-tab="positions" class="${activeTab === 'positions' ? 'active' : ''}">Positions &amp; Apply</button>
+        <button type="button" data-tab="candidates" class="${activeTab === 'candidates' ? 'active' : ''}">Candidates</button>
+        <button type="button" data-tab="vote" class="${activeTab === 'vote' ? 'active' : ''}">Vote</button>
+        <button type="button" data-tab="results" class="${activeTab === 'results' ? 'active' : ''}">Results</button>
+      </div>
+      <div id="pane-positions" class="tab-pane ${activeTab === 'positions' ? 'active' : ''}"></div>
+      <div id="pane-candidates" class="tab-pane ${activeTab === 'candidates' ? 'active' : ''}"></div>
+      <div id="pane-vote" class="tab-pane ${activeTab === 'vote' ? 'active' : ''}"></div>
+      <div id="pane-results" class="tab-pane ${activeTab === 'results' ? 'active' : ''}"></div>
+    `;
+
+    detail.querySelectorAll('.tab-strip button').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        activeTab = btn.dataset.tab;
+        await renderDetail();
+      });
+    });
+
+    if (activeTab === 'positions') await renderPositions(election);
+    if (activeTab === 'candidates') await renderCandidates(election);
+    if (activeTab === 'vote') await renderVote(election);
+    if (activeTab === 'results') await renderResults(election);
+  }
+
+  async function renderPositions(election) {
+    const pane = document.getElementById('pane-positions');
+
+    // Fetch whether the current user already has any candidacy for this election
+    const { data: myCandidacies, error: myCandsErr } = await supabase
+      .from('candidates')
+      .select('position_id')
+      .eq('election_id', election.id)
+      .eq('user_id', profile.id);
+
+    if (myCandsErr) {
+      pane.innerHTML = `<div class="empty">Could not check your applications: ${escapeHtml(myCandsErr.message)}</div>`;
+      return;
+    }
+
+    const appliedPositions = new Set((myCandidacies || []).map(c => c.position_id));
+    const hasAppliedAny = appliedPositions.size > 0;
+
+    pane.innerHTML = positions.map(pos => {
+      const appliedThis = appliedPositions.has(pos.id);
+
+      // If member already applied for another position, hide the Apply button for all others
+      if (appliedThis) {
+        return `
+          <div class="position-card">
+            <h4>${escapeHtml(pos.name)}</h4>
+            ${pos.name_luganda ? `<p class="luganda">${escapeHtml(pos.name_luganda)} &middot; ${pos.category ? escapeHtml(pos.category) : ''} &middot; UGX ${Number(pos.application_fee).toLocaleString()}</p>` : ''}
+            <span class="pill pill-active">Application submitted</span>
+          </div>`;
+      }
+
+      if (hasAppliedAny) {
+        return `
+          <div class="position-card">
+            <h4>${escapeHtml(pos.name)}</h4>
+            ${pos.name_luganda ? `<p class="luganda">${escapeHtml(pos.name_luganda)} &middot; ${pos.category ? escapeHtml(pos.category) : ''} &middot; UGX ${Number(pos.application_fee).toLocaleString()}</p>` : ''}
+            <span class="pill pill-draft">You already applied for another position</span>
+          </div>`;
+      }
+
+      if (election.status === 'draft' || election.status === 'closed') {
+        return `
+          <div class="position-card">
+            <h4>${escapeHtml(pos.name)}</h4>
+            ${pos.name_luganda ? `<p class="luganda">${escapeHtml(pos.name_luganda)} &middot; ${pos.category ? escapeHtml(pos.category) : ''} &middot; UGX ${Number(pos.application_fee).toLocaleString()}</p>` : ''}
+            <span class="pill pill-draft">Applications not open</span>
+          </div>`;
+      }
+
+      // Otherwise render apply button and form
+      return `
+        <div class="position-card">
+          <h4>${escapeHtml(pos.name)}</h4>
+          ${pos.name_luganda ? `<p class="luganda">${escapeHtml(pos.name_luganda)} &middot; ${pos.category ? escapeHtml(pos.category) : ''} &middot; UGX ${Number(pos.application_fee).toLocaleString()}</p>` : ''}
+          <button type="button" class="btn btn-outline-light" style="background:var(--forest);color:#fff;" data-apply="${pos.id}">Apply for this position</button>
+          <div id="apply-form-${pos.id}" style="display:none;margin-top:0.75rem;">
+            <textarea placeholder="Your manifesto (what will you do in this role?)" id="manifesto-${pos.id}" rows="3" style="width:100%;padding:0.6rem;border:1px solid var(--border);"></textarea>
+            <button type="button" class="btn btn-gold" style="margin-top:0.5rem;" data-submit-apply="${pos.id}">Submit Application</button>
+          </div>
+        </div>`;
+    }).join('');
+
+    pane.querySelectorAll('[data-apply]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.getElementById(`apply-form-${btn.dataset.apply}`).style.display = 'block';
+        btn.style.display = 'none';
+      });
+    });
+
+    pane.querySelectorAll('[data-submit-apply]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const posId = btn.dataset.submitApply;
+        const manifesto = document.getElementById(`manifesto-${posId}`).value.trim();
+
+        // Re-check before attempting insert to avoid obvious duplicates
+        const { data: latestCands } = await supabase
+          .from('candidates')
+          .select('id')
+          .eq('election_id', election.id)
+          .eq('user_id', profile.id);
+        if ((latestCands || []).length > 0) {
+          alertBox.innerHTML = `<div class="alert alert-error">You have already applied for a position in this election. If you believe this is an error contact an admin.</div>`;
+          await renderPositions(election);
+          return;
+        }
+
+        btn.disabled = true; btn.textContent = 'Submitting...';
+        const { error } = await supabase.from('candidates').insert({
+          election_id: election.id,
+          user_id: profile.id,
+          position_id: posId,
+          manifesto: manifesto || null,
+        });
+
+        if (error) {
+          // Handle unique constraint errors gracefully (race or DB enforcement)
+          if (String(error?.details || '').toLowerCase().includes('unique') || String(error?.message || '').toLowerCase().includes('unique')) {
+            alertBox.innerHTML = `<div class="alert alert-error">You have already applied for a position in this election. An admin can help if this looks wrong.</div>`;
+          } else {
+            alertBox.innerHTML = `<div class="alert alert-error">${escapeHtml(error.message)}</div>`;
+          }
+          btn.disabled = false; btn.textContent = 'Submit Application';
+        } else {
+          alertBox.innerHTML = `<div class="alert alert-success">Application submitted. An admin will review and approve candidates before voting opens.</div>`;
+          await renderPositions(election);
+        }
+      });
+    });
+  }
+
+  async function renderCandidates(election) {
+    const pane = document.getElementById('pane-candidates');
+    const { data, error } = await supabase
+      .from('candidates')
+      .select('id, manifesto, approved, positions(name), profiles(full_name, avatar_url)')
+      .eq('election_id', election.id)
+      .eq('approved', true);
+
+    if (error) { pane.innerHTML = `<div class="empty">Could not load candidates.</div>`; return; }
+    if (!data || !data.length) { pane.innerHTML = `<div class="empty">No approved candidates yet.</div>`; return; }
+
+    const byPosition = {};
+    data.forEach(c => {
+      const name = c.positions?.name || 'Position';
+      byPosition[name] = byPosition[name] || [];
+      byPosition[name].push(c);
+    });
+
+    pane.innerHTML = Object.entries(byPosition).map(([posName, cands]) => `
+      <div class="position-card">
+        <h4>${escapeHtml(posName)}</h4>
+        ${cands.map(c => `
+          <div class="candidate-row">
+            <div>
+              <strong>${escapeHtml(c.profiles?.full_name || 'Candidate')}</strong>
+              ${c.manifesto ? `<div style="font-size:0.85rem;color:var(--text-muted);">${escapeHtml(c.manifesto)}</div>` : ''}
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `).join('');
+  }
+
+  async function renderVote(election) {
+    const pane = document.getElementById('pane-vote');
+    if (election.status !== 'active') {
+      pane.innerHTML = `<div class="empty">Voting is only open while this election's status is "active".</div>`;
+      return;
+    }
+
+    const { data: candidates } = await supabase
+      .from('candidates')
+      .select('id, manifesto, position_id, positions(id, name), profiles(full_name)')
+      .eq('election_id', election.id)
+      .eq('approved', true);
+
+    const { data: myVotes } = await supabase.from('votes').select('position_id').eq('election_id', election.id).eq('voter_id', profile.id);
+    const votedPositions = new Set((myVotes || []).map(v => v.position_id));
+
+    const byPosition = {};
+    (candidates || []).forEach(c => {
+      const key = c.position_id;
+      byPosition[key] = byPosition[key] || { name: c.positions?.name, cands: [] };
+      byPosition[key].cands.push(c);
+    });
+
+    const entries = Object.entries(byPosition);
+    if (!entries.length) { pane.innerHTML = `<div class="empty">No approved candidates to vote for yet.</div>`; return; }
+
+    pane.innerHTML = entries.map(([posId, group]) => `
+      <div class="position-card">
+        <h4>${escapeHtml(group.name)}</h4>
+        ${votedPositions.has(posId)
+          ? `<span class="pill pill-active">You already voted for this position</span>`
+          : group.cands.map(c => `
+              <div class="candidate-row">
+                <span>${escapeHtml(c.profiles?.full_name || 'Candidate')}</span>
+                <button type="button" class="btn btn-gold" data-vote-candidate="${c.id}" data-vote-position="${posId}">Vote</button>
+              </div>`).join('')}
+      </div>
+    `).join('');
+
+    pane.querySelectorAll('[data-vote-candidate]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        btn.disabled = true; btn.textContent = 'Voting...';
+        const { error } = await supabase.from('votes').insert({
+          election_id: election.id,
+          position_id: btn.dataset.votePosition,
+          voter_id: profile.id,
+          candidate_id: btn.dataset.voteCandidate,
+        });
+        if (error) {
+          alertBox.innerHTML = `<div class="alert alert-error">${escapeHtml(error.message)}</div>`;
+          btn.disabled = false; btn.textContent = 'Vote';
+        } else {
+          alertBox.innerHTML = `<div class="alert alert-success">Your vote has been recorded.</div>`;
+          await renderVote(election);
+        }
+      });
+    });
+  }
+
+  async function renderResults(election) {
+    const pane = document.getElementById('pane-results');
+    if (election.status !== 'closed') {
+      pane.innerHTML = `<div class="empty">Results are published once the Super Admin closes this election.</div>`;
+      return;
+    }
+
+    const { data: tally, error } = await supabase.rpc('election_results', { p_election_id: election.id });
+    if (error) { pane.innerHTML = `<div class="empty">Could not load results.</div>`; return; }
+
+    const { data: candidates } = await supabase
+      .from('candidates')
+      .select('id, position_id, positions(name), profiles(full_name)')
+      .eq('election_id', election.id);
+
+    const candMap = {};
+    (candidates || []).forEach(c => { candMap[c.id] = c; });
+
+    const byPosition = {};
+    (tally || []).forEach(row => {
+      const c = candMap[row.candidate_id];
+      if (!c) return;
+      const key = c.position_id;
+      byPosition[key] = byPosition[key] || { name: c.positions?.name, rows: [] };
+      byPosition[key].rows.push({ name: c.profiles?.full_name || 'Candidate', count: row.vote_count });
+    });
+
+    const entries = Object.values(byPosition);
+    pane.innerHTML = entries.length
+      ? entries.map(group => `
+          <div class="position-card">
+            <h4>${escapeHtml(group.name)}</h4>
+            ${group.rows.sort((a, b) => b.count - a.count).map(r => `
+              <div class="candidate-row"><span>${escapeHtml(r.name)}</span><strong>${r.count} vote${r.count === 1 ? '' : 's'}</strong></div>
+            `).join('')}
+          </div>`).join('')
+      : `<div class="empty">No votes were recorded for this election.</div>`;
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str ?? '';
+    return div.innerHTML;
+  }
+</script>
+</body>
+</html>
