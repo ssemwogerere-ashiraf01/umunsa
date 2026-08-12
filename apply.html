@@ -55,6 +55,46 @@
           <label for="department">Department / Faculty (optional)</label>
           <input id="department" type="text" />
         </div>
+
+        <!-- Hostel / Hall selection -->
+        <div class="form-group">
+          <label for="hostel">Hall / Hostel</label>
+          <select id="hostel">
+            <option value="Carabine">Carabine</option>
+            <option value="Martyrs">Martyrs</option>
+            <option value="Haflet">Haflet</option>
+            <option value="Campbell">Campbell</option>
+            <option value="Onyango">Onyango</option>
+            <option value="Micheal">Micheal</option>
+            <option value="Mugagga">Mugagga</option>
+            <option value="Wamala">Wamala</option>
+            <option value="Katonga">Katonga</option>
+            <option value="Bbosa">Bbosa</option>
+            <option value="Kavuma">Kavuma</option>
+            <option value="Angels">Angels</option>
+            <option value="Fountain">Fountain</option>
+            <option value="Kololo">Kololo</option>
+            <option value="Byaben">Byaben</option>
+            <option value="other">Other</option>
+          </select>
+          <input id="hostel_other" type="text" placeholder="Type your hostel/hall" style="display:none;margin-top:0.5rem;" />
+        </div>
+
+        <!-- Faculty selection (structured) -->
+        <div class="form-group">
+          <label for="faculty">Faculty</label>
+          <select id="faculty">
+            <option value="Education">Faculty of Education</option>
+            <option value="Law">Law</option>
+            <option value="Public Administration">Public Administration</option>
+            <option value="Business Administration">Business Administration</option>
+            <option value="Journalism">Journalism</option>
+            <option value="Agriculture">Agriculture</option>
+            <option value="other">Other</option>
+          </select>
+          <input id="faculty_other" type="text" placeholder="Type your faculty" style="display:none;margin-top:0.5rem;" />
+        </div>
+
         <div class="form-group">
           <label for="password">Password</label>
           <input id="password" type="password" required minlength="8" autocomplete="new-password" />
@@ -120,11 +160,27 @@
   const alertBox = document.getElementById('alert-box');
   const btn = document.getElementById('submit-btn');
 
+  // show/hide Other inputs
+  const hostelSelect = document.getElementById('hostel');
+  const hostelOther = document.getElementById('hostel_other');
+  hostelSelect?.addEventListener('change', () => {
+    hostelOther.style.display = hostelSelect.value === 'other' ? 'block' : 'none';
+  });
+
+  const facultySelect = document.getElementById('faculty');
+  const facultyOther = document.getElementById('faculty_other');
+  facultySelect?.addEventListener('change', () => {
+    facultyOther.style.display = facultySelect.value === 'other' ? 'block' : 'none';
+  });
+
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     alertBox.innerHTML = '';
     btn.disabled = true;
     btn.textContent = 'Submitting...';
+
+    const hostelValue = hostelSelect.value === 'other' ? (hostelOther.value || '').trim() : hostelSelect.value;
+    const facultyValue = facultySelect.value === 'other' ? (facultyOther.value || '').trim() : facultySelect.value;
 
     const result = await registerWithEmail({
       fullName: document.getElementById('full_name').value.trim(),
@@ -132,6 +188,8 @@
       phone: document.getElementById('phone').value.trim(),
       registrationNumber: document.getElementById('registration_number').value.trim(),
       password: document.getElementById('password').value,
+      hostel: hostelValue || null,
+      faculty: facultyValue || null,
     });
 
     if (result.error) {
