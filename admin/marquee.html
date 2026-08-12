@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="robots" content="noindex,nofollow" />
+  <title>Marquee Announcements — Admin</title>
+  <link rel="stylesheet" href="../assets/css/style.css" />
+  <style>
+    .admin-container { padding: 1.5rem; max-width: 880px; margin: 0 auto; }
+    .card { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 1rem; margin-bottom: 1rem; }
+    .marquee-item { border: 1px dashed var(--border); padding: 0.6rem; margin-bottom: 0.6rem; border-radius: 6px; display:flex; gap:0.6rem; align-items:flex-start; }
+    .marquee-item textarea { width:100%; min-height:64px; font-family:inherit; }
+    .marquee-item .controls { display:flex; flex-direction:column; gap:0.4rem; }
+    .mini-btn { padding: 0.35rem 0.7rem; font-size: 0.8rem; border-radius: 4px; border: none; cursor: pointer; font-weight: 600; }
+    .mini-btn.good { background: var(--forest); color:#fff; }
+    .mini-btn.warn { background:#f59e0b;color:#fff; }
+    .mini-btn.bad { background:#ef4444;color:#fff; }
+    .form-row { display:flex; gap:0.5rem; align-items:center; }
+    @media (max-width:640px) { .marquee-item { flex-direction:column; } .marquee-item .controls { flex-direction:row; justify-content:flex-end; } }
+  </style>
+</head>
+<body>
+  <div id="app-nav"></div>
+
+  <main class="admin-container">
+    <h2>Marquee Announcements</h2>
+    <p style="color:var(--text-muted);margin-top:-0.25rem;margin-bottom:1rem;">Manage the scrolling announcements that appear in the site header marquee. Use these for short messages and site-wide notices.</p>
+
+    <div class="card">
+      <h3 style="margin-top:0;">Add Announcement</h3>
+      <form id="marquee-form">
+        <div class="form-group"><label>Message</label><textarea id="marquee-message" rows="3" required placeholder="Short announcement for the marquee (no HTML)"></textarea></div>
+        <div class="form-group form-row"><label style="width:auto;"><input type="checkbox" id="marquee-active" checked /> Active</label>
+        <label style="margin-left:auto;">Display order <input type="number" id="marquee-order" value="1" style="width:80px;margin-left:0.5rem;" /></label></div>
+        <button type="submit" class="mini-btn good">Add Announcement</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-top:0;">Existing Announcements</h3>
+      <div id="marquee-list">Loading…</div>
+    </div>
+  </main>
+
+  <div id="app-footer"></div>
+
+  <script type="module">
+    import { supabase } from '../assets/js/supabase-client.js';
+    import { requireAdmin } from '../assets/js/admin-guard.js';
+    import { mountNav, mountFooter } from '../assets/js/nav.js';
+
+    mountNav();
+    mountFooter();
+
+    const me = await requireAdmin();
+    if (!me) throw new Error('redirecting');
+
+    const listEl = document.getElementById('marquee-list');
+    const form = document.getElementById('marquee-form');
+    const msgInput = document.getElementById('marquee-message');
+    const activeInput = document.getElementById('marquee-active');
+    const orderInput = document.getElementById('marquee-order');
+
+    async function loadItems() {
+      listEl.innerHTML = 'Loading…';
+      const { data, error } = await supabase
+        .from('site_announcements')
+        .select('*')
+        .order('display_order', { ascending: true })
+        .limit(200);
+      if (error) {
+        listEl.innerHTML = `<div style="color:var(--text-muted);">Could not load announcements: ${escapeHtml(error.message)}</div>`;
+        return;
+      }
+      renderList(data || []);
+    }
+
+    function renderList(items) {
+      if (!items.length) { listEl.innerHTML = '<div class="loading-muted">No announcements yet.</div>'; return; }
+      listEl.innerHTML = '';
+      items.forEach(it => {
+        const wrap = document.createElement('div'); wrap.className = 'marquee-item';
+        const ta = document.createElement('textarea'); ta.value = it.message || '';
+        ta.addEventListener('input', () => { wrap.dataset.dirty = '1'; });
+        const meta = document.createElement('div'); meta.style.width = '220px'; meta.style.flex = '0 0 220px'; meta.className = 'controls';
+
+        const activeCheckbox = document.createElement('label'); activeCheckbox.innerHTML = `<input type="checkbox" ${it.is_active ? 'checked' : ''} /> Active`;
+        activeCheckbox.querySelector('input').addEventListener('change', async (e) => {
+          const { error } = await supabase.from('site_announcements').update({ is_active: e.target.checked }).eq('id', it.id);
+          if (error) alert(error.message); else loadItems();
+        });
+
+        const orderRow = document.createElement('div'); orderRow.style.display = 'flex'; orderRow.style.gap = '0.4rem'; orderRow.style.alignItems='center';
+        orderRow.innerHTML = `Order <input type="number" value="${it.display_order ?? 1}" style="width:72px;padding:0.25rem;border-radius:4px;border:1px solid var(--border);" />`;
+        const orderInputEl = orderRow.querySelector('input');
+        orderInputEl.addEventListener('change', async () => {
+          const v = Number(orderInputEl.value) || 0;
+          const { error } = await supabase.from('site_announcements').update({ display_order: v }).eq('id', it.id);
+          if (error) alert(error.message); else loadItems();
+        });
+
+        const btnSave = document.createElement('button'); btnSave.className = 'mini-btn good'; btnSave.textContent = 'Save';
+        btnSave.addEventListener('click', async () => {
+          btnSave.disabled = true; btnSave.textContent = 'Saving...';
+          const { error } = await supabase.from('site_announcements').update({ message: ta.value }).eq('id', it.id);
+          btnSave.disabled = false; btnSave.textContent = 'Save';
+          if (error) alert(error.message); else { wrap.removeAttribute('data-dirty'); loadItems(); }
+        });
+
+        const btnDelete = document.createElement('button'); btnDelete.className = 'mini-btn bad'; btnDelete.textContent = 'Delete';
+        btnDelete.addEventListener('click', async () => {
+          if (!confirm('Delete this announcement?')) return;
+          const { error } = await supabase.from('site_announcements').delete().eq('id', it.id);
+          if (error) alert(error.message); else loadItems();
+        });
+
+        meta.appendChild(activeCheckbox);
+        meta.appendChild(orderRow);
+        meta.appendChild(btnSave);
+        meta.appendChild(btnDelete);
+
+        wrap.appendChild(ta);
+        wrap.appendChild(meta);
+        listEl.appendChild(wrap);
+      });
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const message = msgInput.value.trim();
+      if (!message) return alert('Message cannot be empty.');
+      const { data: existing } = await supabase.from('site_announcements').select('id').order('display_order', { ascending: false }).limit(1);
+      const nextOrder = (existing && existing.length ? (existing[0].display_order || 0) + 1 : Number(orderInput.value) || 1);
+      const { error } = await supabase.from('site_announcements').insert({ message, is_active: !!activeInput.checked, display_order: nextOrder });
+      if (error) { alert(error.message); return; }
+      msgInput.value = ''; activeInput.checked = true; orderInput.value = '1';
+      await loadItems();
+      alert('Announcement added.');
+    });
+
+    function escapeHtml(s) { const d = document.createElement('div'); d.textContent = s ?? ''; return d.innerHTML; }
+
+    // initial load
+    loadItems();
+  </script>
+</body>
+</html>
