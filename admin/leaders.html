@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Admin — Leaders</title>
+<link rel="stylesheet" href="../assets/css/style.css" />
+</head>
+<body>
+<div id="app-nav"></div>
+<div class="section">
+  <div class="section-head">
+    <span class="eyebrow">Admin</span>
+    <h2>Leaders</h2>
+    <p style="color:var(--text-muted);">Create, edit or remove leadership entries for current and past terms.</p>
+  </div>
+
+  <div id="alert-box"></div>
+
+  <div style="margin-bottom:1rem;">
+    <button id="new-leader" class="btn">New leader</button>
+  </div>
+
+  <div id="leaders-list">Loading leaders…</div>
+
+  <div id="editor" style="display:none;margin-top:1rem;max-width:800px;">
+    <h3 id="editor-title">New Leader</h3>
+    <form id="leader-form">
+      <div class="form-group">
+        <label for="leader-user">Member (search by name/email)</label>
+        <input id="leader-user-search" type="text" placeholder="Type name or email to search" />
+        <select id="leader-user" style="width:100%;margin-top:0.5rem;"></select>
+      </div>
+      <div class="form-group">
+        <label for="leader-position">Position</label>
+        <input id="leader-position" type="text" required />
+      </div>
+      <div class="form-group">
+        <label for="leader-bio">Bio</label>
+        <textarea id="leader-bio" rows="3"></textarea>
+      </div>
+      <div class="form-group">
+        <label for="leader-term-start">Term start</label>
+        <input id="leader-term-start" type="date" />
+      </div>
+      <div class="form-group">
+        <label for="leader-term-end">Term end</label>
+        <input id="leader-term-end" type="date" />
+      </div>
+      <div class="form-group">
+        <label><input id="leader-is-current" type="checkbox" /> Current term</label>
+      </div>
+      <div style="display:flex;gap:0.5rem;">
+        <button type="submit" class="btn btn-gold">Save</button>
+        <button type="button" id="cancel-edit" class="btn">Cancel</button>
+        <button type="button" id="delete-leader" class="btn bad" style="margin-left:auto;display:none;">Delete</button>
+      </div>
+    </form>
+  </div>
+</div>
+<div id="app-footer"></div>
+
+<script type="module">
+  import { supabase } from '../assets/js/supabase-client.js';
+  import { mountNav, mountFooter } from '../assets/js/nav.js';
+  import { requireAdmin } from '../assets/js/admin-guard.js';
+
+  mountNav();
+  mountFooter();
+
+  const me = await requireAdmin();
+  if (!me) throw new Error('redirecting');
+
+  const alertBox = document.getElementById('alert-box');
+  const leadersList = document.getElementById('leaders-list');
+  const editor = document.getElementById('editor');
+  const editorTitle = document.getElementById('editor-title');
+  const form = document.getElementById('leader-form');
+  const userSelect = document.getElementById('leader-user');
+  const userSearch = document.getElementById('leader-user-search');
+  const deleteBtn = document.getElementById('delete-leader');
+
+  let editingId = null;
+
+  async function loadLeaders() {
+    const { data, error } = await supabase
+      .from('leaders')
+      .select('id, user_id, position, bio, term_start, term_end, is_current, display_order')
+      .order('is_current', { ascending: false })
+      .order('term_start', { ascending: false })
+      .order('display_order');
+
+    if (error) { leadersList.innerHTML = `<div class="empty">Could not load leaders: ${escapeHtml(error.message)}</div>`; return; }
+
+    if (!data || !data.length) {
+      leadersList.innerHTML = `<div class="empty">No leaders found. Create one using the button above.</div>`;
+      return;
+    }
+
+    // Enrich with public profile info via RPC
+    const enriched = await Promise.all(data.map(async l => {
+      const { data: pub } = await supabase.rpc('public_leader_profile', { p_user_id: l.user_id });
+      return { ...l, full_name: pub && pub[0] ? pub[0].full_name : null, avatar_url: pub && pub[0] ? pub[0].avatar_url : null };
+    }));
+
+    leadersList.innerHTML = enriched.map(l => `
+      <div class="position-card" style="display:flex;align-items:center;gap:0.75rem;justify-content:space-between;">
+        <div style="display:flex;gap:0.75rem;align-items:center;">
+          <div style="width:48px;height:48px;border-radius:50%;overflow:hidden;background:var(--parchment);display:flex;align-items:center;justify-content:center;">${escapeHtml(initials(l.full_name || ''))}</div>
+          <div>
+            <strong>${escapeHtml(l.full_name || 'Unknown')}</strong>
+            <div style="color:var(--text-muted);font-size:0.9rem;">${escapeHtml(l.position)}</div>
+            <div style="color:var(--text-muted);font-size:0.85rem;">${l.term_start ? new Date(l.term_start).toLocaleDateString() : ''} ${l.term_end ? '— ' + new Date(l.term_end).toLocaleDateString() : ''}</div>
+          </div>
+        </div>
+        <div>
+          <button class="btn" data-edit="${l.id}">Edit</button>
+        </div>
+      </div>
+    `).join('');
+
+    leadersList.querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', () => openEditor(b.dataset.edit)));
+  }
+
+  function escapeHtml(str) { const d = document.createElement('div'); d.textContent = str ?? ''; return d.innerHTML; }
+  function initials(name) { if (!name) return '?'; return name.trim().split(/\s+/).slice(0,2).map(w=>w[0]?.toUpperCase()).join(''); }
+
+  function openEditor(id = null) {
+    editingId = id;
+    editor.style.display = 'block';
+    deleteBtn.style.display = id ? 'inline-block' : 'none';
+    editorTitle.textContent = id ? 'Edit Leader' : 'New Leader';
+    // Clear
+    form.reset();
+    userSelect.innerHTML = '';
+
+    if (id) {
+      loadSingle(id);
+    }
+  }
+
+  async function loadSingle(id) {
+    const { data, error } = await supabase.from('leaders').select('*').eq('id', id).single();
+    if (error) { alertBox.innerHTML = `<div class="alert alert-error">${escapeHtml(error.message)}</div>`; return; }
+    const l = data;
+    document.getElementById('leader-position').value = l.position || '';
+    document.getElementById('leader-bio').value = l.bio || '';
+    document.getElementById('leader-term-start').value = l.term_start ? l.term_start.slice(0,10) : '';
+    document.getElementById('leader-term-end').value = l.term_end ? l.term_end.slice(0,10) : '';
+    document.getElementById('leader-is-current').checked = !!l.is_current;
+
+    // Load and select member in dropdown
+    const { data: member } = await supabase.from('profiles').select('id, full_name, email').eq('id', l.user_id).single();
+    if (member) {
+      userSelect.innerHTML = `<option value="${member.id}">${escapeHtml(member.full_name || member.email)}</option>`;
+    }
+  }
+
+  async function searchMembers(q) {
+    if (!q || q.length < 2) return;
+    const { data } = await supabase.from('profiles').select('id, full_name, email').ilike('full_name', `%${q}%`).or(`email.ilike.%${q}%`).limit(10);
+    userSelect.innerHTML = (data || []).map(m => `<option value="${m.id}">${escapeHtml(m.full_name || m.email)}</option>`).join('');
+  }
+
+  userSearch.addEventListener('input', (e) => { searchMembers(e.target.value); });
+
+  document.getElementById('new-leader').addEventListener('click', () => openEditor(null));
+  document.getElementById('cancel-edit').addEventListener('click', () => { editor.style.display = 'none'; editingId = null; });
+
+  deleteBtn.addEventListener('click', async () => {
+    if (!editingId) return;
+    if (!confirm('Delete this leader entry?')) return;
+    const { error } = await supabase.from('leaders').delete().eq('id', editingId);
+    if (error) { alertBox.innerHTML = `<div class="alert alert-error">${escapeHtml(error.message)}</div>`; return; }
+    alertBox.innerHTML = `<div class="alert alert-success">Leader deleted.</div>`;
+    editor.style.display = 'none'; editingId = null; await loadLeaders();
+  });
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const payload = {
+      user_id: document.getElementById('leader-user').value || null,
+      position: document.getElementById('leader-position').value.trim() || null,
+      bio: document.getElementById('leader-bio').value.trim() || null,
+      term_start: document.getElementById('leader-term-start').value || null,
+      term_end: document.getElementById('leader-term-end').value || null,
+      is_current: document.getElementById('leader-is-current').checked || false,
+    };
+
+    if (!payload.user_id) { alertBox.innerHTML = `<div class="alert alert-error">Select a member for this leadership role.</div>`; return; }
+
+    if (editingId) {
+      const { error } = await supabase.from('leaders').update(payload).eq('id', editingId);
+      if (error) { alertBox.innerHTML = `<div class="alert alert-error">${escapeHtml(error.message)}</div>`; return; }
+      alertBox.innerHTML = `<div class="alert alert-success">Leader updated.</div>`;
+    } else {
+      const { error } = await supabase.from('leaders').insert(payload);
+      if (error) { alertBox.innerHTML = `<div class="alert alert-error">${escapeHtml(error.message)}</div>`; return; }
+      alertBox.innerHTML = `<div class="alert alert-success">Leader created.</div>`;
+    }
+
+    editor.style.display = 'none'; editingId = null; await loadLeaders();
+  });
+
+  // quick initial load
+  await loadLeaders();
+</script>
+</body>
+</html>
