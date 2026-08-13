@@ -38,7 +38,7 @@
           <label for="registration_number">Registration number</label>
           <input type="text" id="registration_number" placeholder="e.g. 2026-B101-10000" />
         </div>
-        <div class="form-group">
+      <div class="form-group">
           <label for="hostel">Hall / Hostel</label>
           <select id="hostel">
             <option value="">Select (optional)</option>
@@ -47,8 +47,12 @@
             <option value="Bossa">Bossa</option>
             <option value="Nkozi">Nkozi</option>
             <option value="Off-campus">Off-campus</option>
-            <option value="Other">Other</option>
+            <option value="Other">Other (specify)</option>
           </select>
+        </div>
+        <div class="form-group" id="hostel-other-wrap" style="display:none;">
+          <label for="hostel_other">Where do you reside?</label>
+          <input type="text" id="hostel_other" placeholder="e.g. area, estate, or private hostel name" autocomplete="address-level2" />
         </div>
         <div class="form-group">
           <label for="faculty">Faculty / School</label>
@@ -116,8 +120,29 @@
     }, 6000);
   }
 
+  function wireHostelOther() {
+    const sel = document.getElementById('hostel');
+    const wrap = document.getElementById('hostel-other-wrap');
+    const other = document.getElementById('hostel_other');
+    if (!sel || !wrap) return;
+    const sync = () => {
+      const isOther = sel.value === 'Other';
+      wrap.style.display = isOther ? 'block' : 'none';
+      if (other) other.required = isOther;
+      if (!isOther && other) other.value = '';
+    };
+    sel.addEventListener('change', sync);
+    sync();
+  }
+  wireHostelOther();
+
   document.getElementById('register-form').addEventListener('submit', async (e) => {
     e.preventDefault();
+    if (document.getElementById('hostel').value === 'Other' && !(document.getElementById('hostel_other')?.value || '').trim()) {
+      document.getElementById('alert-box').innerHTML = '<div class="alert alert-error">Please specify where you reside.</div>';
+      document.getElementById('hostel_other')?.focus();
+      return;
+    }
     const btn = document.getElementById('submit-btn');
     btn.disabled = true;
     btn.textContent = 'Submitting...';
@@ -126,7 +151,7 @@
       fullName: document.getElementById('full_name').value.trim(),
       phone: document.getElementById('phone').value.trim(),
       registrationNumber: document.getElementById('registration_number').value.trim(),
-      hostel: document.getElementById('hostel').value.trim(),
+      hostel: (function(){ const h=document.getElementById('hostel').value.trim(); if(h!=='Other') return h||null; const o=(document.getElementById('hostel_other')?.value||'').trim(); return o||null; })(),
       faculty: document.getElementById('faculty').value.trim(),
       email: document.getElementById('email').value.trim(),
       password: document.getElementById('password').value,

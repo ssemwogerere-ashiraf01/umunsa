@@ -71,8 +71,12 @@
           <option value="Bossa">Bossa</option>
           <option value="Nkozi">Nkozi</option>
           <option value="Off-campus">Off-campus</option>
-          <option value="Other">Other</option>
+          <option value="Other">Other (specify)</option>
         </select>
+      </div>
+      <div class="form-group" id="hostel-other-wrap" style="display:none;">
+        <label for="hostel_other">Where do you reside?</label>
+        <input type="text" id="hostel_other" placeholder="e.g. area, estate, or private hostel name" />
       </div>
       <div class="form-group"><label for="faculty">Faculty / School</label><input type="text" id="faculty" placeholder="e.g. Faculty of Science" /></div>
       <div class="form-group"><label for="year_of_study">Year of study</label><input type="number" id="year_of_study" min="1" max="6" /></div>
@@ -196,7 +200,19 @@
     document.getElementById('full_name').value = p.full_name || '';
     document.getElementById('phone').value = p.phone || '';
     document.getElementById('programme').value = p.programme || '';
-    if (document.getElementById('hostel')) document.getElementById('hostel').value = p.hostel || '';
+    if (document.getElementById('hostel')) {
+      const known = ['', 'Carabine', 'Wamala', 'Bossa', 'Nkozi', 'Off-campus', 'Other'];
+      const val = p.hostel || '';
+      if (val && !known.includes(val)) {
+        document.getElementById('hostel').value = 'Other';
+        if (document.getElementById('hostel_other')) document.getElementById('hostel_other').value = val;
+      } else {
+        document.getElementById('hostel').value = val;
+        if (document.getElementById('hostel_other')) document.getElementById('hostel_other').value = '';
+      }
+      const wrap = document.getElementById('hostel-other-wrap');
+      if (wrap) wrap.style.display = document.getElementById('hostel').value === 'Other' ? 'block' : 'none';
+    }
     if (document.getElementById('faculty')) document.getElementById('faculty').value = p.faculty || '';
     document.getElementById('year_of_study').value = p.year_of_study || '';
     document.getElementById('bio').value = p.bio || '';
@@ -314,8 +330,21 @@
     alertBox.innerHTML = `<div class="alert alert-success">Profile photo updated.</div>`;
   });
 
+  document.getElementById('hostel')?.addEventListener('change', () => {
+    const wrap = document.getElementById('hostel-other-wrap');
+    const other = document.getElementById('hostel_other');
+    const isOther = document.getElementById('hostel').value === 'Other';
+    if (wrap) wrap.style.display = isOther ? 'block' : 'none';
+    if (other) { other.required = isOther; if (!isOther) other.value = ''; }
+  });
+
   document.getElementById('profile-form').addEventListener('submit', async (e) => {
     e.preventDefault();
+    if (document.getElementById('hostel')?.value === 'Other' && !(document.getElementById('hostel_other')?.value || '').trim()) {
+      document.getElementById('alert-box').innerHTML = '<div class="alert alert-error">Please specify where you reside.</div>';
+      document.getElementById('hostel_other')?.focus();
+      return;
+    }
     const btn = document.getElementById('save-btn');
     btn.disabled = true;
     btn.textContent = 'Saving...';
@@ -325,7 +354,11 @@
       full_name: document.getElementById('full_name').value.trim(),
       phone: document.getElementById('phone').value.trim() || null,
       programme: document.getElementById('programme').value.trim() || null,
-      hostel: document.getElementById('hostel')?.value.trim() || null,
+      hostel: (function(){
+        const h = document.getElementById('hostel')?.value.trim() || '';
+        if (h !== 'Other') return h || null;
+        return (document.getElementById('hostel_other')?.value || '').trim() || null;
+      })(),
       faculty: document.getElementById('faculty')?.value.trim() || null,
       year_of_study: document.getElementById('year_of_study').value ? Number(document.getElementById('year_of_study').value) : null,
       bio: document.getElementById('bio').value.trim() || null,
