@@ -127,9 +127,17 @@
             <div class="form-group"><label>Hostel (optional)</label>
               <select id="am-hostel">
                 <option value="">—</option>
-                <option>Carabine</option><option>Wamala</option><option>Bossa</option>
-                <option>Nkozi</option><option>Off-campus</option><option>Other</option>
+                <option value="Carabine">Carabine</option>
+                <option value="Wamala">Wamala</option>
+                <option value="Bossa">Bossa</option>
+                <option value="Nkozi">Nkozi</option>
+                <option value="Off-campus">Off-campus</option>
+                <option value="Other">Other (specify)</option>
               </select>
+            </div>
+            <div class="form-group" id="am-hostel-other-wrap" style="display:none;">
+              <label for="am-hostel-other">Where do they reside?</label>
+              <input type="text" id="am-hostel-other" placeholder="e.g. area or private hostel" />
             </div>
             <div class="form-group"><label>Faculty (optional)</label><input type="text" id="am-faculty" placeholder="e.g. Faculty of Science" /></div>
           </div>
@@ -244,6 +252,12 @@
     }
 
     // ---------- Add member (any domain) ----------
+    document.getElementById('am-hostel')?.addEventListener('change', () => {
+      const wrap = document.getElementById('am-hostel-other-wrap');
+      const isOther = document.getElementById('am-hostel').value === 'Other';
+      if (wrap) wrap.style.display = isOther ? 'block' : 'none';
+    });
+
     document.getElementById('add-member-form').addEventListener('submit', async (e) => {
       e.preventDefault();
       const btn = document.getElementById('am-submit');
@@ -262,7 +276,7 @@
             password: document.getElementById('am-password').value,
             role: document.getElementById('am-role').value,
             phone: document.getElementById('am-phone').value.trim(),
-            hostel: document.getElementById('am-hostel')?.value.trim() || null,
+            hostel: (function(){ const h=document.getElementById('am-hostel')?.value.trim()||''; if(h!=='Other') return h||null; return (document.getElementById('am-hostel-other')?.value||'').trim()||null; })(),
             faculty: document.getElementById('am-faculty')?.value.trim() || null || null,
             programme: document.getElementById('am-programme').value.trim() || null,
           }),
