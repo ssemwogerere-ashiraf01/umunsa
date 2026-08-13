@@ -63,6 +63,18 @@
       <div class="form-group"><label for="full_name">Full name</label><input type="text" id="full_name" required /></div>
       <div class="form-group"><label for="phone">Phone number</label><input type="text" id="phone" /></div>
       <div class="form-group"><label for="programme">Programme / Course</label><input type="text" id="programme" /></div>
+      <div class="form-group"><label for="hostel">Hall / Hostel</label>
+        <select id="hostel">
+          <option value="">Select (optional)</option>
+          <option value="Carabine">Carabine</option>
+          <option value="Wamala">Wamala</option>
+          <option value="Bossa">Bossa</option>
+          <option value="Nkozi">Nkozi</option>
+          <option value="Off-campus">Off-campus</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+      <div class="form-group"><label for="faculty">Faculty / School</label><input type="text" id="faculty" placeholder="e.g. Faculty of Science" /></div>
       <div class="form-group"><label for="year_of_study">Year of study</label><input type="number" id="year_of_study" min="1" max="6" /></div>
       <div class="form-group"><label for="bio">Short bio</label><input type="text" id="bio" /></div>
       <div class="form-group"><label for="security_question">Security question (choose one)</label>
@@ -184,6 +196,8 @@
     document.getElementById('full_name').value = p.full_name || '';
     document.getElementById('phone').value = p.phone || '';
     document.getElementById('programme').value = p.programme || '';
+    if (document.getElementById('hostel')) document.getElementById('hostel').value = p.hostel || '';
+    if (document.getElementById('faculty')) document.getElementById('faculty').value = p.faculty || '';
     document.getElementById('year_of_study').value = p.year_of_study || '';
     document.getElementById('bio').value = p.bio || '';
     document.getElementById('security_question').value = p.security_question || '';
@@ -311,6 +325,8 @@
       full_name: document.getElementById('full_name').value.trim(),
       phone: document.getElementById('phone').value.trim() || null,
       programme: document.getElementById('programme').value.trim() || null,
+      hostel: document.getElementById('hostel')?.value.trim() || null,
+      faculty: document.getElementById('faculty')?.value.trim() || null,
       year_of_study: document.getElementById('year_of_study').value ? Number(document.getElementById('year_of_study').value) : null,
       bio: document.getElementById('bio').value.trim() || null,
     };
