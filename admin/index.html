@@ -19,7 +19,14 @@
     .tab-panel { display: none; }
     .tab-panel.active { display: block; }
     .card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-    .admin-table { width: 100%; border-collapse: collapse; margin-top: 1rem; font-size: 0.9rem; min-width: 520px; }
+    .admin-table { width: 100%; border-collapse: collapse; margin-top: 1rem; font-size: 0.9rem; min-width: 720px; }
+    .table-scroll, .data-table-wrap {
+      display: block; width: 100%; max-width: 100%;
+      overflow-x: auto !important; -webkit-overflow-scrolling: touch;
+      border: 1px solid var(--border); border-radius: var(--radius); background: var(--paper);
+      touch-action: pan-x pan-y;
+    }
+    .table-scroll table, .data-table-wrap table { width: max-content; min-width: 100%; }
     .admin-table th, .admin-table td { padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
     .admin-table th { background: var(--paper); color: var(--text); font-weight: 600; white-space: nowrap; }
     .admin-table td { color: var(--text); }
@@ -47,9 +54,9 @@
       background: var(--paper);
       border-color: var(--border);
     }
-    .admin-container { overflow-x: hidden; }
+    .admin-container { overflow-x: visible; max-width: 100%; }
     .tab-nav { flex-wrap: wrap; gap: 0.35rem; }
-    .card { overflow: hidden; }
+    .card { overflow: visible; }
     .pill { padding: 0.2rem 0.6rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600; text-transform: capitalize; }
     .pill-active, .pill-approved { background: #dcfce7; color: #15803d; }
     .pill-pending { background: #fef9c3; color: #a16207; }
@@ -100,7 +107,7 @@
         <h3 style="margin-top:0;">Members</h3>
         <div class="data-table-wrap">
           <table class="admin-table">
-            <thead><tr><th></th><th>Name</th><th>Email</th><th>Programme</th><th>Status</th><th>Role</th><th>Actions</th></tr></thead>
+            <thead><tr><th></th><th>Name</th><th>Email</th><th>Hostel</th><th>Faculty</th><th>Programme</th><th>Status</th><th>Role</th><th>Actions</th></tr></thead>
             <tbody id="members-tbody"></tbody>
           </table>
         </div>
@@ -276,6 +283,8 @@ Preferred meeting day (multiple_choice: Monday, Wednesday, Friday)"></textarea>
           <td>${m.avatar_url ? `<img class="member-avatar-img" src="${m.avatar_url}" />` : `<span class="member-avatar-fallback">${escapeHtml((m.full_name || '?').split(' ').map(w=>w[0]).slice(0,2).join(''))}</span>`}</td>
           <td>${escapeHtml(m.full_name)}</td>
           <td>${escapeHtml(m.email)}</td>
+          <td>${escapeHtml(m.hostel || '-')}</td>
+          <td>${escapeHtml(m.faculty || '-')}</td>
           <td>${escapeHtml(m.programme || '-')}</td>
           <td>${pill(m.membership_status)}</td>
           <td>${escapeHtml(m.role)}</td>
@@ -290,7 +299,7 @@ Preferred meeting day (multiple_choice: Monday, Wednesday, Friday)"></textarea>
             <button class="mini-btn good" data-apply-status="${m.id}">Apply</button>
             <a class="mini-btn" style="background:#eef1f5;color:#1b4332;text-decoration:none;display:inline-flex;align-items:center;" href="../profile.html?admin_view=${m.id}">View</a>
           </td>
-        </tr>`).join('') || '<tr><td colspan="7" style="text-align:center;">No members yet.</td></tr>';
+        </tr>`).join('') || '<tr><td colspan="9" style="text-align:center;">No members yet.</td></tr>';
 
       document.querySelectorAll('[data-apply-status]').forEach(btn => {
         btn.addEventListener('click', async () => {

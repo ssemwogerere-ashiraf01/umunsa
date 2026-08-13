@@ -17,18 +17,25 @@
     .tab-panel { display: none; }
     .tab-panel.active { display: block; }
     .card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-    .admin-table { width: 100%; border-collapse: collapse; margin-top: 1rem; font-size: 0.9rem; min-width: 520px; }
+    .admin-table { width: 100%; border-collapse: collapse; margin-top: 1rem; font-size: 0.9rem; min-width: 780px; }
     .admin-table th, .admin-table td { padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
     .admin-table th { background: var(--paper); color: var(--text); font-weight: 600; white-space: nowrap; }
     .admin-table td { color: var(--text); }
     .table-scroll, .data-table-wrap {
+      display: block;
       width: 100%;
       max-width: 100%;
-      overflow-x: auto;
+      overflow-x: auto !important;
+      overflow-y: visible;
       -webkit-overflow-scrolling: touch;
       border: 1px solid var(--border);
       border-radius: var(--radius);
       background: var(--paper);
+      touch-action: pan-x pan-y;
+    }
+    .table-scroll table, .data-table-wrap table {
+      width: max-content;
+      min-width: 100%;
     }
     .table-scroll .admin-table, .data-table-wrap .admin-table {
       margin-top: 0;
@@ -45,9 +52,9 @@
       background: var(--paper);
       border-color: var(--border);
     }
-    .admin-container { overflow-x: hidden; }
+    .admin-container { overflow-x: visible; max-width: 100%; }
     .tab-nav { flex-wrap: wrap; gap: 0.35rem; }
-    .card { overflow: hidden; }
+    .card { overflow: visible; }
     .pill { padding: 0.2rem 0.6rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600; text-transform: capitalize; }
     .pill-active, .pill-approved { background: #dcfce7; color: #15803d; }
     .pill-pending { background: #fef9c3; color: #a16207; }
@@ -86,10 +93,12 @@
       <div class="card">
         <h3 style="margin-top:0;">Assign / revoke Admin access</h3>
         <p style="font-size:0.85rem;color:var(--text-muted);">Only the Super Admin can promote a member to Admin, or demote an Admin back to Member. This is enforced by the database, not just this screen.</p>
-        <table class="admin-table">
-          <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Assigned by</th><th>Action</th></tr></thead>
+        <div class="data-table-wrap table-scroll">
+          <table class="admin-table">
+          <thead><tr><th>Name</th><th>Email</th><th>Hostel</th><th>Faculty</th><th>Role</th><th>Assigned by</th><th>Action</th></tr></thead>
           <tbody id="access-tbody"></tbody>
         </table>
+        </div>
       </div>
     </div>
 
@@ -113,6 +122,16 @@
           <div class="form-row-2">
             <div class="form-group"><label>Phone (optional)</label><input type="text" id="am-phone" /></div>
             <div class="form-group"><label>Programme (optional)</label><input type="text" id="am-programme" /></div>
+          </div>
+          <div class="form-row-2">
+            <div class="form-group"><label>Hostel (optional)</label>
+              <select id="am-hostel">
+                <option value="">—</option>
+                <option>Carabine</option><option>Wamala</option><option>Bossa</option>
+                <option>Nkozi</option><option>Off-campus</option><option>Other</option>
+              </select>
+            </div>
+            <div class="form-group"><label>Faculty (optional)</label><input type="text" id="am-faculty" placeholder="e.g. Faculty of Science" /></div>
           </div>
           <button type="submit" class="mini-btn good" id="am-submit">Create Account</button>
         </form>
@@ -194,7 +213,7 @@
 
     // ---------- Admin access ----------
     async function loadAccess() {
-      const { data } = await supabase.from('profiles').select('id, full_name, email, role, assigned_admin_by, membership_status').eq('membership_status', 'active').order('full_name');
+      const { data } = await supabase.from('profiles').select('id, full_name, email, role, assigned_admin_by, membership_status, hostel, faculty').eq('membership_status', 'active').order('full_name');
       const byId = {};
       (data || []).forEach(p => byId[p.id] = p);
 
@@ -202,6 +221,8 @@
         <tr>
           <td>${escapeHtml(p.full_name)}</td>
           <td>${escapeHtml(p.email)}</td>
+          <td>${escapeHtml(p.hostel || '-')}</td>
+          <td>${escapeHtml(p.faculty || '-')}</td>
           <td><span class="pill pill-${p.role === 'super_admin' ? 'active' : (p.role === 'admin' ? 'active' : 'pending')}">${escapeHtml(p.role)}</span></td>
           <td>${p.assigned_admin_by ? escapeHtml(byId[p.assigned_admin_by]?.full_name || '-') : '-'}</td>
           <td>
@@ -209,7 +230,7 @@
               ? `<button class="mini-btn bad" data-demote="${p.id}">Revoke Admin</button>`
               : `<button class="mini-btn good" data-promote="${p.id}">Make Admin</button>`}
           </td>
-        </tr>`).join('') || '<tr><td colspan="5" style="text-align:center;">No active members yet.</td></tr>';
+        </tr>`).join('') || '<tr><td colspan="7" style="text-align:center;">No active members yet.</td></tr>';
 
       document.querySelectorAll('[data-promote]').forEach(btn => btn.addEventListener('click', async () => {
         const { error } = await supabase.from('profiles').update({ role: 'admin', assigned_admin_by: me.id, assigned_admin_at: new Date().toISOString() }).eq('id', btn.dataset.promote);
@@ -240,7 +261,9 @@
             email: document.getElementById('am-email').value.trim(),
             password: document.getElementById('am-password').value,
             role: document.getElementById('am-role').value,
-            phone: document.getElementById('am-phone').value.trim() || null,
+            phone: document.getElementById('am-phone').value.trim(),
+            hostel: document.getElementById('am-hostel')?.value.trim() || null,
+            faculty: document.getElementById('am-faculty')?.value.trim() || null || null,
             programme: document.getElementById('am-programme').value.trim() || null,
           }),
         });
