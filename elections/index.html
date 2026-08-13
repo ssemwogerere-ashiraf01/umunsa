@@ -149,65 +149,49 @@
 
   async function renderPositions(election) {
     const pane = document.getElementById('pane-positions');
-
-    // Fetch whether the current user already has any candidacy for this election
-    const { data: myCandidacies, error: myCandsErr } = await supabase
+    // One application per election per user (DB unique index on election_id, user_id).
+    const { data: myCandidacies } = await supabase
       .from('candidates')
-      .select('position_id')
+      .select('position_id, positions(name)')
       .eq('election_id', election.id)
       .eq('user_id', profile.id);
+    const appliedFor = new Set((myCandidacies || []).map(c => c.position_id));
+    const alreadyApplied = (myCandidacies || []).length > 0;
+    const appliedPositionName = alreadyApplied
+      ? (myCandidacies[0].positions?.name || 'a position')
+      : null;
 
-    if (myCandsErr) {
-      pane.innerHTML = `<div class="empty">Could not check your applications: ${escapeHtml(myCandsErr.message)}</div>`;
-      return;
+    if (alreadyApplied) {
+      pane.insertAdjacentHTML('afterbegin', `<div class="alert alert-success" style="margin-bottom:1rem;">You have already applied for <strong>${escapeHtml(appliedPositionName)}</strong> in this election. Only one application per election is allowed.</div>`);
     }
 
-    const appliedPositions = new Set((myCandidacies || []).map(c => c.position_id));
-    const hasAppliedAny = appliedPositions.size > 0;
-
-    pane.innerHTML = positions.map(pos => {
-      const appliedThis = appliedPositions.has(pos.id);
-
-      // If member already applied for another position, hide the Apply button for all others
-      if (appliedThis) {
-        return `
-          <div class="position-card">
-            <h4>${escapeHtml(pos.name)}</h4>
-            ${pos.name_luganda ? `<p class="luganda">${escapeHtml(pos.name_luganda)} &middot; ${pos.category ? escapeHtml(pos.category) : ''} &middot; UGX ${Number(pos.application_fee).toLocaleString()}</p>` : ''}
-            <span class="pill pill-active">Application submitted</span>
-          </div>`;
+    // If we just inserted a notice, clear previous content carefully
+    const cardsHtml = positions.map(pos => {
+      let actionHtml;
+      if (appliedFor.has(pos.id)) {
+        actionHtml = `<span class="pill pill-active">Your application</span>`;
+      } else if (alreadyApplied) {
+        actionHtml = `<span class="pill pill-draft">Not available (you already applied for another position)</span>`;
+      } else if (election.status === 'draft' || election.status === 'closed') {
+        actionHtml = `<span class="pill pill-draft">Applications not open</span>`;
+      } else {
+        actionHtml = `<button type="button" class="btn btn-outline-light" style="background:var(--forest);color:#fff;" data-apply="${pos.id}">Apply for this position</button>
+               <div id="apply-form-${pos.id}" style="display:none;margin-top:0.75rem;">
+                 <textarea placeholder="Your manifesto (what will you do in this role?)" id="manifesto-${pos.id}" rows="3" style="width:100%;padding:0.6rem;border:1px solid var(--border);border-radius:6px;"></textarea>
+                 <button type="button" class="btn btn-gold" style="margin-top:0.5rem;" data-submit-apply="${pos.id}">Submit Application</button>
+               </div>`;
       }
-
-      if (hasAppliedAny) {
-        return `
-          <div class="position-card">
-            <h4>${escapeHtml(pos.name)}</h4>
-            ${pos.name_luganda ? `<p class="luganda">${escapeHtml(pos.name_luganda)} &middot; ${pos.category ? escapeHtml(pos.category) : ''} &middot; UGX ${Number(pos.application_fee).toLocaleString()}</p>` : ''}
-            <span class="pill pill-draft">You already applied for another position</span>
-          </div>`;
-      }
-
-      if (election.status === 'draft' || election.status === 'closed') {
-        return `
-          <div class="position-card">
-            <h4>${escapeHtml(pos.name)}</h4>
-            ${pos.name_luganda ? `<p class="luganda">${escapeHtml(pos.name_luganda)} &middot; ${pos.category ? escapeHtml(pos.category) : ''} &middot; UGX ${Number(pos.application_fee).toLocaleString()}</p>` : ''}
-            <span class="pill pill-draft">Applications not open</span>
-          </div>`;
-      }
-
-      // Otherwise render apply button and form
       return `
-        <div class="position-card">
-          <h4>${escapeHtml(pos.name)}</h4>
-          ${pos.name_luganda ? `<p class="luganda">${escapeHtml(pos.name_luganda)} &middot; ${pos.category ? escapeHtml(pos.category) : ''} &middot; UGX ${Number(pos.application_fee).toLocaleString()}</p>` : ''}
-          <button type="button" class="btn btn-outline-light" style="background:var(--forest);color:#fff;" data-apply="${pos.id}">Apply for this position</button>
-          <div id="apply-form-${pos.id}" style="display:none;margin-top:0.75rem;">
-            <textarea placeholder="Your manifesto (what will you do in this role?)" id="manifesto-${pos.id}" rows="3" style="width:100%;padding:0.6rem;border:1px solid var(--border);"></textarea>
-            <button type="button" class="btn btn-gold" style="margin-top:0.5rem;" data-submit-apply="${pos.id}">Submit Application</button>
-          </div>
-        </div>`;
+      <div class="position-card">
+        <h4>${escapeHtml(pos.name)}</h4>
+        ${pos.name_luganda ? `<p class="luganda">${escapeHtml(pos.name_luganda)} &middot; ${pos.category ? escapeHtml(pos.category) : ''} &middot; UGX ${Number(pos.application_fee).toLocaleString()} application fee</p>` : ''}
+        ${actionHtml}
+      </div>`;
     }).join('');
+
+    pane.innerHTML = (alreadyApplied
+      ? `<div class="alert alert-success" style="margin-bottom:1rem;">You have already applied for <strong>${escapeHtml(appliedPositionName)}</strong> in this election. Only one application per election is allowed.</div>`
+      : '') + cardsHtml;
 
     pane.querySelectorAll('[data-apply]').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -220,19 +204,6 @@
       btn.addEventListener('click', async () => {
         const posId = btn.dataset.submitApply;
         const manifesto = document.getElementById(`manifesto-${posId}`).value.trim();
-
-        // Re-check before attempting insert to avoid obvious duplicates
-        const { data: latestCands } = await supabase
-          .from('candidates')
-          .select('id')
-          .eq('election_id', election.id)
-          .eq('user_id', profile.id);
-        if ((latestCands || []).length > 0) {
-          alertBox.innerHTML = `<div class="alert alert-error">You have already applied for a position in this election. If you believe this is an error contact an admin.</div>`;
-          await renderPositions(election);
-          return;
-        }
-
         btn.disabled = true; btn.textContent = 'Submitting...';
         const { error } = await supabase.from('candidates').insert({
           election_id: election.id,
@@ -240,14 +211,11 @@
           position_id: posId,
           manifesto: manifesto || null,
         });
-
         if (error) {
-          // Handle unique constraint errors gracefully (race or DB enforcement)
-          if (String(error?.details || '').toLowerCase().includes('unique') || String(error?.message || '').toLowerCase().includes('unique')) {
-            alertBox.innerHTML = `<div class="alert alert-error">You have already applied for a position in this election. An admin can help if this looks wrong.</div>`;
-          } else {
-            alertBox.innerHTML = `<div class="alert alert-error">${escapeHtml(error.message)}</div>`;
-          }
+          const msg = (error.code === '23505' || /unique|duplicate/i.test(error.message))
+            ? 'You have already applied for a position in this election. Only one application per election is allowed.'
+            : error.message;
+          alertBox.innerHTML = `<div class="alert alert-error">${escapeHtml(msg)}</div>`;
           btn.disabled = false; btn.textContent = 'Submit Application';
         } else {
           alertBox.innerHTML = `<div class="alert alert-success">Application submitted. An admin will review and approve candidates before voting opens.</div>`;
