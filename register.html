@@ -39,6 +39,22 @@
           <input type="text" id="registration_number" placeholder="e.g. 2026-B101-10000" />
         </div>
         <div class="form-group">
+          <label for="hostel">Hall / Hostel</label>
+          <select id="hostel">
+            <option value="">Select (optional)</option>
+            <option value="Carabine">Carabine</option>
+            <option value="Wamala">Wamala</option>
+            <option value="Bossa">Bossa</option>
+            <option value="Nkozi">Nkozi</option>
+            <option value="Off-campus">Off-campus</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="faculty">Faculty / School</label>
+          <input type="text" id="faculty" placeholder="e.g. Faculty of Science" />
+        </div>
+        <div class="form-group">
           <label for="email">University email</label>
           <input type="email" id="email" required autocomplete="username" placeholder="yourname@umu.ac.ug" pattern=".+@([a-zA-Z0-9-]+\.)*umu\.ac\.ug$" title="Must be a university email on umu.ac.ug" />
         </div>
@@ -110,6 +126,8 @@
       fullName: document.getElementById('full_name').value.trim(),
       phone: document.getElementById('phone').value.trim(),
       registrationNumber: document.getElementById('registration_number').value.trim(),
+      hostel: document.getElementById('hostel').value.trim(),
+      faculty: document.getElementById('faculty').value.trim(),
       email: document.getElementById('email').value.trim(),
       password: document.getElementById('password').value,
     });
