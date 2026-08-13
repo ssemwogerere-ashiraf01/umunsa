@@ -1359,3 +1359,21 @@ body.login-page {
   min-height: 2.2rem;
   align-items: center;
 }
+
+
+/* Responsive admin / data tables */
+.table-scroll {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.data-table-wrap {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+[data-theme="dark"] .data-table tbody tr:hover {
+  background: #121a26;
+}
