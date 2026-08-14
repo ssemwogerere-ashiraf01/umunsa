@@ -3,12 +3,12 @@ export const BASE_URL = window.location.origin;
 
 export const SOCIAL_LINKS = {
   facebook: 'https://facebook.com/',
-  instagram: 'https://instagram.com/',
-  tiktok: 'https://www.tiktok.com/',
+  instagram: 'https://www.instagram.com/bugandankobazambogoumu?utm_source=qr&igsh=MTRwMzEyaG94dWJ0dw==',
+  tiktok: 'https://www.tiktok.com/@bankosa.umu7?_r=1&_t=ZS-98nIAB9e3hY',
   x: 'https://x.com/',
-  whatsapp: 'https://wa.me/',
+  whatsapp: 'https://chat.whatsapp.com/FK4ccQlPHS8ApwEBj8F0cq?s=cl&p=a&ilr=4',
   telegram: 'https://t.me/',
-  email: 'mailto:nsa@umu.ac.ug',
+  email: 'mailto:nkobazambogo.umu@gmail.com',
 };
 
 /** Theme: 'light' | 'dark' | 'system' : stored in localStorage as nsa-theme */
@@ -19,7 +19,7 @@ export const SITE_FULL_NAME = 'Uganda Martyrs University Nkobazambogo Students\'
 export const SITE_SHORT_SEAL = 'NSA';
 export const SITE_DESCRIPTION = 'The official home of the Nkobazambogo Students\' Association at Uganda Martyrs University, Nkozi: news, activities, projects, and discussions for our members.';
 export const DEFAULT_OG_IMAGE_PATH = '/assets/img/og-default.png';
-export const CANONICAL_ORIGIN = 'https://nkobazambogo-nsa.netlify.app';
+export const CANONICAL_ORIGIN = 'https://umunsa.vercel.app';
 
 /**
  * University email domain (no leading @).
