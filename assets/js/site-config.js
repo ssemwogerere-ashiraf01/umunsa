@@ -18,7 +18,7 @@ export const SITE_NAME = 'Nkobazambogo Students\' Association';
 export const SITE_FULL_NAME = 'Uganda Martyrs University Nkobazambogo Students\' Association';
 export const SITE_SHORT_SEAL = 'NSA';
 export const SITE_DESCRIPTION = 'The official home of the Nkobazambogo Students\' Association at Uganda Martyrs University, Nkozi: news, activities, projects, and discussions for our members.';
-export const DEFAULT_OG_IMAGE_PATH = '/assets/img/og-default.png';
+export const DEFAULT_OG_IMAGE_PATH = '/assets/img/og-default.jpg';
 export const CANONICAL_ORIGIN = 'https://umunsa.vercel.app';
 
 /**
