@@ -196,11 +196,11 @@
         actionHtml = `<button type="button" class="btn btn-outline-light" style="background:var(--forest);color:#fff;" data-apply="${pos.id}">Apply for this position</button>
                <div id="apply-form-${pos.id}" style="display:none;margin-top:0.75rem;">
                  <textarea placeholder="Your manifesto (what will you do in this role?)" id="manifesto-${pos.id}" rows="3" style="width:100%;padding:0.6rem;border:1px solid var(--border);border-radius:6px;margin-bottom:0.5rem;"></textarea>
-                 <label style="display:block;font-size:0.82rem;font-weight:600;margin:0.35rem 0 0.2rem;">CV / Resume (PDF or image)</label>
+                 <label style="display:block;font-size:0.82rem;font-weight:600;margin:0.35rem 0 0.2rem;">CV / Resume (optional — PDF or image)</label>
                  <input type="file" id="cv-${pos.id}" accept=".pdf,.doc,.docx,image/*" style="width:100%;font-size:0.85rem;margin-bottom:0.4rem;" />
                  <label style="display:block;font-size:0.82rem;font-weight:600;margin:0.35rem 0 0.2rem;">Certificate of former leadership (optional)</label>
                  <input type="file" id="cert-${pos.id}" accept=".pdf,.doc,.docx,image/*" style="width:100%;font-size:0.85rem;margin-bottom:0.4rem;" />
-                 <label style="display:block;font-size:0.82rem;font-weight:600;margin:0.35rem 0 0.2rem;">Application letter (PDF or image)</label>
+                 <label style="display:block;font-size:0.82rem;font-weight:600;margin:0.35rem 0 0.2rem;">Application letter (optional — PDF or image)</label>
                  <input type="file" id="letter-${pos.id}" accept=".pdf,.doc,.docx,image/*" style="width:100%;font-size:0.85rem;margin-bottom:0.5rem;" />
                  <button type="button" class="btn btn-gold" style="margin-top:0.5rem;" data-submit-apply="${pos.id}">Submit Application</button>
                </div>`;
@@ -243,15 +243,8 @@
         const cvFile = document.getElementById(`cv-${posId}`)?.files?.[0] || null;
         const certFile = document.getElementById(`cert-${posId}`)?.files?.[0] || null;
         const letterFile = document.getElementById(`letter-${posId}`)?.files?.[0] || null;
-        if (!cvFile) {
-          alertBox.innerHTML = `<div class="alert alert-error">Please upload your CV / resume.</div>`;
-          return;
-        }
-        if (!letterFile) {
-          alertBox.innerHTML = `<div class="alert alert-error">Please upload your application letter.</div>`;
-          return;
-        }
-        btn.disabled = true; btn.textContent = 'Uploading documents...';
+        btn.disabled = true;
+        btn.textContent = (cvFile || certFile || letterFile) ? 'Uploading documents...' : 'Submitting...';
         try {
           const [cv_url, leadership_certificate_url, application_letter_url] = await Promise.all([
             uploadElectionDoc(cvFile, 'cv'),
@@ -277,7 +270,7 @@
             alertBox.innerHTML = `<div class="alert alert-error">${escapeHtml(msg)}</div>`;
             btn.disabled = false; btn.textContent = 'Submit Application';
           } else {
-            alertBox.innerHTML = `<div class="alert alert-success">Application submitted with your documents. An admin will review and approve candidates before voting opens.</div>`;
+            alertBox.innerHTML = `<div class="alert alert-success">Application submitted. An admin will review and approve candidates before voting opens.</div>`;
             await renderPositions(election);
           }
         } catch (err) {
