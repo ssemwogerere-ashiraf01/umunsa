@@ -148,6 +148,8 @@
       <button class="tab-btn" data-tab="elections">Elections</button>
       <button class="tab-btn" data-tab="feedback">Feedback</button>
       <button class="tab-btn" data-tab="contact">Contact Messages</button>
+      <button class="tab-btn" data-tab="leadership">Leadership</button>
+      <button class="tab-btn" data-tab="settings">Settings</button>
       <a href="./super-admin.html" class="tab-btn" style="text-decoration:none; display:inline-flex; align-items:center;" id="super-admin-link" title="Assigning admins, club settings, and adding members outside umu.ac.ug are Super Admin tasks">Super Admin ↗</a>
     </div>
 
@@ -256,7 +258,7 @@
       </div>
       <div class="card">
         <h3 style="margin-top:0;">Elections &amp; Candidate Approval</h3>
-        <p style="font-size:0.85rem;color:var(--text-muted);">Approve applicants below. Setting an election to "active" opens voting. Closing an election and promoting winners to the Leadership page is a Super Admin action.</p>
+        <p style="font-size:0.85rem;color:var(--text-muted);">Approve applicants below. Use <strong>Terminate applications</strong> to stop new candidacies. Setting status to "active" opens voting. Closing an election and promoting winners is a Super Admin action.</p>
         <div id="elections-list"></div>
       </div>
     </div>
@@ -290,6 +292,61 @@ Preferred meeting day (multiple_choice: Monday, Wednesday, Friday)"></textarea>
         <div id="contact-list"></div>
       </div>
     </div>
+
+    <!-- LEADERSHIP -->
+    <div class="tab-panel" id="tab-leadership">
+      <div class="card">
+        <h3 style="margin-top:0;">Leadership · Current term 2025/26</h3>
+        <p style="font-size:0.85rem;color:var(--text-muted);">Add or edit current and previous executive members shown on the public Leadership page. Mark <strong>Current</strong> for the 2025/26 committee; uncheck it for past terms.</p>
+        <div id="leadership-alert"></div>
+        <form id="leader-form" class="form-row-2" style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:1rem;">
+          <input type="hidden" id="leader-id" value="" />
+          <div class="form-group" style="grid-column:1/-1;"><label>Full name</label><input type="text" id="leader-name" required placeholder="Leader's full name" /></div>
+          <div class="form-group"><label>Position</label><input type="text" id="leader-position" required placeholder="e.g. Chairperson" /></div>
+          <div class="form-group"><label>Term label</label><input type="text" id="leader-term-label" placeholder="e.g. 2025/26" value="2025/26" /></div>
+          <div class="form-group"><label>Term start</label><input type="date" id="leader-term-start" /></div>
+          <div class="form-group"><label>Term end</label><input type="date" id="leader-term-end" /></div>
+          <div class="form-group"><label>Photo URL (optional)</label><input type="url" id="leader-photo" placeholder="https://..." /></div>
+          <div class="form-group"><label>Display order</label><input type="number" id="leader-order" value="0" /></div>
+          <div class="form-group" style="grid-column:1/-1;"><label>Bio (optional)</label><textarea id="leader-bio" rows="2"></textarea></div>
+          <div class="form-group" style="grid-column:1/-1;">
+            <label><input type="checkbox" id="leader-is-current" checked /> Current term (2025/26)</label>
+          </div>
+          <div style="grid-column:1/-1;display:flex;gap:0.5rem;flex-wrap:wrap;">
+            <button type="submit" class="mini-btn good" id="leader-save-btn">Save leader</button>
+            <button type="button" class="mini-btn" id="leader-reset-btn" style="background:#eef1f5;">Clear form</button>
+          </div>
+        </form>
+        <h4>Current · 2025/26</h4>
+        <div id="leaders-current-list"></div>
+        <h4 style="margin-top:1.25rem;">Previous terms</h4>
+        <div id="leaders-past-list"></div>
+      </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div class="tab-panel" id="tab-settings">
+      <div class="card">
+        <h3 style="margin-top:0;">Admin settings</h3>
+        <p style="font-size:0.85rem;color:var(--text-muted);">Control membership approval and related operational options. Changes apply to new registrations immediately.</p>
+        <div id="settings-alert"></div>
+        <div class="form-group" style="margin:1rem 0;">
+          <label style="display:flex;align-items:flex-start;gap:0.65rem;cursor:pointer;">
+            <input type="checkbox" id="setting-auto-approve" style="margin-top:0.2rem;" />
+            <span>
+              <strong>Allow registration without manual approval</strong><br />
+              <span style="font-size:0.85rem;color:var(--text-muted);font-weight:400;">When on, new members who register with a valid @umu.ac.ug email become <em>active</em> immediately. When off (default), they stay <em>pending</em> until an admin approves them.</span>
+            </span>
+          </label>
+        </div>
+        <div class="form-group">
+          <label for="setting-term-label">Current leadership term label</label>
+          <input type="text" id="setting-term-label" value="2025/26" placeholder="2025/26" />
+        </div>
+        <button type="button" class="mini-btn good" id="settings-save-btn">Save settings</button>
+      </div>
+    </div>
+
   </main>
 
   <div id="app-footer"></div>
@@ -633,22 +690,33 @@ Preferred meeting day (multiple_choice: Monday, Wednesday, Friday)"></textarea>
 
     async function loadElections() {
       const { data: elections } = await supabase.from('elections').select('*').order('start_date', { ascending: false });
-      document.getElementById('elections-list').innerHTML = (elections || []).map(el => `
-        <div class="card" style="background:#f8fafc;">
+      document.getElementById('elections-list').innerHTML = (elections || []).map(el => {
+        const appsOpen = el.accepting_applications !== false;
+        return `
+        <div class="card" style="background:var(--paper);border:1px solid var(--border);">
           <div style="display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;">
-            <strong>${escapeHtml(el.title)}</strong>
-            <div style="display:flex;gap:0.5rem;align-items:center;">
+            <div>
+              <strong>${escapeHtml(el.title)}</strong>
+              <div style="font-size:0.8rem;color:var(--text-muted);margin-top:0.2rem;">
+                Applications: ${appsOpen ? '<span class="pill pill-active">Open</span>' : '<span class="pill pill-rejected">Closed</span>'}
+              </div>
+            </div>
+            <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">
               ${pill(el.status)}
               <select class="action-select" id="election-status-${el.id}">
                 <option value="draft">Draft</option>
                 <option value="upcoming">Upcoming</option>
-                <option value="active">Active</option>
+                <option value="active">Active (voting)</option>
               </select>
-              <button class="mini-btn good" data-set-status="${el.id}">Update</button>
+              <button class="mini-btn good" data-set-status="${el.id}">Update status</button>
+              ${appsOpen
+                ? `<button class="mini-btn bad" data-close-apps="${el.id}">Terminate applications</button>`
+                : `<button class="mini-btn good" data-open-apps="${el.id}">Re-open applications</button>`}
             </div>
           </div>
           <div id="candidates-${el.id}" style="margin-top:0.75rem;">Loading candidates...</div>
-        </div>`).join('') || '<p style="color:var(--text-muted);">No elections yet.</p>';
+        </div>`;
+      }).join('') || '<p style="color:var(--text-muted);">No elections yet.</p>';
 
       document.querySelectorAll('[id^="election-status-"]').forEach(sel => {
         const id = sel.id.replace('election-status-', '');
@@ -660,6 +728,16 @@ Preferred meeting day (multiple_choice: Monday, Wednesday, Friday)"></textarea>
         const id = btn.dataset.setStatus;
         const status = document.getElementById(`election-status-${id}`).value;
         const { error } = await supabase.from('elections').update({ status }).eq('id', id);
+        if (error) alert(error.message); else await loadElections();
+      }));
+
+      document.querySelectorAll('[data-close-apps]').forEach(btn => btn.addEventListener('click', async () => {
+        if (!confirm('Terminate candidacy applications for this election? Members will no longer be able to apply for positions.')) return;
+        const { error } = await supabase.from('elections').update({ accepting_applications: false }).eq('id', btn.dataset.closeApps);
+        if (error) alert(error.message); else await loadElections();
+      }));
+      document.querySelectorAll('[data-open-apps]').forEach(btn => btn.addEventListener('click', async () => {
+        const { error } = await supabase.from('elections').update({ accepting_applications: true }).eq('id', btn.dataset.openApps);
         if (error) alert(error.message); else await loadElections();
       }));
 
@@ -737,7 +815,155 @@ Preferred meeting day (multiple_choice: Monday, Wednesday, Friday)"></textarea>
       }));
     }
 
-    await Promise.all([loadStats(), loadMembers(), loadNews(), loadActivities(), loadProjects(), loadForumModeration(), loadElections(), loadFeedback(), loadContactMessages()]);
+
+    // ---------- Leadership CRUD ----------
+    function resetLeaderForm() {
+      document.getElementById('leader-id').value = '';
+      document.getElementById('leader-name').value = '';
+      document.getElementById('leader-position').value = '';
+      document.getElementById('leader-term-label').value = '2025/26';
+      document.getElementById('leader-term-start').value = '';
+      document.getElementById('leader-term-end').value = '';
+      document.getElementById('leader-photo').value = '';
+      document.getElementById('leader-order').value = '0';
+      document.getElementById('leader-bio').value = '';
+      document.getElementById('leader-is-current').checked = true;
+      document.getElementById('leader-save-btn').textContent = 'Save leader';
+    }
+    document.getElementById('leader-reset-btn')?.addEventListener('click', resetLeaderForm);
+
+    async function loadLeadership() {
+      const { data, error } = await supabase
+        .from('leaders')
+        .select('id, full_name, position, bio, photo_url, term_start, term_end, term_label, is_current, display_order, user_id')
+        .order('display_order');
+      if (error) {
+        document.getElementById('leaders-current-list').innerHTML = `<p class="alert alert-error">${escapeHtml(error.message)}</p>`;
+        return;
+      }
+      const current = (data || []).filter(l => l.is_current);
+      const past = (data || []).filter(l => !l.is_current);
+      const row = (l) => `
+        <div style="display:flex;justify-content:space-between;gap:0.75rem;flex-wrap:wrap;padding:0.65rem 0;border-bottom:1px solid var(--border);align-items:center;">
+          <div>
+            <strong>${escapeHtml(l.full_name || '—')}</strong>
+            <span style="color:var(--text-muted);"> · ${escapeHtml(l.position || '')}</span>
+            <div style="font-size:0.8rem;color:var(--text-muted);">${escapeHtml(l.term_label || (l.is_current ? '2025/26' : '—'))}</div>
+          </div>
+          <div style="display:flex;gap:0.4rem;">
+            <button type="button" class="mini-btn" data-edit-leader="${l.id}" style="background:#eef1f5;">Edit</button>
+            <button type="button" class="mini-btn bad" data-del-leader="${l.id}">Delete</button>
+          </div>
+        </div>`;
+      document.getElementById('leaders-current-list').innerHTML = current.map(row).join('') || '<p style="color:var(--text-muted);">No current leaders yet.</p>';
+      document.getElementById('leaders-past-list').innerHTML = past.map(row).join('') || '<p style="color:var(--text-muted);">No previous-term leaders yet.</p>';
+
+      document.querySelectorAll('[data-edit-leader]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const l = (data || []).find(x => x.id === btn.dataset.editLeader);
+          if (!l) return;
+          document.getElementById('leader-id').value = l.id;
+          document.getElementById('leader-name').value = l.full_name || '';
+          document.getElementById('leader-position').value = l.position || '';
+          document.getElementById('leader-term-label').value = l.term_label || (l.is_current ? '2025/26' : '');
+          document.getElementById('leader-term-start').value = l.term_start || '';
+          document.getElementById('leader-term-end').value = l.term_end || '';
+          document.getElementById('leader-photo').value = l.photo_url || '';
+          document.getElementById('leader-order').value = l.display_order ?? 0;
+          document.getElementById('leader-bio').value = l.bio || '';
+          document.getElementById('leader-is-current').checked = !!l.is_current;
+          document.getElementById('leader-save-btn').textContent = 'Update leader';
+        });
+      });
+      document.querySelectorAll('[data-del-leader]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          if (!confirm('Delete this leadership record?')) return;
+          const { error: delErr } = await supabase.from('leaders').delete().eq('id', btn.dataset.delLeader);
+          if (delErr) alert(delErr.message); else await loadLeadership();
+        });
+      });
+    }
+
+    document.getElementById('leader-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const alertBox = document.getElementById('leadership-alert');
+      const id = document.getElementById('leader-id').value.trim();
+      const payload = {
+        full_name: document.getElementById('leader-name').value.trim(),
+        position: document.getElementById('leader-position').value.trim(),
+        term_label: document.getElementById('leader-term-label').value.trim() || null,
+        term_start: document.getElementById('leader-term-start').value || null,
+        term_end: document.getElementById('leader-term-end').value || null,
+        photo_url: document.getElementById('leader-photo').value.trim() || null,
+        display_order: Number(document.getElementById('leader-order').value) || 0,
+        bio: document.getElementById('leader-bio').value.trim() || null,
+        is_current: document.getElementById('leader-is-current').checked,
+      };
+      let error;
+      if (id) {
+        ({ error } = await supabase.from('leaders').update(payload).eq('id', id));
+      } else {
+        ({ error } = await supabase.from('leaders').insert(payload));
+      }
+      if (error) {
+        alertBox.innerHTML = `<div class="alert alert-error">${escapeHtml(error.message)}</div>`;
+        return;
+      }
+      alertBox.innerHTML = `<div class="alert alert-success">Leader saved.</div>`;
+      resetLeaderForm();
+      await loadLeadership();
+    });
+
+    // ---------- Admin settings (auto-approve) ----------
+    function parseSettingBool(val) {
+      if (typeof val === 'boolean') return val;
+      if (val && typeof val === 'object' && 'value' in val) return parseSettingBool(val.value);
+      if (typeof val === 'string') return val === 'true' || val === '1';
+      return !!val;
+    }
+    function parseSettingString(val, fallback) {
+      if (val == null) return fallback;
+      if (typeof val === 'string') return val.replace(/^"|"$/g, '') || fallback;
+      if (typeof val === 'object') return String(val).replace(/^"|"$/g, '') || fallback;
+      return String(val);
+    }
+
+    async function loadAdminSettings() {
+      const { data } = await supabase.from('club_settings').select('key, value').in('key', ['auto_approve_members', 'current_leadership_term']);
+      const map = {};
+      (data || []).forEach(r => { map[r.key] = r.value; });
+      const cb = document.getElementById('setting-auto-approve');
+      if (cb) cb.checked = parseSettingBool(map.auto_approve_members);
+      const term = document.getElementById('setting-term-label');
+      if (term) term.value = parseSettingString(map.current_leadership_term, '2025/26');
+    }
+
+    document.getElementById('settings-save-btn')?.addEventListener('click', async () => {
+      const alertBox = document.getElementById('settings-alert');
+      const auto = !!document.getElementById('setting-auto-approve')?.checked;
+      const termLabel = (document.getElementById('setting-term-label')?.value || '2025/26').trim();
+      const rows = [
+        { key: 'auto_approve_members', value: auto, updated_by: me.id },
+        { key: 'current_leadership_term', value: termLabel, updated_by: me.id },
+      ];
+      let failed = false;
+      for (const row of rows) {
+        const { data: existing } = await supabase.from('club_settings').select('key').eq('key', row.key).maybeSingle();
+        let error;
+        if (existing) {
+          ({ error } = await supabase.from('club_settings').update({ value: row.value, updated_by: row.updated_by }).eq('key', row.key));
+        } else {
+          ({ error } = await supabase.from('club_settings').insert(row));
+        }
+        if (error) { failed = true; console.error(error); }
+      }
+      alertBox.innerHTML = failed
+        ? `<div class="alert alert-error">Could not save some settings. If this persists, ask a Super Admin to confirm club_settings write access for admins.</div>`
+        : `<div class="alert alert-success">Settings saved. ${auto ? 'New registrations will be auto-approved.' : 'New registrations will require manual approval.'}</div>`;
+    });
+
+    await Promise.all([loadStats(), loadMembers(), loadNews(), loadActivities(), loadProjects(), loadForumModeration(), loadElections(), loadFeedback(), loadContactMessages(), loadLeadership(), loadAdminSettings()]);
+
   </script>
 </body>
 </html>
