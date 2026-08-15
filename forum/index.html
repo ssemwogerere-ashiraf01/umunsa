@@ -4,14 +4,14 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta name="robots" content="noindex, nofollow" />
-<title>Forum: Nkobazambogo Students' Association</title>
-<meta name="description" content="Member discussion forum for the Nkobazambogo Students" />
+<title>Elections: Nkobazambogo Students' Association</title>
+<meta name="description" content="The official home of the Nkobazambogo Students' Association at Uganda Martyrs University, Nkozi: news, activities, projects, and membership." />
 <!-- Social / Open Graph (link previews) -->
 <meta property="og:site_name" content="Nkobazambogo Students' Association" />
 <meta property="og:type" content="website" />
-<meta property="og:title" content="Forum: Nkobazambogo Students' Association" />
-<meta property="og:description" content="Member discussion forum for the Nkobazambogo Students" />
-<meta property="og:url" content="https://umunsa.vercel.app/forum/index.html" />
+<meta property="og:title" content="Elections: Nkobazambogo Students' Association" />
+<meta property="og:description" content="The official home of the Nkobazambogo Students' Association at Uganda Martyrs University, Nkozi: news, activities, projects, and membership." />
+<meta property="og:url" content="https://umunsa.vercel.app/elections/index.html" />
 <meta property="og:image" content="https://umunsa.vercel.app/assets/img/og-default.jpg" />
 <meta property="og:image:secure_url" content="https://umunsa.vercel.app/assets/img/og-default.jpg" />
 <meta property="og:image:type" content="image/jpeg" />
@@ -19,153 +19,53 @@
 <meta property="og:image:height" content="630" />
 <meta property="og:image:alt" content="Nkobazambogo Students' Association" />
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="Forum: Nkobazambogo Students' Association" />
-<meta name="twitter:description" content="Member discussion forum for the Nkobazambogo Students" />
+<meta name="twitter:title" content="Elections: Nkobazambogo Students' Association" />
+<meta name="twitter:description" content="The official home of the Nkobazambogo Students' Association at Uganda Martyrs University, Nkozi: news, activities, projects, and membership." />
 <meta name="twitter:image" content="https://umunsa.vercel.app/assets/img/og-default.jpg" />
 
 <link rel="stylesheet" href="../assets/css/style.css" />
 <style>
-  .forum-layout { display:grid; grid-template-columns: 320px 1fr; gap:1.5rem; align-items:start; }
-  .forum-panel { background:var(--paper); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); }
-  .forum-panel h3 { margin-top:0; }
-  .forum-sidebar { position: sticky; top: 1rem; }
-  .forum-topic-list { display:flex; flex-direction:column; gap:0.75rem; }
-  .forum-topic-btn {
-    width:100%; text-align:left; border:1px solid var(--border); background:#fff; border-radius:12px; padding:0.9rem 1rem; cursor:pointer; font-family:inherit;
-  }
-  .forum-topic-btn:hover { background:#faf8f2; }
-  .forum-topic-btn.active { border-color:var(--gold); box-shadow:0 0 0 3px rgba(201,162,39,0.12); }
-  .forum-topic-title { font-weight:700; color:var(--ink-navy); margin:0 0 0.25rem; }
-  .forum-topic-meta { font-size:0.8rem; color:var(--text-muted); }
-  .forum-topic-preview { margin-top:0.45rem; color:var(--text); font-size:0.88rem; line-height:1.45; }
-  .forum-topic-preview-full[hidden], .forum-topic-preview-short[hidden] { display:none; }
-  .forum-topic-toggle {
-    margin-top:0.45rem;
-    border:0;
-    background:none;
-    color:var(--gold);
-    padding:0;
-    font:inherit;
-    font-weight:700;
-    cursor:pointer;
-  }
-  .forum-main { display:flex; flex-direction:column; gap:1.25rem; }
-  .forum-post-card { padding:1.5rem; }
-  .forum-post-body { white-space:pre-wrap; color:var(--text); }
-  .forum-post-body-short[hidden], .forum-post-body-full[hidden] { display:none; }
-  .reply-marquee {
-    overflow:hidden;
-    border-top:1px solid var(--border);
-    border-bottom:1px solid var(--border);
-    padding:1rem 0;
-    background:linear-gradient(180deg, #fff, #fbfaf5);
-  }
-  .reply-track {
-    display:grid;
-    grid-template-columns: 1fr 1fr;
-    gap:1rem;
-    padding-bottom:0.25rem;
-  }
-  .reply-card {
-    background:var(--paper);
-    border:1px solid var(--border);
-    border-radius:14px;
-    padding:1rem;
-    box-shadow:var(--shadow);
-  }
-  .reply-author { display:flex; align-items:center; gap:0.75rem; margin-bottom:0.65rem; }
-  .reply-avatar { width:40px; height:40px; border-radius:50%; overflow:hidden; background:var(--gold); color:var(--ink-navy); display:flex; align-items:center; justify-content:center; font-weight:700; flex-shrink:0; }
-  .reply-avatar img { width:100%; height:100%; object-fit:cover; }
-  .reply-name { font-weight:700; color:var(--ink-navy); margin:0; font-size:0.92rem; }
-  .reply-time { font-size:0.78rem; color:var(--text-muted); }
-  .reply-content { margin:0; color:var(--text); font-size:0.9rem; line-height:1.55; white-space:pre-wrap; }
-  .reply-content-short[hidden], .reply-content-full[hidden] { display:none; }
-  .reply-toggle {
-    margin-top:0.65rem;
-    border:0;
-    background:none;
-    color:var(--gold);
-    padding:0;
-    font:inherit;
-    font-weight:700;
-    cursor:pointer;
-  }
-  .topic-form textarea, .reply-form textarea {
-    width:100%; padding:0.75rem 0.9rem; border:1px solid var(--border); border-radius:var(--radius); font-family:inherit; font-size:0.95rem;
-  }
-  .forum-meta { display:flex; gap:0.6rem; flex-wrap:wrap; align-items:center; color:var(--text-muted); font-size:0.82rem; }
-  .forum-badge { display:inline-block; padding:0.2rem 0.55rem; border-radius:999px; font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.03em; }
-  .forum-badge-active { background:#eaf4ec; color:#1f4b3f; }
-  .forum-badge-locked { background:#fdecec; color:#9c2b2b; }
-  .forum-empty { text-align:center; color:var(--text-muted); padding:1.5rem 0; }
-  @media (max-width: 900px) {
-    .forum-layout { grid-template-columns:1fr; }
-    .forum-sidebar { position: static; }
-  }
-  @media (max-width: 640px) {
-    .reply-track { grid-template-columns: 1fr; }
-  }
+  .page-header { background: var(--paper); border-bottom: 1px solid var(--border); padding: 2.5rem 2rem; text-align: center; }
+  .page-header h1 { margin: 0 0 0.25rem; font-size: 1.8rem; }
+  .page-header p { color: var(--text-muted); margin: 0; }
+  .elections-wrap { max-width: 900px; margin: 0 auto; }
+  .election-picker { display:flex; gap:0.75rem; flex-wrap:wrap; margin: 1.5rem 0; }
+  .election-picker button { padding:0.55rem 1.1rem; border:1px solid var(--border); background:var(--paper); border-radius:20px; cursor:pointer; font-weight:600; font-size:0.85rem; }
+  .election-picker button.active { background:var(--forest); color:#fff; border-color:var(--forest); }
+  .pill { display:inline-block; padding:0.15rem 0.6rem; border-radius:12px; font-size:0.75rem; font-weight:600; }
+  .pill-draft { background:#eef1f5; color:#55605c; }
+  .pill-upcoming { background:#eaf0fd; color:#2a4d9c; }
+  .pill-active { background:#eaf4ec; color:#1f4b3f; }
+  .pill-closed { background:#fdecec; color:#9c2b2b; }
+  .tab-strip { display:flex; gap:0.5rem; border-bottom: 2px solid var(--border); margin: 1.5rem 0 1.25rem; }
+  .tab-strip button { padding: 0.6rem 1rem; border:none; background:none; font-weight:600; cursor:pointer; color:var(--text-muted); border-bottom: 3px solid transparent; }
+  .tab-strip button.active { color: var(--forest); border-bottom-color: var(--gold); }
+  .tab-pane { display:none; }
+  .tab-pane.active { display:block; }
+  .position-card { background: var(--paper); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1rem; }
+  .position-card h4 { margin: 0 0 0.2rem; }
+  .position-card .luganda { color: var(--text-muted); font-size: 0.85rem; margin: 0 0 0.5rem; }
+  .candidate-row { display:flex; justify-content:space-between; align-items:center; gap:0.75rem; padding: 0.6rem 0; border-top: 1px solid var(--border); }
+  .candidate-row:first-of-type { border-top: none; }
+  .empty { text-align:center; color:var(--text-muted); padding:2.5rem 0; }
 </style>
 </head>
 <body>
 <div id="app-nav"></div>
 
-<div class="section">
-  <div class="section-head" style="text-align:left;margin-left:0;max-width:none;">
-    <span class="eyebrow">Forum</span>
-    <h2 style="margin:0;">What our members say about this post</h2>
-    <p style="color:var(--text-muted);max-width:760px;">Start a discussion, read the main post, and follow the replies underneath. Approved members can post new topics and respond to existing ones.</p>
-  </div>
+<div class="page-header">
+  <span class="eyebrow">Association</span>
+  <h1>Elections</h1>
+  <p>Apply for a leadership position or cast your vote when an election is open.</p>
+</div>
 
-  <div id="alert-box"></div>
+<div class="section" style="padding-top:0;">
+  <div class="elections-wrap">
+    <div id="alert-box"></div>
+    <div id="election-picker" class="election-picker"></div>
 
-  <div class="forum-layout">
-    <div class="forum-sidebar forum-panel" style="padding:1.2rem;">
-      <h3>Start a post</h3>
-      <p id="topic-permission-note" style="color:var(--text-muted);margin-top:-0.25rem;"></p>
-      <form id="topic-form" class="topic-form">
-        <div class="form-group">
-          <label for="topic-title">Title</label>
-          <input type="text" id="topic-title" required placeholder="Best Practices for Managing Localhost Admin Panels" />
-        </div>
-        <div class="form-group">
-          <label for="topic-category">Category</label>
-          <input type="text" id="topic-category" placeholder="Admin, Database, Security" />
-        </div>
-        <div class="form-group">
-          <label for="topic-content">Post content</label>
-          <textarea id="topic-content" rows="9" required placeholder="Write your question or discussion here..."></textarea>
-        </div>
-        <button type="submit" class="btn btn-gold btn-block" id="topic-submit-btn">Publish Post</button>
-      </form>
-
-      <div style="margin-top:1.5rem;">
-        <h3 style="margin-bottom:0.8rem;">Recent posts</h3>
-        <div id="topics-list" class="forum-topic-list"></div>
-      </div>
-    </div>
-
-    <div class="forum-main">
-      <div id="topic-detail" class="forum-panel forum-post-card">
-        <div class="forum-empty">Loading forum posts...</div>
-      </div>
-
-      <div class="forum-panel" style="padding:1.2rem;">
-        <h3 style="margin-bottom:0.2rem;">What our members say about this post</h3>
-        <p style="color:var(--text-muted);margin-top:0;">Replies and comments appear here in a scrolling strip for quick browsing.</p>
-        <div id="replies-marquee" class="reply-marquee"><div class="forum-empty">Loading replies...</div></div>
-      </div>
-
-      <div class="forum-panel" style="padding:1.2rem;">
-        <h3 style="margin-top:0;">Add your response</h3>
-        <form id="reply-form" class="reply-form">
-          <div class="form-group">
-            <label for="reply-content">Your reply</label>
-            <textarea id="reply-content" rows="5" required placeholder="Share your thoughts, advice, or answer here..."></textarea>
-          </div>
-          <button type="submit" class="btn btn-gold" id="reply-submit-btn">Post Reply</button>
-        </form>
-      </div>
+    <div id="election-detail">
+      <div class="empty">Loading elections...</div>
     </div>
   </div>
 </div>
@@ -177,312 +77,352 @@
   import { mountNav, mountFooter } from '../assets/js/nav.js';
   import { requireApprovedMember } from '../assets/js/session-guard.js';
 
-  mountNav('forum');
+  mountNav('elections');
   mountFooter();
 
   const profile = await requireApprovedMember();
   if (!profile) throw new Error('redirecting');
 
   const alertBox = document.getElementById('alert-box');
-  const topicsList = document.getElementById('topics-list');
-  const topicDetail = document.getElementById('topic-detail');
-  const repliesMarquee = document.getElementById('replies-marquee');
-  const topicForm = document.getElementById('topic-form');
-  const replyForm = document.getElementById('reply-form');
-  const topicPermissionNote = document.getElementById('topic-permission-note');
+  const picker = document.getElementById('election-picker');
+  const detail = document.getElementById('election-detail');
 
-  let topics = [];
-  let selectedTopicId = new URLSearchParams(window.location.search).get('topic') || '';
-  const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin';
+  let elections = [];
+  let positions = [];
+  let selectedElectionId = null;
+  let activeTab = 'positions';
 
-  topicPermissionNote.textContent = 'Any active member can start a new discussion. Admins can moderate or remove posts.';
+  const { data: positionsData } = await supabase.from('positions').select('*').order('display_order');
+  positions = positionsData || [];
 
-  await loadForum();
+  const { data: electionsData, error: electionsErr } = await supabase
+    .from('elections')
+    .select('*')
+    .order('start_date', { ascending: false });
 
-  topicForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const btn = document.getElementById('topic-submit-btn');
-    btn.disabled = true;
-    btn.textContent = 'Publishing...';
-
-    const title = document.getElementById('topic-title').value.trim();
-    const category = document.getElementById('topic-category').value.trim();
-    const content = document.getElementById('topic-content').value.trim();
-
-    const { data, error } = await supabase.from('forum_topics').insert({
-      title,
-      category: category || null,
-      content,
-      author_id: profile.id,
-    }).select('id').single();
-
-    if (error) {
-      showAlert(error.message, 'error');
-    } else {
-      topicForm.reset();
-      selectedTopicId = data.id;
-      showAlert('Post published. Members can now read and reply.', 'success');
-      await loadForum();
-    }
-
-    btn.disabled = false;
-    btn.textContent = 'Publish Post';
-  });
-
-  replyForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    if (!selectedTopicId) return;
-
-    const btn = document.getElementById('reply-submit-btn');
-    const replyText = document.getElementById('reply-content').value.trim();
-    if (!replyText) return;
-
-    btn.disabled = true;
-    btn.textContent = 'Posting...';
-
-    const { error } = await supabase.from('forum_replies').insert({
-      topic_id: selectedTopicId,
-      content: replyText,
-      author_id: profile.id,
-    });
-
-    if (error) {
-      showAlert(error.message, 'error');
-    } else {
-      document.getElementById('reply-content').value = '';
-      showAlert('Your reply was posted.', 'success');
-      await loadTopicDetail();
-    }
-
-    btn.disabled = false;
-    btn.textContent = 'Post Reply';
-  });
-
-  async function loadForum() {
-    const { data, error } = await supabase
-      .from('forum_topics')
-      .select('id, title, category, content, created_at, is_locked, author_id')
-      
-      .order('created_at', { ascending: false })
-      .limit(20);
-
-    if (error) {
-      showAlert(error.message, 'error');
-      topicsList.innerHTML = `<div class="forum-empty">Could not load posts.</div>`;
-      return;
-    }
-
-    topics = data || [];
-    for (const topic of topics) {
-      topic.author = await loadForumAuthor(topic.author_id);
-    }
-    if (!selectedTopicId && topics.length) selectedTopicId = topics[0].id;
-    if (selectedTopicId && !topics.some(topic => topic.id === selectedTopicId) && topics.length) selectedTopicId = topics[0].id;
-
-    renderTopicsList();
-    await loadTopicDetail();
+  if (electionsErr) {
+    detail.innerHTML = `<div class="empty">Could not load elections: ${escapeHtml(electionsErr.message)}</div>`;
+    throw new Error('load failed');
   }
 
-  function renderTopicsList() {
-    if (!topics.length) {
-      topicsList.innerHTML = `<div class="forum-empty">No forum posts yet. Be the first to start one.</div>`;
-      return;
+  elections = electionsData || [];
+
+  if (!elections.length) {
+    detail.innerHTML = `<div class="empty">No elections have been scheduled yet. Check back later.</div>`;
+    throw new Error('nothing to show');
+  }
+
+  selectedElectionId = elections[0].id;
+  renderPicker();
+  await renderDetail();
+
+  function renderPicker() {
+    picker.innerHTML = elections.map(el => `
+      <button type="button" data-id="${el.id}" class="${el.id === selectedElectionId ? 'active' : ''}">
+        ${escapeHtml(el.title)} <span class="pill pill-${el.status}">${escapeHtml(el.status)}</span>
+      </button>
+    `).join('');
+    picker.querySelectorAll('button').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        selectedElectionId = btn.dataset.id;
+        renderPicker();
+        await renderDetail();
+      });
+    });
+  }
+
+  async function renderDetail() {
+    const election = elections.find(e => e.id === selectedElectionId);
+    if (!election) return;
+
+    detail.innerHTML = `
+      <p style="color:var(--text-muted);">${escapeHtml(election.description || '')}</p>
+      <p style="font-size:0.85rem;color:var(--text-muted);">
+        Voting window: ${new Date(election.start_date).toLocaleString()} &rarr; ${new Date(election.end_date).toLocaleString()}
+      </p>
+      <div class="tab-strip">
+        <button type="button" data-tab="positions" class="${activeTab === 'positions' ? 'active' : ''}">Positions &amp; Apply</button>
+        <button type="button" data-tab="candidates" class="${activeTab === 'candidates' ? 'active' : ''}">Candidates</button>
+        <button type="button" data-tab="vote" class="${activeTab === 'vote' ? 'active' : ''}">Vote</button>
+        <button type="button" data-tab="results" class="${activeTab === 'results' ? 'active' : ''}">Results</button>
+      </div>
+      <div id="pane-positions" class="tab-pane ${activeTab === 'positions' ? 'active' : ''}"></div>
+      <div id="pane-candidates" class="tab-pane ${activeTab === 'candidates' ? 'active' : ''}"></div>
+      <div id="pane-vote" class="tab-pane ${activeTab === 'vote' ? 'active' : ''}"></div>
+      <div id="pane-results" class="tab-pane ${activeTab === 'results' ? 'active' : ''}"></div>
+    `;
+
+    detail.querySelectorAll('.tab-strip button').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        activeTab = btn.dataset.tab;
+        await renderDetail();
+      });
+    });
+
+    if (activeTab === 'positions') await renderPositions(election);
+    if (activeTab === 'candidates') await renderCandidates(election);
+    if (activeTab === 'vote') await renderVote(election);
+    if (activeTab === 'results') await renderResults(election);
+  }
+
+  async function renderPositions(election) {
+    const pane = document.getElementById('pane-positions');
+    // One application per election per user (DB unique index on election_id, user_id).
+    const { data: myCandidacies } = await supabase
+      .from('candidates')
+      .select('position_id, positions(name)')
+      .eq('election_id', election.id)
+      .eq('user_id', profile.id);
+    const appliedFor = new Set((myCandidacies || []).map(c => c.position_id));
+    const alreadyApplied = (myCandidacies || []).length > 0;
+    const appliedPositionName = alreadyApplied
+      ? (myCandidacies[0].positions?.name || 'a position')
+      : null;
+
+    if (alreadyApplied) {
+      pane.insertAdjacentHTML('afterbegin', `<div class="alert alert-success" style="margin-bottom:1rem;">You have already applied for <strong>${escapeHtml(appliedPositionName)}</strong> in this election. Only one application per election is allowed.</div>`);
     }
 
-    topicsList.innerHTML = topics.map(topic => {
-      const isActive = topic.id === selectedTopicId;
-      const words = (topic.content || '').trim().split(/\s+/).filter(Boolean);
-      const shouldTruncate = words.length > 15;
-      const shortContent = shouldTruncate ? words.slice(0, 15).join(' ') : (topic.content || '');
+    // If we just inserted a notice, clear previous content carefully
+    const cardsHtml = positions.map(pos => {
+      let actionHtml;
+      if (appliedFor.has(pos.id)) {
+        actionHtml = `<span class="pill pill-active">Your application</span>`;
+      } else if (alreadyApplied) {
+        actionHtml = `<span class="pill pill-draft">Not available (you already applied for another position)</span>`;
+      } else if (election.status === 'draft' || election.status === 'closed' || election.accepting_applications === false) {
+        actionHtml = `<span class="pill pill-draft">Applications closed</span>`;
+      } else {
+        actionHtml = `<button type="button" class="btn btn-outline-light" style="background:var(--forest);color:#fff;" data-apply="${pos.id}">Apply for this position</button>
+               <div id="apply-form-${pos.id}" style="display:none;margin-top:0.75rem;">
+                 <textarea placeholder="Your manifesto (what will you do in this role?)" id="manifesto-${pos.id}" rows="3" style="width:100%;padding:0.6rem;border:1px solid var(--border);border-radius:6px;margin-bottom:0.5rem;"></textarea>
+                 <label style="display:block;font-size:0.82rem;font-weight:600;margin:0.35rem 0 0.2rem;">CV / Resume (PDF or image)</label>
+                 <input type="file" id="cv-${pos.id}" accept=".pdf,.doc,.docx,image/*" style="width:100%;font-size:0.85rem;margin-bottom:0.4rem;" />
+                 <label style="display:block;font-size:0.82rem;font-weight:600;margin:0.35rem 0 0.2rem;">Certificate of former leadership (optional)</label>
+                 <input type="file" id="cert-${pos.id}" accept=".pdf,.doc,.docx,image/*" style="width:100%;font-size:0.85rem;margin-bottom:0.4rem;" />
+                 <label style="display:block;font-size:0.82rem;font-weight:600;margin:0.35rem 0 0.2rem;">Application letter (PDF or image)</label>
+                 <input type="file" id="letter-${pos.id}" accept=".pdf,.doc,.docx,image/*" style="width:100%;font-size:0.85rem;margin-bottom:0.5rem;" />
+                 <button type="button" class="btn btn-gold" style="margin-top:0.5rem;" data-submit-apply="${pos.id}">Submit Application</button>
+               </div>`;
+      }
       return `
-        <button type="button" class="forum-topic-btn ${isActive ? 'active' : ''}" data-topic-id="${topic.id}">
-          <div class="forum-topic-title">${escapeHtml(topic.title)}</div>
-          <div class="forum-topic-meta">${escapeHtml(topic.category || 'General')} · ${new Date(topic.created_at).toLocaleDateString()}</div>
-          ${topic.content ? `
-            <div class="forum-topic-preview" data-topic-preview>
-              ${shouldTruncate
-                ? `
-                  <span class="forum-topic-preview-short">${escapeHtml(shortContent)}...</span>
-                  <span class="forum-topic-preview-full" hidden>${escapeHtml(topic.content || '')}</span>
-                  <button type="button" class="forum-topic-toggle" data-topic-toggle>Readmore</button>
-                `
-                : `<span>${escapeHtml(topic.content || '')}</span>`
-              }
-            </div>
-          ` : ''}
-        </button>
-      `;
+      <div class="position-card">
+        <h4>${escapeHtml(pos.name)}</h4>
+        ${pos.name_luganda ? `<p class="luganda">${escapeHtml(pos.name_luganda)} &middot; ${pos.category ? escapeHtml(pos.category) : ''} &middot; UGX ${Number(pos.application_fee).toLocaleString()} application fee</p>` : ''}
+        ${actionHtml}
+      </div>`;
     }).join('');
 
-    topicsList.querySelectorAll('[data-topic-id]').forEach(btn => {
+    pane.innerHTML = (alreadyApplied
+      ? `<div class="alert alert-success" style="margin-bottom:1rem;">You have already applied for <strong>${escapeHtml(appliedPositionName)}</strong> in this election. Only one application per election is allowed.</div>`
+      : '') + cardsHtml;
+
+    pane.querySelectorAll('[data-apply]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.getElementById(`apply-form-${btn.dataset.apply}`).style.display = 'block';
+        btn.style.display = 'none';
+      });
+    });
+
+    async function uploadElectionDoc(file, kind) {
+      if (!file) return null;
+      const maxBytes = 8 * 1024 * 1024;
+      if (file.size > maxBytes) throw new Error(`${kind}: file must be under 8 MB`);
+      const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const path = `${profile.id}/${election.id}/${kind}-${Date.now()}-${safe}`;
+      const { error: upErr } = await supabase.storage.from('election-docs').upload(path, file, { upsert: false });
+      if (upErr) throw new Error(`${kind}: ${upErr.message}`);
+      const { data: pub } = supabase.storage.from('election-docs').getPublicUrl(path);
+      return pub?.publicUrl || null;
+    }
+
+    pane.querySelectorAll('[data-submit-apply]').forEach(btn => {
       btn.addEventListener('click', async () => {
-        selectedTopicId = btn.dataset.topicId;
-        const url = new URL(window.location.href);
-        url.searchParams.set('topic', selectedTopicId);
-        window.history.replaceState({}, '', url);
-        renderTopicsList();
-        await loadTopicDetail();
-      });
-    });
-
-    topicsList.querySelectorAll('[data-topic-toggle]').forEach(button => {
-      button.addEventListener('click', (event) => {
-        event.stopPropagation();
-        const buttonEl = button;
-        const preview = buttonEl.closest('[data-topic-preview]');
-        if (!preview) return;
-        const isExpanded = preview.dataset.expanded === 'true';
-        preview.dataset.expanded = isExpanded ? 'false' : 'true';
-        buttonEl.textContent = isExpanded ? 'Readmore' : 'Read less';
-        const shortSpan = preview.querySelector('.forum-topic-preview-short');
-        const fullSpan = preview.querySelector('.forum-topic-preview-full');
-        if (shortSpan) shortSpan.hidden = isExpanded;
-        if (fullSpan) fullSpan.hidden = !isExpanded;
-      });
-    });
-  }
-
-  async function loadTopicDetail() {
-    const topic = topics.find(item => item.id === selectedTopicId);
-    if (!topic) {
-      topicDetail.innerHTML = `<div class="forum-empty">Select a post to view it.</div>`;
-      repliesMarquee.innerHTML = `<div class="forum-empty">No post selected.</div>`;
-      return;
-    }
-
-    const words = (topic.content || '').trim().split(/\s+/).filter(Boolean);
-    const shouldTruncateDetail = words.length > 30;
-    const shortDetailContent = shouldTruncateDetail ? words.slice(0, 30).join(' ') : (topic.content || '');
-
-    topicDetail.innerHTML = `
-      <div class="forum-meta" style="margin-bottom:0.8rem;">
-        <span class="forum-badge ${topic.is_locked ? 'forum-badge-locked' : 'forum-badge-active'}">${topic.is_locked ? 'Locked' : 'Open'}</span>
-        <span>${escapeHtml(topic.category || 'General')}</span>
-        <span>Posted ${new Date(topic.created_at).toLocaleDateString()}</span>
-      </div>
-      <h3 style="margin:0 0 0.45rem;">${escapeHtml(topic.title)}</h3>
-      <div class="forum-meta" style="margin-bottom:1rem;">
-        <span>By ${escapeHtml(topic.author?.full_name || 'Member')}</span>
-      </div>
-      <div id="topic-detail-body" class="forum-post-body" data-detail-expanded="false">
-        ${shouldTruncateDetail
-          ? `
-            <span class="forum-post-body-short">${escapeHtml(shortDetailContent)}...</span>
-            <span class="forum-post-body-full" hidden>${escapeHtml(topic.content || '')}</span>
-            <button type="button" class="forum-topic-toggle" data-detail-toggle>Readmore</button>
-          `
-          : escapeHtml(topic.content || '')
+        const posId = btn.dataset.submitApply;
+        const manifesto = document.getElementById(`manifesto-${posId}`).value.trim();
+        const cvFile = document.getElementById(`cv-${posId}`)?.files?.[0] || null;
+        const certFile = document.getElementById(`cert-${posId}`)?.files?.[0] || null;
+        const letterFile = document.getElementById(`letter-${posId}`)?.files?.[0] || null;
+        if (!cvFile) {
+          alertBox.innerHTML = `<div class="alert alert-error">Please upload your CV / resume.</div>`;
+          return;
         }
-      </div>
-    `;
-
-    const detailToggle = topicDetail.querySelector('[data-detail-toggle]');
-    if (detailToggle) {
-      detailToggle.addEventListener('click', () => {
-        const body = document.getElementById('topic-detail-body');
-        if (!body) return;
-        const isExpanded = body.dataset.detailExpanded === 'true';
-        body.dataset.detailExpanded = isExpanded ? 'false' : 'true';
-        detailToggle.textContent = isExpanded ? 'Read less' : 'Readmore';
-        const shortSpan = body.querySelector('.forum-post-body-short');
-        const fullSpan = body.querySelector('.forum-post-body-full');
-        if (shortSpan) shortSpan.hidden = isExpanded;
-        if (fullSpan) fullSpan.hidden = !isExpanded;
-      });
-    }
-
-    const { data: replies, error } = await supabase
-      .from('forum_replies')
-      .select('id, content, created_at, author_id')
-      .eq('topic_id', topic.id)
-      
-      .order('created_at', { ascending: true });
-
-    if (error) {
-      repliesMarquee.innerHTML = `<div class="forum-empty">Could not load replies.</div>`;
-      return;
-    }
-
-    if (!replies || replies.length === 0) {
-      repliesMarquee.innerHTML = `<div class="forum-empty">No replies yet. Be the first member to respond.</div>`;
-      return;
-    }
-
-    for (const reply of replies) {
-      reply.author = await loadForumAuthor(reply.author_id);
-    }
-
-    const replyCards = replies.map(reply => replyCardHtml(reply)).join('');
-    repliesMarquee.innerHTML = `
-      <div class="reply-track">
-        ${replyCards}
-      </div>
-    `;
-
-    repliesMarquee.querySelectorAll('[data-reply-toggle]').forEach(button => {
-      button.addEventListener('click', () => {
-        const card = button.closest('.reply-card');
-        if (!card) return;
-        const isExpanded = card.dataset.expanded === 'true';
-        card.dataset.expanded = isExpanded ? 'false' : 'true';
-        button.textContent = isExpanded ? 'Read less' : 'Readmore';
-        const shortSpan = card.querySelector('.reply-content-short');
-        const fullSpan = card.querySelector('.reply-content-full');
-        if (shortSpan) shortSpan.hidden = isExpanded;
-        if (fullSpan) fullSpan.hidden = !isExpanded;
+        if (!letterFile) {
+          alertBox.innerHTML = `<div class="alert alert-error">Please upload your application letter.</div>`;
+          return;
+        }
+        btn.disabled = true; btn.textContent = 'Uploading documents...';
+        try {
+          const [cv_url, leadership_certificate_url, application_letter_url] = await Promise.all([
+            uploadElectionDoc(cvFile, 'cv'),
+            uploadElectionDoc(certFile, 'cert'),
+            uploadElectionDoc(letterFile, 'letter'),
+          ]);
+          btn.textContent = 'Submitting...';
+          const { error } = await supabase.from('candidates').insert({
+            election_id: election.id,
+            user_id: profile.id,
+            position_id: posId,
+            manifesto: manifesto || null,
+            cv_url,
+            leadership_certificate_url,
+            application_letter_url,
+            application_status: 'pending',
+            approved: false,
+          });
+          if (error) {
+            const msg = (error.code === '23505' || /unique|duplicate/i.test(error.message))
+              ? 'You have already applied for a position in this election. Only one application per election is allowed.'
+              : error.message;
+            alertBox.innerHTML = `<div class="alert alert-error">${escapeHtml(msg)}</div>`;
+            btn.disabled = false; btn.textContent = 'Submit Application';
+          } else {
+            alertBox.innerHTML = `<div class="alert alert-success">Application submitted with your documents. An admin will review and approve candidates before voting opens.</div>`;
+            await renderPositions(election);
+          }
+        } catch (err) {
+          alertBox.innerHTML = `<div class="alert alert-error">${escapeHtml(err.message || String(err))}</div>`;
+          btn.disabled = false; btn.textContent = 'Submit Application';
+        }
       });
     });
   }
 
-  function replyCardHtml(reply) {
-    const initials = getInitials(reply.author?.full_name);
-    const avatar = reply.author?.avatar_url
-      ? `<img src="${escapeHtml(reply.author.avatar_url)}" alt="${escapeHtml(reply.author?.full_name || 'Member')}" />`
-      : `<span>${initials}</span>`;
-    const words = (reply.content || '').trim().split(/\s+/).filter(Boolean);
-    const shouldTruncate = words.length > 15;
-    const shortContent = shouldTruncate ? words.slice(0, 15).join(' ') : reply.content || '';
+  async function renderCandidates(election) {
+    const pane = document.getElementById('pane-candidates');
+    const { data, error } = await supabase
+      .from('candidates')
+      .select('id, manifesto, approved, positions(name), profiles(full_name, avatar_url)')
+      .eq('election_id', election.id)
+      .eq('approved', true);
 
-    return `
-      <div class="reply-card" data-expanded="false">
-        <div class="reply-author">
-          <div class="reply-avatar">${avatar}</div>
-          <div>
-            <p class="reply-name">${escapeHtml(reply.author?.full_name || 'Member')}</p>
-            <div class="reply-time">${new Date(reply.created_at).toLocaleString()}</div>
+    if (error) { pane.innerHTML = `<div class="empty">Could not load candidates.</div>`; return; }
+    if (!data || !data.length) { pane.innerHTML = `<div class="empty">No approved candidates yet.</div>`; return; }
+
+    const byPosition = {};
+    data.forEach(c => {
+      const name = c.positions?.name || 'Position';
+      byPosition[name] = byPosition[name] || [];
+      byPosition[name].push(c);
+    });
+
+    pane.innerHTML = Object.entries(byPosition).map(([posName, cands]) => `
+      <div class="position-card">
+        <h4>${escapeHtml(posName)}</h4>
+        ${cands.map(c => `
+          <div class="candidate-row">
+            <div>
+              <strong>${escapeHtml(c.profiles?.full_name || 'Candidate')}</strong>
+              ${c.manifesto ? `<div style="font-size:0.85rem;color:var(--text-muted);">${escapeHtml(c.manifesto)}</div>` : ''}
+            </div>
           </div>
-        </div>
-        ${shouldTruncate
-          ? `
-            <p class="reply-content reply-content-short">${escapeHtml(shortContent)}...</p>
-            <p class="reply-content reply-content-full" hidden>${escapeHtml(reply.content || '')}</p>
-            <button type="button" class="reply-toggle" data-reply-toggle>Readmore</button>
-          `
-          : `<p class="reply-content">${escapeHtml(reply.content || '')}</p>`
-        }
+        `).join('')}
       </div>
-    `;
+    `).join('');
   }
 
-  async function loadForumAuthor(userId) {
-    if (!userId) return null;
-    const { data } = await supabase.rpc('forum_author_profile', { p_user_id: userId });
-    return data && data[0] ? data[0] : null;
+  async function renderVote(election) {
+    const pane = document.getElementById('pane-vote');
+    if (election.status !== 'active') {
+      pane.innerHTML = `<div class="empty">Voting is only open while this election's status is "active".</div>`;
+      return;
+    }
+
+    const { data: candidates } = await supabase
+      .from('candidates')
+      .select('id, manifesto, position_id, positions(id, name), profiles(full_name)')
+      .eq('election_id', election.id)
+      .eq('approved', true);
+
+    const { data: myVotes } = await supabase.from('votes').select('position_id').eq('election_id', election.id).eq('voter_id', profile.id);
+    const votedPositions = new Set((myVotes || []).map(v => v.position_id));
+
+    const byPosition = {};
+    (candidates || []).forEach(c => {
+      const key = c.position_id;
+      byPosition[key] = byPosition[key] || { name: c.positions?.name, cands: [] };
+      byPosition[key].cands.push(c);
+    });
+
+    const entries = Object.entries(byPosition);
+    if (!entries.length) { pane.innerHTML = `<div class="empty">No approved candidates to vote for yet.</div>`; return; }
+
+    pane.innerHTML = entries.map(([posId, group]) => `
+      <div class="position-card">
+        <h4>${escapeHtml(group.name)}</h4>
+        ${votedPositions.has(posId)
+          ? `<span class="pill pill-active">You already voted for this position</span>`
+          : group.cands.map(c => `
+              <div class="candidate-row">
+                <span>${escapeHtml(c.profiles?.full_name || 'Candidate')}</span>
+                <button type="button" class="btn btn-gold" data-vote-candidate="${c.id}" data-vote-position="${posId}">Vote</button>
+              </div>`).join('')}
+      </div>
+    `).join('');
+
+    pane.querySelectorAll('[data-vote-candidate]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        btn.disabled = true; btn.textContent = 'Voting...';
+        const { error } = await supabase.from('votes').insert({
+          election_id: election.id,
+          position_id: btn.dataset.votePosition,
+          voter_id: profile.id,
+          candidate_id: btn.dataset.voteCandidate,
+        });
+        if (error) {
+          alertBox.innerHTML = `<div class="alert alert-error">${escapeHtml(error.message)}</div>`;
+          btn.disabled = false; btn.textContent = 'Vote';
+        } else {
+          alertBox.innerHTML = `<div class="alert alert-success">Your vote has been recorded.</div>`;
+          await renderVote(election);
+        }
+      });
+    });
   }
 
-  function showAlert(msg, type) {
-    alertBox.innerHTML = `<div class="alert alert-${type}">${escapeHtml(msg)}</div>`;
+  async function renderResults(election) {
+    const pane = document.getElementById('pane-results');
+    if (election.status !== 'closed') {
+      pane.innerHTML = `<div class="empty">Results are published once the Super Admin closes this election.</div>`;
+      return;
+    }
+
+    const { data: tally, error } = await supabase.rpc('election_results', { p_election_id: election.id });
+    if (error) { pane.innerHTML = `<div class="empty">Could not load results.</div>`; return; }
+
+    const { data: candidates } = await supabase
+      .from('candidates')
+      .select('id, position_id, positions(name), profiles(full_name)')
+      .eq('election_id', election.id);
+
+    const candMap = {};
+    (candidates || []).forEach(c => { candMap[c.id] = c; });
+
+    const byPosition = {};
+    (tally || []).forEach(row => {
+      const c = candMap[row.candidate_id];
+      if (!c) return;
+      const key = c.position_id;
+      byPosition[key] = byPosition[key] || { name: c.positions?.name, rows: [] };
+      byPosition[key].rows.push({ name: c.profiles?.full_name || 'Candidate', count: row.vote_count });
+    });
+
+    const entries = Object.values(byPosition);
+    pane.innerHTML = entries.length
+      ? entries.map(group => `
+          <div class="position-card">
+            <h4>${escapeHtml(group.name)}</h4>
+            ${group.rows.sort((a, b) => b.count - a.count).map(r => `
+              <div class="candidate-row"><span>${escapeHtml(r.name)}</span><strong>${r.count} vote${r.count === 1 ? '' : 's'}</strong></div>
+            `).join('')}
+          </div>`).join('')
+      : `<div class="empty">No votes were recorded for this election.</div>`;
   }
 
   function escapeHtml(str) {
     const div = document.createElement('div');
     div.textContent = str ?? '';
     return div.innerHTML;
-  }
-
-  function getInitials(name) {
-    if (!name) return '?';
-    return name.trim().split(/\s+/).slice(0, 2).map(word => word[0]?.toUpperCase()).join('');
   }
 </script>
 </body>
