@@ -190,8 +190,8 @@
         actionHtml = `<span class="pill pill-active">Your application</span>`;
       } else if (alreadyApplied) {
         actionHtml = `<span class="pill pill-draft">Not available (you already applied for another position)</span>`;
-      } else if (election.status === 'draft' || election.status === 'closed') {
-        actionHtml = `<span class="pill pill-draft">Applications not open</span>`;
+      } else if (election.status === 'draft' || election.status === 'closed' || election.accepting_applications === false) {
+        actionHtml = `<span class="pill pill-draft">Applications closed</span>`;
       } else {
         actionHtml = `<button type="button" class="btn btn-outline-light" style="background:var(--forest);color:#fff;" data-apply="${pos.id}">Apply for this position</button>
                <div id="apply-form-${pos.id}" style="display:none;margin-top:0.75rem;">
