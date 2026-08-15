@@ -187,7 +187,11 @@
         <form id="news-form">
           <div class="form-group"><label>Title</label><input type="text" id="news-title" required /></div>
           <div class="form-group"><label>Content</label><textarea id="news-content" rows="4" required></textarea></div>
-          <div class="form-group"><label>Image URL (optional)</label><input type="text" id="news-image" /></div>
+          <div class="form-group"><label>Image URL (optional)</label><input type="url" id="news-image" placeholder="https://..." /></div>
+          <div class="form-group"><label>Or upload image / media</label><input type="file" id="news-image-file" accept="image/*,video/*" /></div>
+          <div class="form-group"><label>Document URL (optional)</label><input type="url" id="news-document" placeholder="https://... PDF or file link" /></div>
+          <div class="form-group"><label>Or upload document</label><input type="file" id="news-document-file" accept=".pdf,.doc,.docx,image/*" /></div>
+          <div class="form-group"><label>External link (optional)</label><input type="url" id="news-external" placeholder="https://..." /></div>
           <div class="form-group"><label><input type="checkbox" id="news-featured" style="width:auto;display:inline;" /> Featured</label></div>
           <button type="submit" class="mini-btn good">Publish News</button>
         </form>
@@ -208,6 +212,11 @@
           <div class="form-group"><label>Date &amp; time</label><input type="datetime-local" id="activity-date" required /></div>
           <div class="form-group"><label>Location</label><input type="text" id="activity-location" /></div>
           <div class="form-group"><label>Max participants (optional)</label><input type="number" id="activity-max" /></div>
+          <div class="form-group"><label>Image URL (optional)</label><input type="url" id="activity-image" placeholder="https://..." /></div>
+          <div class="form-group"><label>Or upload image / media</label><input type="file" id="activity-image-file" accept="image/*,video/*" /></div>
+          <div class="form-group"><label>Document URL (optional)</label><input type="url" id="activity-document" placeholder="https://..." /></div>
+          <div class="form-group"><label>Or upload document</label><input type="file" id="activity-document-file" accept=".pdf,.doc,.docx,image/*" /></div>
+          <div class="form-group"><label>External link (optional)</label><input type="url" id="activity-external" placeholder="https://..." /></div>
           <button type="submit" class="mini-btn good">Create Activity</button>
         </form>
       </div>
@@ -227,6 +236,11 @@
           <div class="form-group"><label>Status</label>
             <select id="project-status"><option value="planned">Planned</option><option value="ongoing">Ongoing</option><option value="completed">Completed</option></select>
           </div>
+          <div class="form-group"><label>Image URL (optional)</label><input type="url" id="project-image" placeholder="https://..." /></div>
+          <div class="form-group"><label>Or upload image / media</label><input type="file" id="project-image-file" accept="image/*,video/*" /></div>
+          <div class="form-group"><label>Document URL (optional)</label><input type="url" id="project-document" placeholder="https://..." /></div>
+          <div class="form-group"><label>Or upload document</label><input type="file" id="project-document-file" accept=".pdf,.doc,.docx,image/*" /></div>
+          <div class="form-group"><label>External link (optional)</label><input type="url" id="project-external" placeholder="https://..." /></div>
           <button type="submit" class="mini-btn good">Create Project</button>
         </form>
       </div>
@@ -529,18 +543,46 @@ Preferred meeting day (multiple_choice: Monday, Wednesday, Friday)"></textarea>
     });
 
     // ---------- Content: News ----------
-    document.getElementById('news-form').addEventListener('submit', async (e) => {
+    
+    async function uploadContentFile(file, folder) {
+      if (!file) return null;
+      const maxBytes = 12 * 1024 * 1024;
+      if (file.size > maxBytes) throw new Error('File must be under 12 MB');
+      const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const path = `${folder}/${me.id}/${Date.now()}-${safe}`;
+      const { error } = await supabase.storage.from('content-media').upload(path, file, { upsert: false });
+      if (error) throw new Error(error.message);
+      const { data: pub } = supabase.storage.from('content-media').getPublicUrl(path);
+      return pub?.publicUrl || null;
+    }
+
+    async function resolveMediaFields(urlId, fileId, folder) {
+      const typed = (document.getElementById(urlId)?.value || '').trim();
+      const file = document.getElementById(fileId)?.files?.[0] || null;
+      if (file) return await uploadContentFile(file, folder);
+      return typed || null;
+    }
+
+document.getElementById('news-form').addEventListener('submit', async (e) => {
       e.preventDefault();
-      const { error } = await supabase.from('news').insert({
-        title: document.getElementById('news-title').value.trim(),
-        content: document.getElementById('news-content').value.trim(),
-        image_url: document.getElementById('news-image').value.trim() || null,
-        is_featured: document.getElementById('news-featured').checked,
-        author_id: me.id,
-      });
-      if (error) return alert(error.message);
-      e.target.reset();
-      await loadNews();
+      try {
+        const image_url = await resolveMediaFields('news-image', 'news-image-file', 'news');
+        const document_url = await resolveMediaFields('news-document', 'news-document-file', 'news-docs');
+        const { error } = await supabase.from('news').insert({
+          title: document.getElementById('news-title').value.trim(),
+          content: document.getElementById('news-content').value.trim(),
+          image_url,
+          document_url,
+          external_url: document.getElementById('news-external').value.trim() || null,
+          is_featured: document.getElementById('news-featured').checked,
+          author_id: me.id,
+        });
+        if (error) return alert(error.message);
+        e.target.reset();
+        await loadNews();
+      } catch (err) {
+        alert(err.message || String(err));
+      }
     });
 
     async function loadNews() {
@@ -560,17 +602,26 @@ Preferred meeting day (multiple_choice: Monday, Wednesday, Friday)"></textarea>
     // ---------- Activities ----------
     document.getElementById('activity-form').addEventListener('submit', async (e) => {
       e.preventDefault();
-      const { error } = await supabase.from('activities').insert({
-        title: document.getElementById('activity-title').value.trim(),
-        description: document.getElementById('activity-description').value.trim() || null,
-        activity_date: new Date(document.getElementById('activity-date').value).toISOString(),
-        location: document.getElementById('activity-location').value.trim() || null,
-        max_participants: document.getElementById('activity-max').value || null,
-        created_by: me.id,
-      });
-      if (error) return alert(error.message);
-      e.target.reset();
-      await loadActivities();
+      try {
+        const image_url = await resolveMediaFields('activity-image', 'activity-image-file', 'activities');
+        const document_url = await resolveMediaFields('activity-document', 'activity-document-file', 'activity-docs');
+        const { error } = await supabase.from('activities').insert({
+          title: document.getElementById('activity-title').value.trim(),
+          description: document.getElementById('activity-description').value.trim() || null,
+          activity_date: new Date(document.getElementById('activity-date').value).toISOString(),
+          location: document.getElementById('activity-location').value.trim() || null,
+          max_participants: document.getElementById('activity-max').value ? Number(document.getElementById('activity-max').value) : null,
+          image_url,
+          document_url,
+          external_url: document.getElementById('activity-external').value.trim() || null,
+          created_by: me.id,
+        });
+        if (error) return alert(error.message);
+        e.target.reset();
+        await loadActivities();
+      } catch (err) {
+        alert(err.message || String(err));
+      }
     });
 
     async function loadActivities() {
@@ -594,15 +645,29 @@ Preferred meeting day (multiple_choice: Monday, Wednesday, Friday)"></textarea>
     // ---------- Projects ----------
     document.getElementById('project-form').addEventListener('submit', async (e) => {
       e.preventDefault();
-      const { error } = await supabase.from('projects').insert({
-        title: document.getElementById('project-title').value.trim(),
-        description: document.getElementById('project-description').value.trim() || null,
-        status: document.getElementById('project-status').value,
-        created_by: me.id,
-      });
-      if (error) return alert(error.message);
-      e.target.reset();
-      await loadProjects();
+      try {
+        const image_url = await resolveMediaFields('project-image', 'project-image-file', 'projects');
+        const document_url = await resolveMediaFields('project-document', 'project-document-file', 'project-docs');
+        const payload = {
+          title: document.getElementById('project-title').value.trim(),
+          description: document.getElementById('project-description').value.trim() || null,
+          status: document.getElementById('project-status').value,
+          image_url,
+          document_url,
+          external_url: document.getElementById('project-external').value.trim() || null,
+          created_by: me.id,
+        };
+        const startEl = document.getElementById('project-start');
+        const endEl = document.getElementById('project-end');
+        if (startEl?.value) payload.start_date = startEl.value;
+        if (endEl?.value) payload.end_date = endEl.value;
+        const { error } = await supabase.from('projects').insert(payload);
+        if (error) return alert(error.message);
+        e.target.reset();
+        await loadProjects();
+      } catch (err) {
+        alert(err.message || String(err));
+      }
     });
 
     async function loadProjects() {
@@ -742,18 +807,71 @@ Preferred meeting day (multiple_choice: Monday, Wednesday, Friday)"></textarea>
       }));
 
       for (const el of (elections || [])) {
-        const { data: cands } = await supabase.from('candidates').select('id, manifesto, approved, positions(name), profiles(full_name)').eq('election_id', el.id);
+        const { data: cands } = await supabase.from('candidates').select('id, manifesto, approved, application_status, cv_url, leadership_certificate_url, application_letter_url, positions(name), profiles(full_name, email)').eq('election_id', el.id);
         const container = document.getElementById(`candidates-${el.id}`);
         if (!container) continue;
-        container.innerHTML = (cands && cands.length) ? cands.map(c => `
-          <div style="display:flex;justify-content:space-between;align-items:center;gap:0.75rem;padding:0.5rem 0;border-top:1px solid var(--border);">
-            <span>${escapeHtml(c.profiles?.full_name || 'Candidate')}: ${escapeHtml(c.positions?.name || '')}</span>
-            ${c.approved ? pill('active') : `<button class="mini-btn good" data-approve-candidate="${c.id}">Approve</button>`}
-          </div>`).join('') : '<p style="font-size:0.85rem;color:var(--text-muted);">No applicants yet.</p>';
+        if (!cands || !cands.length) {
+          container.innerHTML = '<p style="font-size:0.85rem;color:var(--text-muted);">No applicants yet.</p>';
+        } else {
+          container.innerHTML = `
+            <div class="data-table-wrap table-scroll" style="margin-top:0.5rem;">
+              <table class="admin-table" style="min-width:640px;">
+                <thead>
+                  <tr>
+                    <th>Applicant</th>
+                    <th>Position</th>
+                    <th>Status</th>
+                    <th>Documents</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${cands.map(c => {
+                    const st = c.application_status || (c.approved ? 'approved' : 'pending');
+                    const docs = [
+                      c.cv_url ? `<a href="${escapeHtml(c.cv_url)}" target="_blank" rel="noopener">CV</a>` : null,
+                      c.leadership_certificate_url ? `<a href="${escapeHtml(c.leadership_certificate_url)}" target="_blank" rel="noopener">Cert</a>` : null,
+                      c.application_letter_url ? `<a href="${escapeHtml(c.application_letter_url)}" target="_blank" rel="noopener">Letter</a>` : null,
+                    ].filter(Boolean).join(' · ') || '—';
+                    return `<tr>
+                      <td>
+                        <strong>${escapeHtml(c.profiles?.full_name || 'Candidate')}</strong>
+                        <div style="font-size:0.78rem;color:var(--text-muted);word-break:break-all;">${escapeHtml(c.profiles?.email || '')}</div>
+                        ${c.manifesto ? `<div style="font-size:0.8rem;margin-top:0.25rem;max-width:220px;">${escapeHtml(c.manifesto)}</div>` : ''}
+                      </td>
+                      <td>${escapeHtml(c.positions?.name || '—')}</td>
+                      <td><span class="pill pill-${st === 'approved' ? 'active' : (st === 'suspended' ? 'rejected' : 'pending')}">${escapeHtml(st)}</span></td>
+                      <td style="font-size:0.82rem;">${docs}</td>
+                      <td style="white-space:nowrap;">
+                        ${st !== 'approved' ? `<button class="mini-btn good" data-approve-candidate="${c.id}">Approve</button>` : ''}
+                        ${st !== 'suspended' ? `<button class="mini-btn" style="background:#fdf3e0;color:#8a6100;" data-suspend-candidate="${c.id}">Suspend</button>` : ''}
+                        <button class="mini-btn bad" data-delete-candidate="${c.id}">Delete</button>
+                      </td>
+                    </tr>`;
+                  }).join('')}
+                </tbody>
+              </table>
+            </div>`;
+        }
 
         container.querySelectorAll('[data-approve-candidate]').forEach(btn => btn.addEventListener('click', async () => {
-          await supabase.from('candidates').update({ approved: true }).eq('id', btn.dataset.approveCandidate);
-          await loadElections();
+          const { error } = await supabase.from('candidates').update({ approved: true, application_status: 'approved' }).eq('id', btn.dataset.approveCandidate);
+          if (error) alert(error.message); else await loadElections();
+        }));
+        container.querySelectorAll('[data-suspend-candidate]').forEach(btn => btn.addEventListener('click', async () => {
+          if (!confirm('Suspend this application? The candidate will not appear for voting.')) return;
+          const { error } = await supabase.from('candidates').update({ approved: false, application_status: 'suspended' }).eq('id', btn.dataset.suspendCandidate);
+          if (error) alert(error.message); else await loadElections();
+        }));
+        container.querySelectorAll('[data-delete-candidate]').forEach(btn => btn.addEventListener('click', async () => {
+          if (!confirm('Delete this candidate application permanently?')) return;
+          const { error } = await supabase.from('candidates').delete().eq('id', btn.dataset.deleteCandidate);
+          if (error) alert(error.message); else await loadElections();
+        }));
+        container.querySelectorAll('[data-delete-candidate]').forEach(btn => btn.addEventListener('click', async () => {
+          if (!confirm('Delete this candidate application permanently? Their uploaded documents will remain in storage unless removed separately.')) return;
+          const { error } = await supabase.from('candidates').delete().eq('id', btn.dataset.deleteCandidate);
+          if (error) alert(error.message); else await loadElections();
         }));
       }
     }
@@ -917,9 +1035,18 @@ Preferred meeting day (multiple_choice: Monday, Wednesday, Friday)"></textarea>
     // ---------- Admin settings (auto-approve) ----------
     function parseSettingBool(val) {
       if (typeof val === 'boolean') return val;
-      if (val && typeof val === 'object' && 'value' in val) return parseSettingBool(val.value);
-      if (typeof val === 'string') return val === 'true' || val === '1';
-      return !!val;
+      if (val === 1 || val === '1') return true;
+      if (val === 0 || val === '0') return false;
+      if (typeof val === 'string') {
+        const s = val.trim().toLowerCase().replace(/^"|"$/g, '');
+        return s === 'true' || s === 't' || s === 'yes';
+      }
+      if (val && typeof val === 'object') {
+        // jsonb sometimes returned nested
+        if ('value' in val) return parseSettingBool(val.value);
+        try { return parseSettingBool(JSON.parse(JSON.stringify(val))); } catch (_) {}
+      }
+      return false;
     }
     function parseSettingString(val, fallback) {
       if (val == null) return fallback;
@@ -929,7 +1056,16 @@ Preferred meeting day (multiple_choice: Monday, Wednesday, Friday)"></textarea>
     }
 
     async function loadAdminSettings() {
-      const { data } = await supabase.from('club_settings').select('key, value').in('key', ['auto_approve_members', 'current_leadership_term']);
+      const { data, error } = await supabase
+        .from('club_settings')
+        .select('key, value')
+        .in('key', ['auto_approve_members', 'current_leadership_term']);
+      if (error) {
+        console.error('loadAdminSettings', error);
+        const alertBox = document.getElementById('settings-alert');
+        if (alertBox) alertBox.innerHTML = `<div class="alert alert-error">Could not load settings: ${escapeHtml(error.message)}</div>`;
+        return;
+      }
       const map = {};
       (data || []).forEach(r => { map[r.key] = r.value; });
       const cb = document.getElementById('setting-auto-approve');
@@ -938,28 +1074,55 @@ Preferred meeting day (multiple_choice: Monday, Wednesday, Friday)"></textarea>
       if (term) term.value = parseSettingString(map.current_leadership_term, '2025/26');
     }
 
+    async function saveClubSetting(key, value) {
+      // Store pure JSON values (boolean / string) — not stringified twice
+      const { data: existing, error: findErr } = await supabase
+        .from('club_settings')
+        .select('key')
+        .eq('key', key)
+        .maybeSingle();
+      if (findErr) return findErr;
+      if (existing) {
+        const { error } = await supabase
+          .from('club_settings')
+          .update({ value, updated_by: me.id, updated_at: new Date().toISOString() })
+          .eq('key', key);
+        return error;
+      }
+      const { error } = await supabase
+        .from('club_settings')
+        .insert({ key, value, updated_by: me.id });
+      return error;
+    }
+
+    document.getElementById('setting-auto-approve')?.addEventListener('change', async (e) => {
+      const on = !!e.target.checked;
+      const alertBox = document.getElementById('settings-alert');
+      const error = await saveClubSetting('auto_approve_members', on);
+      if (error) {
+        e.target.checked = !on;
+        if (alertBox) alertBox.innerHTML = `<div class="alert alert-error">Could not update: ${escapeHtml(error.message)}</div>`;
+        return;
+      }
+      if (alertBox) {
+        alertBox.innerHTML = `<div class="alert alert-success">${on
+          ? 'Auto-approve is ON in the database. New @umu.ac.ug registrations become active immediately.'
+          : 'Auto-approve is OFF in the database. New registrations stay pending until an admin approves them.'}</div>`;
+      }
+    });
+
     document.getElementById('settings-save-btn')?.addEventListener('click', async () => {
       const alertBox = document.getElementById('settings-alert');
       const auto = !!document.getElementById('setting-auto-approve')?.checked;
       const termLabel = (document.getElementById('setting-term-label')?.value || '2025/26').trim();
-      const rows = [
-        { key: 'auto_approve_members', value: auto, updated_by: me.id },
-        { key: 'current_leadership_term', value: termLabel, updated_by: me.id },
-      ];
-      let failed = false;
-      for (const row of rows) {
-        const { data: existing } = await supabase.from('club_settings').select('key').eq('key', row.key).maybeSingle();
-        let error;
-        if (existing) {
-          ({ error } = await supabase.from('club_settings').update({ value: row.value, updated_by: row.updated_by }).eq('key', row.key));
-        } else {
-          ({ error } = await supabase.from('club_settings').insert(row));
-        }
-        if (error) { failed = true; console.error(error); }
+      const err1 = await saveClubSetting('auto_approve_members', auto);
+      const err2 = await saveClubSetting('current_leadership_term', termLabel);
+      if (err1 || err2) {
+        alertBox.innerHTML = `<div class="alert alert-error">${escapeHtml((err1 || err2).message)}</div>`;
+        return;
       }
-      alertBox.innerHTML = failed
-        ? `<div class="alert alert-error">Could not save some settings. If this persists, ask a Super Admin to confirm club_settings write access for admins.</div>`
-        : `<div class="alert alert-success">Settings saved. ${auto ? 'New registrations will be auto-approved.' : 'New registrations will require manual approval.'}</div>`;
+      alertBox.innerHTML = `<div class="alert alert-success">Settings saved to Supabase. ${auto ? 'New registrations will be auto-approved.' : 'New registrations require manual approval.'}</div>`;
+      await loadAdminSettings();
     });
 
     await Promise.all([loadStats(), loadMembers(), loadNews(), loadActivities(), loadProjects(), loadForumModeration(), loadElections(), loadFeedback(), loadContactMessages(), loadLeadership(), loadAdminSettings()]);
