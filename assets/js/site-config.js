@@ -51,3 +51,26 @@ export const CULTURAL_IMAGES = {
   cultureBg: '/assets/img/culture-bg.jpg',
   seal: '/assets/img/nsa-seal.png',
 };
+
+/** Canonical hall / hostel list for registration and profile forms */
+export const HOSTEL_OPTIONS = [
+  'Katonga hostel',
+  'Bbosa hostel',
+  'Kavuma hostel',
+  'Lwanga hostel',
+  'Byaben hostel',
+  'Kololo hostel',
+  'Ivis hostel',
+  'Canan hostel',
+  'Fountain hostel',
+  'Angels hostel',
+  'Wamala hostel',
+  'Mugagga hostel',
+  'Micheal hall',
+  'Onyango hall',
+  'Campbell hall',
+  'Mukasa hall',
+  'Martyrs hall',
+  'Haflet hall',
+  'Carabine hall'
+];
