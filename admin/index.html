@@ -1104,9 +1104,16 @@ document.getElementById('news-form').addEventListener('submit', async (e) => {
         if (alertBox) alertBox.innerHTML = `<div class="alert alert-error">Could not update: ${escapeHtml(error.message)}</div>`;
         return;
       }
+      // Verify what the database actually has
+      let verified = on;
+      try {
+        const { data: enabled } = await supabase.rpc('is_auto_approve_enabled');
+        verified = !!enabled;
+        e.target.checked = verified;
+      } catch (_) {}
       if (alertBox) {
-        alertBox.innerHTML = `<div class="alert alert-success">${on
-          ? 'Auto-approve is ON in the database. New @umu.ac.ug registrations become active immediately.'
+        alertBox.innerHTML = `<div class="alert alert-success">${verified
+          ? 'Auto-approve is ON in the database. New registrations become active immediately.'
           : 'Auto-approve is OFF in the database. New registrations stay pending until an admin approves them.'}</div>`;
       }
     });
