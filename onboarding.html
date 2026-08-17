@@ -5,69 +5,89 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta name="robots" content="noindex, nofollow" />
 <title>Complete Your Profile: Nkobazambogo Students' Association</title>
-<meta name="description" content="The official home of the Nkobazambogo Students' Association at Uganda Martyrs University, Nkozi: news, activities, projects, and membership." />
-<!-- Social / Open Graph (link previews) -->
-<meta property="og:site_name" content="Nkobazambogo Students' Association" />
-<meta property="og:type" content="website" />
-<meta property="og:title" content="Complete Your Profile: Nkobazambogo Students' Association" />
-<meta property="og:description" content="The official home of the Nkobazambogo Students' Association at Uganda Martyrs University, Nkozi: news, activities, projects, and membership." />
-<meta property="og:url" content="https://umunsa.vercel.app/onboarding.html" />
-<meta property="og:image" content="https://umunsa.vercel.app/assets/img/og-default.jpg" />
-<meta property="og:image:secure_url" content="https://umunsa.vercel.app/assets/img/og-default.jpg" />
-<meta property="og:image:type" content="image/jpeg" />
-<meta property="og:image:width" content="1200" />
-<meta property="og:image:height" content="630" />
-<meta property="og:image:alt" content="Nkobazambogo Students' Association" />
-<meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="Complete Your Profile: Nkobazambogo Students' Association" />
-<meta name="twitter:description" content="The official home of the Nkobazambogo Students' Association at Uganda Martyrs University, Nkozi: news, activities, projects, and membership." />
-<meta name="twitter:image" content="https://umunsa.vercel.app/assets/img/og-default.jpg" />
-
 <link rel="stylesheet" href="assets/css/style.css" />
 </head>
 <body>
 <div id="app-nav"></div>
 
 <div class="auth-wrap">
-  <div class="auth-card" style="max-width:480px;">
-    <h2>Welcome! Let's finish setting up your account</h2>
-    <p class="subtitle">Just a few details so admins and fellow members know a bit about you. This only takes a minute.</p>
+  <div class="auth-card" style="max-width:520px;">
+    <h2>Complete your profile</h2>
+    <p class="subtitle">You signed in with your university email. Fill in these details before using member features. Required fields are marked.</p>
 
     <div id="alert-box"></div>
+    <p id="signed-in-as" style="font-size:0.85rem;color:var(--text-muted);margin-bottom:1rem;"></p>
 
     <form id="onboarding-form">
       <div class="form-group">
-        <label>Profile photo</label>
+        <label>Profile photo (optional)</label>
         <div style="display:flex;align-items:center;gap:1rem;">
-          <img id="avatar-preview" src="" alt="" style="width:64px;height:64px;border-radius:50%;object-fit:cover;background:var(--border);display:none;" />
-          <span id="avatar-fallback" style="width:64px;height:64px;border-radius:50%;background:var(--gold);color:var(--ink-navy);display:flex;align-items:center;justify-content:center;font-weight:700;font-family:'Fraunces',serif;"></span>
-          <input type="file" id="avatar_file" accept="image/png,image/jpeg,image/webp" style="flex:1;" />
+          <img id="avatar-preview" src="" alt="" style="width:64px;height:64px;border-radius:50%;object-fit:cover;border:2px solid var(--border);display:none;" />
+          <div id="avatar-fallback" style="width:64px;height:64px;border-radius:50%;background:var(--forest);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;"></div>
+          <input type="file" id="avatar-file" accept="image/*" />
         </div>
-        <small style="color:var(--text-muted);">Optional: JPG, PNG or WEBP, up to 10MB. You can also add this later from My Profile.</small>
       </div>
 
       <div class="form-group">
-        <label for="programme">Programme / Course</label>
-        <input type="text" id="programme" required placeholder="e.g. Bachelor of Information Technology" />
+        <label for="full_name">Full name *</label>
+        <input type="text" id="full_name" required autocomplete="name" />
       </div>
       <div class="form-group">
-        <label for="year_of_study">Year of study</label>
-        <input type="number" id="year_of_study" min="1" max="6" placeholder="e.g. 2" />
-      </div>
-      <div class="form-group">
-        <label for="phone">Phone number</label>
-        <input type="text" id="phone" required placeholder="e.g. 07XXXXXXXX" />
+        <label for="phone">Phone number *</label>
+        <input type="tel" id="phone" required placeholder="e.g. 07XXXXXXXX or +2567XXXXXXXX" autocomplete="tel" />
       </div>
       <div class="form-group">
         <label for="registration_number">Registration number</label>
         <input type="text" id="registration_number" placeholder="e.g. 2026-B101-10000" />
       </div>
       <div class="form-group">
-        <label for="bio">A short line about you (optional)</label>
-        <input type="text" id="bio" placeholder="e.g. Second-year IT student, loves debate and football" />
+        <label for="programme">Programme / Course *</label>
+        <input type="text" id="programme" required placeholder="e.g. Bachelor of Science with Education" />
+      </div>
+      <div class="form-group">
+        <label for="year_of_study">Year of study</label>
+        <input type="number" id="year_of_study" min="1" max="6" placeholder="e.g. 2" />
+      </div>
+      <div class="form-group">
+        <label for="hostel">Hall / Hostel *</label>
+        <select id="hostel" required>
+          <option value="">Select hostel</option>
+            <option value="Katonga hostel">Katonga hostel</option>
+            <option value="Bbosa hostel">Bbosa hostel</option>
+            <option value="Kavuma hostel">Kavuma hostel</option>
+            <option value="Lwanga hostel">Lwanga hostel</option>
+            <option value="Byaben hostel">Byaben hostel</option>
+            <option value="Kololo hostel">Kololo hostel</option>
+            <option value="Ivis hostel">Ivis hostel</option>
+            <option value="Canan hostel">Canan hostel</option>
+            <option value="Fountain hostel">Fountain hostel</option>
+            <option value="Angels hostel">Angels hostel</option>
+            <option value="Wamala hostel">Wamala hostel</option>
+            <option value="Mugagga hostel">Mugagga hostel</option>
+            <option value="Micheal hall">Micheal hall</option>
+            <option value="Onyango hall">Onyango hall</option>
+            <option value="Campbell hall">Campbell hall</option>
+            <option value="Mukasa hall">Mukasa hall</option>
+            <option value="Martyrs hall">Martyrs hall</option>
+            <option value="Haflet hall">Haflet hall</option>
+            <option value="Carabine hall">Carabine hall</option>
+          <option value="Other">Other (specify)</option>
+        </select>
+      </div>
+      <div class="form-group" id="hostel-other-wrap" style="display:none;">
+        <label for="hostel_other">Enter your hostel name *</label>
+        <input type="text" id="hostel_other" placeholder="Enter your hostel name" />
+      </div>
+      <div class="form-group">
+        <label for="faculty">Faculty / School *</label>
+        <input type="text" id="faculty" required placeholder="e.g. Faculty of Education" />
+      </div>
+      <div class="form-group">
+        <label for="bio">Short bio (optional)</label>
+        <textarea id="bio" rows="3" placeholder="A line about yourself"></textarea>
       </div>
 
-      <button type="submit" class="btn btn-gold btn-block" id="submit-btn">Continue</button>
+      <button type="submit" class="btn btn-gold btn-block" id="submit-btn">Save and continue</button>
     </form>
   </div>
 </div>
@@ -76,52 +96,89 @@
 
 <script type="module">
   import { supabase } from './assets/js/supabase-client.js';
-  import { mountNav, mountFooter } from './assets/js/nav.js';
   import { routeAfterLogin } from './assets/js/auth.js';
+  import { mountNav, mountFooter } from './assets/js/nav.js';
+  import { BASE_URL, isUmuEmail } from './assets/js/site-config.js';
 
   mountNav();
   mountFooter();
 
   const { data: { session } } = await supabase.auth.getSession();
-  if (!session) { window.location.href = 'login.html'; throw new Error('no session'); }
-
-  const { data: profile } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
-    if (profile?.onboarding_completed) {
-    // Already done this before: send them wherever they actually belong now.
-    await routeAfterLogin();
-    throw new Error('already onboarded');
+  if (!session?.user) {
+    window.location.href = `${BASE_URL}/apply.html`;
+    throw new Error('redirect');
+  }
+  if (!isUmuEmail(session.user.email)) {
+    await supabase.auth.signOut();
+    window.location.href = `${BASE_URL}/apply.html`;
+    throw new Error('redirect');
   }
 
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', session.user.id)
+    .maybeSingle();
+
+  document.getElementById('signed-in-as').textContent = `Signed in as ${session.user.email}`;
+
+  // Prefill
+  const metaName = session.user.user_metadata?.full_name || session.user.user_metadata?.name || '';
+  document.getElementById('full_name').value = profile?.full_name || metaName || '';
   document.getElementById('phone').value = profile?.phone || '';
   document.getElementById('registration_number').value = profile?.registration_number || '';
   document.getElementById('programme').value = profile?.programme || '';
   document.getElementById('year_of_study').value = profile?.year_of_study || '';
+  document.getElementById('faculty').value = profile?.faculty || '';
   document.getElementById('bio').value = profile?.bio || '';
-  renderAvatar(profile?.avatar_url, profile?.full_name);
+
+  const hostelSel = document.getElementById('hostel');
+  const known = profile?.hostel || '';
+  if (known) {
+    const match = [...hostelSel.options].some(o => o.value === known);
+    if (match) hostelSel.value = known;
+    else {
+      hostelSel.value = 'Other';
+      document.getElementById('hostel-other-wrap').style.display = 'block';
+      document.getElementById('hostel_other').value = known;
+      document.getElementById('hostel_other').required = true;
+    }
+  }
 
   let uploadedPhotoUrl = profile?.avatar_url || null;
+  renderAvatar(uploadedPhotoUrl, profile?.full_name || metaName);
 
-  document.getElementById('avatar_file').addEventListener('change', async (e) => {
-    const file = e.target.files[0];
+  document.getElementById('hostel').addEventListener('change', () => {
+    const wrap = document.getElementById('hostel-other-wrap');
+    const other = document.getElementById('hostel_other');
+    if (hostelSel.value === 'Other') {
+      wrap.style.display = 'block';
+      other.required = true;
+    } else {
+      wrap.style.display = 'none';
+      other.required = false;
+      other.value = '';
+    }
+  });
+
+  document.getElementById('avatar-file').addEventListener('change', async (e) => {
+    const file = e.target.files?.[0];
     if (!file) return;
-    const alertBox = document.getElementById('alert-box');
-
     if (file.size > 10 * 1024 * 1024) {
-      alertBox.innerHTML = `<div class="alert alert-error">That image is larger than 10MB: please choose a smaller file.</div>`;
+      document.getElementById('alert-box').innerHTML = `<div class="alert alert-error">Photo must be under 10MB.</div>`;
       e.target.value = '';
       return;
     }
-
     const ext = file.name.split('.').pop();
     const path = `${session.user.id}/avatar.${ext}`;
     const { error: uploadErr } = await supabase.storage.from('avatars').upload(path, file, { upsert: true, cacheControl: '3600' });
     if (uploadErr) {
-      alertBox.innerHTML = `<div class="alert alert-error">Photo upload failed: ${uploadErr.message}</div>`;
+      document.getElementById('alert-box').innerHTML = `<div class="alert alert-error">Photo upload failed: ${uploadErr.message}</div>`;
       return;
     }
     const { data: pub } = supabase.storage.from('avatars').getPublicUrl(path);
     uploadedPhotoUrl = `${pub.publicUrl}?t=${Date.now()}`;
-    renderAvatar(uploadedPhotoUrl, profile?.full_name);
+    renderAvatar(uploadedPhotoUrl, document.getElementById('full_name').value);
   });
 
   function renderAvatar(url, name) {
@@ -141,26 +198,37 @@
     const alertBox = document.getElementById('alert-box');
     btn.disabled = true; btn.textContent = 'Saving...';
 
+    const full_name = document.getElementById('full_name').value.trim();
+    const phone = document.getElementById('phone').value.trim();
     const programme = document.getElementById('programme').value.trim();
-    if (!programme) {
-      alertBox.innerHTML = `<div class="alert alert-error">Please enter your programme/course.</div>`;
-      btn.disabled = false; btn.textContent = 'Continue';
+    const faculty = document.getElementById('faculty').value.trim();
+    let hostel = document.getElementById('hostel').value.trim();
+    if (hostel === 'Other') {
+      hostel = document.getElementById('hostel_other').value.trim();
+    }
+    if (!full_name || !phone || !programme || !faculty || !hostel) {
+      alertBox.innerHTML = `<div class="alert alert-error">Please fill all required fields (name, phone, programme, hostel, faculty).</div>`;
+      btn.disabled = false; btn.textContent = 'Save and continue';
       return;
     }
 
     const { error } = await supabase.from('profiles').update({
+      full_name,
+      phone,
       programme,
+      faculty,
+      hostel,
       year_of_study: document.getElementById('year_of_study').value ? Number(document.getElementById('year_of_study').value) : null,
-      phone: document.getElementById('phone').value.trim(),
       registration_number: document.getElementById('registration_number').value.trim() || null,
       bio: document.getElementById('bio').value.trim() || null,
       avatar_url: uploadedPhotoUrl,
       onboarding_completed: true,
+      updated_at: new Date().toISOString(),
     }).eq('id', session.user.id);
 
     if (error) {
-      alertBox.innerHTML = `<div class="alert alert-error">${String(error.message || error)}</div>`;
-      btn.disabled = false; btn.textContent = 'Continue';
+      alertBox.innerHTML = `<div class="alert alert-error">${error.message}</div>`;
+      btn.disabled = false; btn.textContent = 'Save and continue';
       return;
     }
 
