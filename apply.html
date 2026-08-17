@@ -30,7 +30,6 @@
 <div id="app-nav"></div>
 
 <div class="login-portal apply-portal">
-  <!-- Left: application form panel -->
   <aside class="login-panel apply-panel">
     <div class="login-panel-inner apply-panel-inner">
       <h1 class="login-heading">APPLY</h1>
@@ -38,26 +37,42 @@
 
       <div id="alert-box"></div>
 
-      <form id="apply-form" class="apply-form">
-        <div class="form-group">
-          <label for="full_name">Full name</label>
-          <input id="full_name" type="text" required autocomplete="name" />
-        </div>
-        <div class="form-group">
-          <label for="email">University email</label>
-          <input id="email" type="email" required placeholder="name@umu.ac.ug" pattern=".+@([a-zA-Z0-9-]+\.)*umu\.ac\.ug$" title="Must be a university email on umu.ac.ug" autocomplete="username" />
-        </div>
-        <div class="form-group">
-          <label for="phone">Phone number</label>
-          <input id="phone" type="tel" required placeholder="e.g. +2567XXXXXXXX" autocomplete="tel" />
-        </div>
-        <div class="form-group">
-          <label for="registration_number">Registration number</label>
-          <input id="registration_number" type="text" placeholder="e.g. 2026-B101-10000" />
-        </div>
-      <div class="form-group">
-          <label for="hostel">Hall / Hostel</label>
-                    <select id="hostel">
+      <!-- Step 1: Google university email -->
+      <div id="step-google">
+        <p style="color:rgba(255,255,255,0.9);font-size:0.95rem;margin:0 0 1rem;">
+          First sign in with your <strong>real university Google account</strong>
+          (name@umu.ac.ug or name@stud.umu.ac.ug). This proves the email is yours.
+        </p>
+        <button type="button" class="btn btn-google" id="google-apply-btn" style="width:100%;display:flex;align-items:center;justify-content:center;gap:0.6rem;background:#fff;color:#1f1f1f;border:none;padding:0.85rem 1rem;border-radius:8px;font-weight:600;cursor:pointer;">
+          <span style="display:inline-flex;width:20px;height:20px;">
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+          </span>
+          Continue with your UMU email
+        </button>
+        <p style="margin-top:1.25rem;font-size:0.85rem;color:rgba(255,255,255,0.75);text-align:center;">
+          Already a member? <a href="login.html" style="color:#fff;text-decoration:underline;">Sign in</a>
+        </p>
+      </div>
+
+      <!-- Step 2: Details form (after Google) -->
+      <div id="step-details" style="display:none;">
+        <p id="signed-in-as" style="font-size:0.85rem;color:rgba(255,255,255,0.85);margin:0 0 1rem;"></p>
+        <form id="apply-form" class="apply-form">
+          <div class="form-group">
+            <label for="full_name">Full name</label>
+            <input id="full_name" type="text" required autocomplete="name" />
+          </div>
+          <div class="form-group">
+            <label for="phone">Phone number</label>
+            <input id="phone" type="tel" required placeholder="e.g. 07XXXXXXXX or +2567XXXXXXXX" autocomplete="tel" />
+          </div>
+          <div class="form-group">
+            <label for="registration_number">Registration number</label>
+            <input id="registration_number" type="text" placeholder="e.g. 2026-B101-10000" />
+          </div>
+          <div class="form-group">
+            <label for="hostel">Hall / Hostel</label>
+            <select id="hostel">
             <option value="">Select (optional)</option>
             <option value="Katonga hostel">Katonga hostel</option>
             <option value="Bbosa hostel">Bbosa hostel</option>
@@ -80,63 +95,40 @@
             <option value="Carabine hall">Carabine hall</option>
             <option value="Other">Other (specify)</option>
           </select>
-        </div>
-        <div class="form-group" id="hostel-other-wrap" style="display:none;">
-          <label for="hostel_other">Enter your hostel name</label>
-          <input type="text" id="hostel_other" placeholder="Enter your hostel name" autocomplete="address-level2" />
-        </div>
-        <div class="form-group">
-          <label for="faculty">Faculty / School</label>
-          <input id="faculty" type="text" placeholder="e.g. Faculty of Science" />
-        </div>
-        <div class="form-group">
-          <label for="role">I am a</label>
-          <select id="role">
-            <option value="student">Student</option>
-            <option value="staff">Staff / Faculty</option>
-            <option value="other">Other</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label for="department">Department / Faculty (optional)</label>
-          <input id="department" type="text" />
-        </div>
-        <div class="form-group">
-          <label for="password">Password</label>
-          <input id="password" type="password" required minlength="8" autocomplete="new-password" />
-          <small class="field-hint">At least 8 characters. You will use this after an admin approves you.</small>
-        </div>
-        <button type="submit" id="submit-btn" class="btn btn-apply-submit btn-block">Apply now</button>
-      </form>
-
-      <p class="login-panel-foot">
-        Already a member? <a href="login.html">Sign in</a>
-        <br /><a href="privacy">Privacy</a> &middot; <a href="terms">Terms</a>
-      </p>
+          </div>
+          <div class="form-group" id="hostel-other-wrap" style="display:none;">
+            <label for="hostel_other">Enter your hostel name</label>
+            <input type="text" id="hostel_other" placeholder="Enter your hostel name" autocomplete="address-level2" />
+          </div>
+          <div class="form-group">
+            <label for="faculty">Faculty / School</label>
+            <input id="faculty" type="text" placeholder="e.g. Faculty of Science" />
+          </div>
+          <button type="submit" class="btn btn-gold btn-block" id="apply-submit" style="width:100%;margin-top:0.5rem;">Submit Application</button>
+        </form>
+        <p style="margin-top:1rem;font-size:0.8rem;color:rgba(255,255,255,0.7);text-align:center;">
+          <button type="button" id="sign-out-btn" style="background:none;border:none;color:#fff;text-decoration:underline;cursor:pointer;font-size:0.8rem;">Use a different Google account</button>
+        </p>
+      </div>
     </div>
   </aside>
 
-  <!-- Right: carousel + info -->
   <section class="login-showcase">
-    <div class="login-carousel" aria-hidden="true">
+    <div class="login-carousel" id="login-carousel" aria-hidden="true">
       <div class="login-carousel-slide is-active" style="background-image:url('assets/img/umu.webp')"></div>
       <div class="login-carousel-slide" style="background-image:url('assets/img/umu%20b.webp')"></div>
     </div>
     <div class="login-showcase-overlay"></div>
-
     <div class="login-showcase-content">
       <img src="assets/img/nsa-seal.png" alt="Nkobazambogo Students' Association seal" class="login-seal" width="120" height="120" />
-
       <div class="login-info-card">
-        <h2 class="login-steps-title">Join the association</h2>
-        <p class="login-steps-intro">Apply using your university email on the <strong>umu.ac.ug</strong> domain. Applications are reviewed by an admin.</p>
+        <h2 class="login-steps-title">How to apply</h2>
         <ol class="login-steps">
-          <li>Fill in your details on the left (university email required).</li>
-          <li>Submit the form. An admin will review your application.</li>
-          <li>Once approved, sign in with <strong>Login with your UMU email</strong> (Google) or your email and password.</li>
+          <li>Click <strong>Continue with your UMU email</strong> and sign in with Google using your university address.</li>
+          <li>Only a real <strong>@umu.ac.ug</strong> or <strong>@stud.umu.ac.ug</strong> Google account is accepted — invented emails will not work.</li>
+          <li>Fill in your name, phone, hostel, and faculty, then submit. An admin will review your application unless auto-approve is on.</li>
         </ol>
-        <p class="login-note">Only <strong>umu.ac.ug</strong> addresses (including student subdomains) can self-apply. Need another domain? Ask a Super Admin to add you.</p>
-        <p class="login-note" style="margin-bottom:0;"><a href="rules.html" style="color:var(--forest);font-weight:600;">Read the Members' Code →</a></p>
+        <p class="login-note">Password accounts are not used. Your university Google login is your identity on this site.</p>
       </div>
     </div>
   </section>
@@ -145,13 +137,134 @@
 <div id="app-footer"></div>
 
 <script type="module">
+  import { supabase } from './assets/js/supabase-client.js';
+  import {
+    loginWithGoogle,
+    completeGoogleLoginFromUrl,
+    submitMembershipApplication,
+  } from './assets/js/auth.js';
   import { mountNav, mountFooter } from './assets/js/nav.js';
-  import { registerWithEmail, redirectIfAlreadyLoggedIn } from './assets/js/auth.js';
+  import { isUmuEmail } from './assets/js/site-config.js';
 
-  await redirectIfAlreadyLoggedIn();
   mountNav();
   mountFooter();
 
+  const alertBox = document.getElementById('alert-box');
+  const stepGoogle = document.getElementById('step-google');
+  const stepDetails = document.getElementById('step-details');
+
+  function showAlert(msg, type = 'error') {
+    alertBox.innerHTML = `<div class="alert alert-${type}">${msg}</div>`;
+  }
+
+  function showDetails(user, profile) {
+    stepGoogle.style.display = 'none';
+    stepDetails.style.display = 'block';
+    document.getElementById('signed-in-as').textContent =
+      `Signed in as ${user.email} — complete your details below.`;
+    const metaName = user.user_metadata?.full_name || user.user_metadata?.name || '';
+    document.getElementById('full_name').value = profile?.full_name || metaName || '';
+    document.getElementById('phone').value = profile?.phone || '';
+    document.getElementById('registration_number').value = profile?.registration_number || '';
+    document.getElementById('faculty').value = profile?.faculty || '';
+    const hostelSel = document.getElementById('hostel');
+    const known = profile?.hostel || '';
+    if (known) {
+      const match = [...hostelSel.options].some(o => o.value === known);
+      if (match) hostelSel.value = known;
+      else {
+        hostelSel.value = 'Other';
+        document.getElementById('hostel-other-wrap').style.display = 'block';
+        document.getElementById('hostel_other').value = known;
+      }
+    }
+  }
+
+  // Hostel other toggle
+  document.getElementById('hostel')?.addEventListener('change', () => {
+    const wrap = document.getElementById('hostel-other-wrap');
+    const other = document.getElementById('hostel_other');
+    if (document.getElementById('hostel').value === 'Other') {
+      wrap.style.display = 'block';
+      other.required = true;
+    } else {
+      wrap.style.display = 'none';
+      other.required = false;
+      other.value = '';
+    }
+  });
+
+  // OAuth return
+  const googleResult = await completeGoogleLoginFromUrl();
+  if (googleResult.error) {
+    showAlert(googleResult.error, 'error');
+    if (googleResult.needsApply) {
+      // stay on apply step 1
+    }
+  } else if (googleResult.needsApplication) {
+    showDetails(googleResult.user, googleResult.profile);
+  }
+
+  // Already signed in?
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.user && isUmuEmail(session.user.email) && stepDetails.style.display === 'none') {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('membership_status, full_name, phone, registration_number, hostel, faculty')
+      .eq('id', session.user.id)
+      .maybeSingle();
+    if (profile?.membership_status === 'active') {
+      window.location.href = 'dashboard.html';
+    } else if (profile?.membership_status !== 'rejected' && profile?.membership_status !== 'suspended') {
+      showDetails(session.user, profile);
+    }
+  }
+
+  document.getElementById('google-apply-btn')?.addEventListener('click', async () => {
+    const btn = document.getElementById('google-apply-btn');
+    btn.disabled = true;
+    const { error } = await loginWithGoogle({ redirectPath: '/apply.html' });
+    if (error) {
+      showAlert(error, 'error');
+      btn.disabled = false;
+    }
+  });
+
+  document.getElementById('sign-out-btn')?.addEventListener('click', async () => {
+    await supabase.auth.signOut();
+    window.location.reload();
+  });
+
+  document.getElementById('apply-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const hostelVal = document.getElementById('hostel').value.trim();
+    let hostel = hostelVal || null;
+    if (hostelVal === 'Other') {
+      hostel = (document.getElementById('hostel_other')?.value || '').trim() || null;
+      if (!hostel) {
+        showAlert('Please enter your hostel name.', 'error');
+        return;
+      }
+    }
+    const btn = document.getElementById('apply-submit');
+    btn.disabled = true;
+    btn.textContent = 'Submitting...';
+    const result = await submitMembershipApplication({
+      fullName: document.getElementById('full_name').value,
+      phone: document.getElementById('phone').value,
+      registrationNumber: document.getElementById('registration_number').value,
+      hostel,
+      faculty: document.getElementById('faculty').value,
+    });
+    if (result.error) {
+      showAlert(result.error, 'error');
+      btn.disabled = false;
+      btn.textContent = 'Submit Application';
+    }
+    // success redirects inside submitMembershipApplication
+  });
+
+  // Carousel
   const slides = document.querySelectorAll('.login-carousel-slide');
   if (slides.length > 1) {
     let i = 0;
@@ -161,58 +274,6 @@
       slides[i].classList.add('is-active');
     }, 6000);
   }
-
-  function wireHostelOther() {
-    const sel = document.getElementById('hostel');
-    const wrap = document.getElementById('hostel-other-wrap');
-    const other = document.getElementById('hostel_other');
-    if (!sel || !wrap) return;
-    const sync = () => {
-      const isOther = sel.value === 'Other';
-      wrap.style.display = isOther ? 'block' : 'none';
-      if (other) other.required = isOther;
-      if (!isOther && other) other.value = '';
-    };
-    sel.addEventListener('change', sync);
-    sync();
-  }
-  wireHostelOther();
-
-  const form = document.getElementById('apply-form');
-  const alertBox = document.getElementById('alert-box');
-  const btn = document.getElementById('submit-btn');
-
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    alertBox.innerHTML = '';
-    if (document.getElementById('hostel').value === 'Other' && !(document.getElementById('hostel_other')?.value || '').trim()) {
-      alertBox.innerHTML = '<div class="alert alert-error">Please specify where you reside.</div>';
-      document.getElementById('hostel_other')?.focus();
-      return;
-    }
-    btn.disabled = true;
-    btn.textContent = 'Submitting...';
-
-    const result = await registerWithEmail({
-      fullName: document.getElementById('full_name').value.trim(),
-      email: document.getElementById('email').value.trim(),
-      phone: document.getElementById('phone').value.trim(),
-      registrationNumber: document.getElementById('registration_number').value.trim(),
-      hostel: (function(){ const h=document.getElementById('hostel').value.trim(); if(h!=='Other') return h||null; const o=(document.getElementById('hostel_other')?.value||'').trim(); return o||null; })(),
-      faculty: document.getElementById('faculty').value.trim(),
-      password: document.getElementById('password').value,
-    });
-
-    if (result.error) {
-      alertBox.innerHTML = `<div class="alert alert-error">${String(result.error)}</div>`;
-      btn.disabled = false;
-      btn.textContent = 'Apply now';
-      return;
-    }
-
-    alertBox.innerHTML = `<div class="alert alert-success">${result.message || 'Application submitted. An admin will review your request.'}</div>`;
-    form.style.display = 'none';
-  });
 </script>
 </body>
 </html>

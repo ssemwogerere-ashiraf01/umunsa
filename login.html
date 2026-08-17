@@ -95,7 +95,10 @@
 
   const googleResult = await completeGoogleLoginFromUrl();
   if (googleResult.error) {
-    showAlert(googleResult.error, 'error');
+    const extra = googleResult.needsApply
+      ? ' <a href="apply.html">Apply for membership</a>'
+      : '';
+    showAlert(googleResult.error + extra, 'error');
   }
 
   await redirectIfAlreadyLoggedIn();
