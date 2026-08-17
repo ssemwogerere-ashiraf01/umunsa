@@ -64,12 +64,31 @@ export async function registerWithEmail({ email, password, fullName, phone, regi
   });
   if (error) return { error: error.message };
 
+  // If auto-approve is enabled in club_settings, activate pending -> active
+  if (data?.user?.id) {
+    try {
+      await supabase.rpc('maybe_auto_approve_member', { p_user_id: data.user.id });
+    } catch (_) { /* ignore if RPC not deployed yet */ }
+  }
+
   if (data?.session) {
     await routeAfterLogin();
     return { data, message: 'Signed in successfully.' };
   }
 
-  return { data, message: 'Account created. An admin will review and approve your account before you can sign in.' };
+  // Re-check status for messaging
+  let autoOn = false;
+  try {
+    const { data: enabled } = await supabase.rpc('is_auto_approve_enabled');
+    autoOn = !!enabled;
+  } catch (_) {}
+
+  return {
+    data,
+    message: autoOn
+      ? 'Account created and approved. You can sign in now.'
+      : 'Account created. An admin will review and approve your account before you can sign in.',
+  };
 }
 
 function normalizePhoneForRegister(phone) {
@@ -235,6 +254,11 @@ export async function logout() {
 export async function routeAfterLogin() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: 'Session not found.' };
+
+  // Apply auto-approve if the admin has enabled it (covers Google OAuth too)
+  try {
+    await supabase.rpc('maybe_auto_approve_member', { p_user_id: user.id });
+  } catch (_) {}
 
   const { data: profile } = await supabase
     .from('profiles')
