@@ -291,6 +291,7 @@ export async function submitMembershipApplication({ fullName, phone, registratio
     registration_number: String(registrationNumber || '').trim() || null,
     hostel: String(hostel || '').trim() || null,
     faculty: String(faculty || '').trim() || null,
+    onboarding_completed: false,
     updated_at: new Date().toISOString(),
   };
 
@@ -321,13 +322,9 @@ export async function submitMembershipApplication({ fullName, phone, registratio
     .eq('id', user.id)
     .maybeSingle();
 
-  if (refreshed?.membership_status === 'active') {
-    await routeAfterLogin();
-    return { ok: true, active: true };
-  }
-
-  window.location.href = `${BASE_URL}/pending-approval.html`;
-  return { ok: true, pending: true };
+  // Always complete profile (onboarding) before dashboard or pending screen
+  window.location.href = `${BASE_URL}/onboarding.html`;
+  return { ok: true };
 }
 
 // Second step of login: the code from email is the only thing that
@@ -350,6 +347,14 @@ export async function logout() {
   window.location.href = `${BASE_URL}/index.html`;
 }
 
+/** Required fields before dashboard access */
+export function isProfileComplete(profile) {
+  if (!profile) return false;
+  if (!profile.onboarding_completed) return false;
+  const need = [profile.full_name, profile.phone, profile.programme, profile.hostel, profile.faculty];
+  return need.every((v) => typeof v === 'string' && v.trim().length > 0);
+}
+
 // After any successful login, send the person to the right place based on
 // their membership status rather than assuming dashboard.
 export async function routeAfterLogin() {
@@ -363,19 +368,20 @@ export async function routeAfterLogin() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('membership_status, onboarding_completed')
+    .select('membership_status, onboarding_completed, full_name, phone, programme, hostel, faculty')
     .eq('id', user.id)
-    .single();
+    .maybeSingle();
 
   if (!profile) {
-    window.location.href = `${BASE_URL}/pending-approval.html`;
-  } else if (!profile.onboarding_completed) {
+    // New Google user — collect personal details first
     window.location.href = `${BASE_URL}/onboarding.html`;
-  } else if (profile.membership_status === 'pending') {
-    window.location.href = `${BASE_URL}/pending-approval.html`;
   } else if (profile.membership_status === 'rejected' || profile.membership_status === 'suspended') {
     await supabase.auth.signOut();
     window.location.href = `${BASE_URL}/login.html?denied=1`;
+  } else if (!isProfileComplete(profile)) {
+    window.location.href = `${BASE_URL}/onboarding.html`;
+  } else if (profile.membership_status === 'pending') {
+    window.location.href = `${BASE_URL}/pending-approval.html`;
   } else {
     window.location.href = `${BASE_URL}/dashboard.html`;
   }

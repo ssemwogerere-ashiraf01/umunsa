@@ -1,5 +1,6 @@
 import { supabase } from './supabase-client.js';
 import { BASE_URL } from './site-config.js';
+import { isProfileComplete } from './auth.js';
 
 const IDLE_LIMIT_MS = 10 * 60 * 1000;   // 10 minutes idle -> logout
 const REFRESH_INTERVAL_MS = 10 * 60 * 1000; // 10 minutes -> refresh session/data
@@ -48,10 +49,10 @@ export async function requireApprovedMember() {
     .single();
 
   if (!profile) {
-    window.location.href = `${BASE_URL}/pending-approval.html`;
+    window.location.href = `${BASE_URL}/onboarding.html`;
     return null;
   }
-  if (!profile.onboarding_completed) {
+  if (!isProfileComplete(profile)) {
     window.location.href = `${BASE_URL}/onboarding.html`;
     return null;
   }
