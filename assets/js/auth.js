@@ -15,7 +15,16 @@ const functionHeaders = () => ({
 });
 
 function normalizeEmail(email) {
-  return (email || '').trim().toLowerCase();
+  let e = (email || '').trim().toLowerCase();
+  // Collapse spaces
+  e = e.replace(/\s+/g, '');
+  const at = e.lastIndexOf('@');
+  if (at < 1) return e;
+  let local = e.slice(0, at);
+  const domain = e.slice(at + 1);
+  // Strip trailing/leading dots in local part and collapse ".." 
+  local = local.replace(/^\.+|\.+$/g, '').replace(/\.{2,}/g, '.');
+  return `${local}@${domain}`;
 }
 
 // Self-registration is restricted to @umu.ac.ug addresses. The super admin
@@ -34,13 +43,20 @@ export async function registerWithEmail({ email, password, fullName, phone, regi
     return { error: 'A valid phone number is required for password reset and account verification.' };
   }
 
-  const { data: existingProfile, error: existingErr } = await supabase
+  // Prefer security-definer RPC (works while logged out; RLS blocks direct profiles read)
+  try {
+    const { data: taken, error: takenErr } = await supabase.rpc('email_already_registered', { p_email: cleanEmail });
+    if (!takenErr && taken === true) {
+      return { error: 'An account already exists for that email. Use Sign In or reset your password instead of registering again.' };
+    }
+  } catch (_) { /* fall through */ }
+
+  // Fallback direct check (may be blocked by RLS for anonymous users)
+  const { data: existingProfile } = await supabase
     .from('profiles')
-    .select('id, membership_status')
+    .select('id')
     .ilike('email', cleanEmail)
     .maybeSingle();
-
-  if (existingErr) return { error: existingErr.message };
   if (existingProfile) {
     return { error: 'An account already exists for that email. Use Sign In or reset your password instead of registering again.' };
   }
@@ -62,7 +78,13 @@ export async function registerWithEmail({ email, password, fullName, phone, regi
       },
     },
   });
-  if (error) return { error: error.message };
+  if (error) {
+    const msg = error.message || '';
+    if (/already|registered|exists/i.test(msg)) {
+      return { error: 'An account already exists for that email. Use Sign In or reset your password instead of registering again.' };
+    }
+    return { error: msg };
+  }
 
   // If auto-approve is enabled in club_settings, activate pending -> active
   if (data?.user?.id) {
@@ -130,11 +152,12 @@ export async function loginWithEmail({ email, password, captcha_token, captcha_a
   return { requireOtp: true, email: cleanEmail };
 }
 
-export async function loginWithGoogle() {
+export async function loginWithGoogle(options = {}) {
   // Prefer the real browser origin so local/dev and production both work.
-  // Supabase Dashboard → Authentication → URL Configuration must list this
-  // exact redirect URL (and Site URL must not be a bogus IP like 0.0.11.184).
-  const redirectTo = `${window.location.origin}/login.html`;
+  // Supabase Dashboard → Authentication → URL Configuration must list each
+  // redirect URL used (login.html and apply.html).
+  const path = options.redirectPath || '/login.html';
+  const redirectTo = `${window.location.origin}${path.startsWith('/') ? path : `/${path}`}`;
 
   const { error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
@@ -199,7 +222,7 @@ export async function completeGoogleLoginFromUrl() {
 
   const { data: profile, error: profileErr } = await supabase
     .from('profiles')
-    .select('membership_status')
+    .select('membership_status, full_name, phone, registration_number, hostel, faculty, onboarding_completed')
     .eq('id', user.id)
     .maybeSingle();
 
@@ -208,16 +231,33 @@ export async function completeGoogleLoginFromUrl() {
     return { error: 'There was an error checking your membership status. Please try again or contact an admin.' };
   }
 
+  const path = window.location.pathname || '';
+  const onApplyPage = /apply\.html?$/i.test(path) || path.endsWith('/apply');
+
+  // Apply flow: keep session so they can finish the membership form
+  if (onApplyPage) {
+    if (profile?.membership_status === 'active') {
+      await routeAfterLogin();
+      return { completed: true, alreadyMember: true };
+    }
+    if (profile?.membership_status === 'rejected' || profile?.membership_status === 'suspended') {
+      await supabase.auth.signOut();
+      return { error: 'Your account is not active. Contact an admin for details.' };
+    }
+    return { needsApplication: true, user, profile: profile || null };
+  }
+
+  // Login flow
   if (!profile) {
-    await supabase.auth.signOut();
     return {
-      error: `Your Google account uses a ${REQUIRED_EMAIL_DOMAIN} email but you are not registered as a member. Apply for membership or contact an admin to be added.`,
+      error: `Your Google account uses a ${REQUIRED_EMAIL_DOMAIN} email but you are not a registered member yet. Please apply for membership first.`,
+      needsApply: true,
     };
   }
 
   if (profile.membership_status === 'pending') {
-    await supabase.auth.signOut();
-    return { error: 'Your membership application is still pending approval. An admin will review your request.' };
+    window.location.href = `${BASE_URL}/pending-approval.html`;
+    return { pending: true };
   }
 
   if (profile.membership_status === 'rejected' || profile.membership_status === 'suspended') {
@@ -227,6 +267,67 @@ export async function completeGoogleLoginFromUrl() {
 
   await routeAfterLogin();
   return { completed: true };
+}
+
+/** Save membership application details after Google sign-in */
+export async function submitMembershipApplication({ fullName, phone, registrationNumber, hostel, faculty }) {
+  const { data: { user }, error: userErr } = await supabase.auth.getUser();
+  if (userErr || !user) return { error: 'Please sign in with your university Google account first.' };
+  if (!isUmuEmail(user.email)) {
+    await supabase.auth.signOut();
+    return { error: `Only ${REQUIRED_EMAIL_DOMAIN} emails are accepted.` };
+  }
+
+  const cleanPhone = normalizePhoneForRegister(phone);
+  if (!cleanPhone) {
+    return { error: 'A valid phone number is required.' };
+  }
+  const name = String(fullName || '').trim();
+  if (!name) return { error: 'Full name is required.' };
+
+  const payload = {
+    full_name: name,
+    phone: cleanPhone,
+    registration_number: String(registrationNumber || '').trim() || null,
+    hostel: String(hostel || '').trim() || null,
+    faculty: String(faculty || '').trim() || null,
+    updated_at: new Date().toISOString(),
+  };
+
+  // Profile should already exist from handle_new_user after first Google sign-in
+  const { data: existing } = await supabase.from('profiles').select('id, membership_status').eq('id', user.id).maybeSingle();
+  if (!existing) {
+    const { error: insErr } = await supabase.from('profiles').insert({
+      id: user.id,
+      email: user.email,
+      ...payload,
+      membership_status: 'pending',
+      onboarding_completed: false,
+    });
+    if (insErr) return { error: insErr.message };
+  } else {
+    const { error: upErr } = await supabase.from('profiles').update(payload).eq('id', user.id);
+    if (upErr) return { error: upErr.message };
+  }
+
+  // Auto-approve if enabled
+  try {
+    await supabase.rpc('maybe_auto_approve_member', { p_user_id: user.id });
+  } catch (_) {}
+
+  const { data: refreshed } = await supabase
+    .from('profiles')
+    .select('membership_status')
+    .eq('id', user.id)
+    .maybeSingle();
+
+  if (refreshed?.membership_status === 'active') {
+    await routeAfterLogin();
+    return { ok: true, active: true };
+  }
+
+  window.location.href = `${BASE_URL}/pending-approval.html`;
+  return { ok: true, pending: true };
 }
 
 // Second step of login: the code from email is the only thing that
