@@ -9,11 +9,11 @@
 <style>
   .msg-shell {
     max-width: 1100px; margin: 1rem auto 2rem; padding: 0 1rem;
-    display: grid; grid-template-columns: 280px 1fr; gap: 1rem; min-height: 70vh;
+    display: grid; grid-template-columns: 300px 1fr; gap: 1rem; min-height: 70vh;
   }
   @media (max-width: 800px) {
-    .msg-shell { grid-template-columns: 1fr; min-height: auto; }
-    .msg-sidebar { max-height: 40vh; }
+    .msg-shell { grid-template-columns: 1fr; }
+    .msg-sidebar { max-height: 42vh; }
   }
   .msg-panel {
     background: var(--paper); border: 1px solid var(--border);
@@ -22,82 +22,119 @@
   }
   .msg-sidebar { max-height: 75vh; }
   .msg-side-head, .msg-chat-head {
-    padding: 0.9rem 1rem; border-bottom: 1px solid var(--border);
-    display: flex; align-items: center; gap: 0.75rem;
+    padding: 0.85rem 1rem; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 0.75rem; justify-content: space-between;
   }
   .msg-side-head h2, .msg-chat-head h2 { margin: 0; font-size: 1.05rem; }
-  .msg-tabs { display: flex; gap: 0.35rem; padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border); }
+  .msg-tabs { display: flex; gap: 0.3rem; padding: 0.45rem 0.6rem; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
   .msg-tab {
-    flex: 1; border: none; background: transparent; padding: 0.45rem;
-    border-radius: 8px; cursor: pointer; font-weight: 600; color: var(--text-muted);
+    flex: 1; min-width: 70px; border: none; background: transparent; padding: 0.4rem 0.35rem;
+    border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.82rem; color: var(--text-muted);
   }
   .msg-tab.active { background: var(--forest); color: #fff; }
   .msg-list { overflow-y: auto; flex: 1; }
   .msg-person {
     width: 100%; text-align: left; border: none; border-bottom: 1px solid var(--border);
-    background: transparent; padding: 0.75rem 1rem; cursor: pointer; display: flex; gap: 0.65rem; align-items: center;
+    background: transparent; padding: 0.7rem 0.9rem; cursor: pointer; display: flex; gap: 0.65rem; align-items: center;
   }
   .msg-person:hover, .msg-person.active { background: rgba(27,67,50,0.06); }
   .msg-avatar {
     width: 40px; height: 40px; border-radius: 50%; background: var(--forest); color: #fff;
-    display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0;
-    overflow: hidden;
+    display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0; overflow: hidden;
   }
   .msg-avatar img { width: 100%; height: 100%; object-fit: cover; }
-  .msg-person-name { font-weight: 700; font-size: 0.92rem; color: var(--ink-navy); }
-  .msg-person-sub { font-size: 0.78rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 160px; }
-  .msg-chat { min-height: 60vh; max-height: 75vh; }
-  .msg-thread { flex: 1; overflow-y: auto; padding: 1rem; display: flex; flex-direction: column; gap: 0.65rem; background: #f7f5f0; }
+  .msg-person-name { font-weight: 700; font-size: 0.9rem; color: var(--ink-navy); }
+  .msg-person-sub { font-size: 0.75rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 170px; }
+  .msg-chat { min-height: 58vh; max-height: 75vh; }
+  .msg-thread { flex: 1; overflow-y: auto; padding: 1rem; display: flex; flex-direction: column; gap: 0.6rem; background: #f7f5f0; }
   .msg-bubble {
-    max-width: 78%; padding: 0.65rem 0.85rem; border-radius: 14px; font-size: 0.92rem; line-height: 1.4;
-    word-break: break-word;
+    max-width: 80%; padding: 0.6rem 0.8rem; border-radius: 14px; font-size: 0.92rem; line-height: 1.4; word-break: break-word;
   }
   .msg-bubble.mine { align-self: flex-end; background: var(--forest); color: #fff; border-bottom-right-radius: 4px; }
   .msg-bubble.theirs { align-self: flex-start; background: #fff; border: 1px solid var(--border); border-bottom-left-radius: 4px; }
-  .msg-time { font-size: 0.7rem; opacity: 0.75; margin-top: 0.25rem; }
+  .msg-sender { font-size: 0.72rem; font-weight: 700; margin-bottom: 0.15rem; opacity: 0.85; }
+  .msg-time { font-size: 0.68rem; opacity: 0.75; margin-top: 0.2rem; }
   .msg-composer {
-    border-top: 1px solid var(--border); padding: 0.65rem; display: flex; flex-direction: column; gap: 0.4rem;
+    border-top: 1px solid var(--border); padding: 0.55rem; display: flex; flex-direction: column; gap: 0.35rem;
     background: var(--paper); position: relative;
   }
-  .msg-composer-row { display: flex; gap: 0.5rem; align-items: flex-end; }
+  .msg-composer-row { display: flex; gap: 0.45rem; align-items: flex-end; }
   .msg-composer textarea {
-    flex: 1; min-height: 44px; max-height: 120px; resize: vertical;
-    border: 1px solid var(--border); border-radius: 12px; padding: 0.6rem 0.75rem;
+    flex: 1; min-height: 42px; max-height: 120px; resize: vertical;
+    border: 1px solid var(--border); border-radius: 12px; padding: 0.55rem 0.7rem;
     font-family: inherit; background: #fff; color: var(--text);
   }
   .msg-icon-btn {
     border: 1px solid var(--border); background: #fff; border-radius: 10px;
-    width: 42px; height: 42px; cursor: pointer; font-size: 1.2rem;
+    width: 40px; height: 40px; cursor: pointer; font-size: 1.15rem;
   }
   .msg-send {
     background: var(--forest); color: #fff; border: none; border-radius: 10px;
-    padding: 0 1rem; height: 42px; font-weight: 700; cursor: pointer;
+    padding: 0 0.9rem; height: 40px; font-weight: 700; cursor: pointer;
   }
-  .msg-send:disabled { opacity: 0.5; cursor: not-allowed; }
+  .msg-send:disabled { opacity: 0.5; }
   .emoji-pop {
-    display: none; position: absolute; bottom: 100%; left: 0.5rem; right: 0.5rem;
-    max-height: 220px; overflow-y: auto; background: #fff; border: 1px solid var(--border);
-    border-radius: 12px; box-shadow: var(--shadow); padding: 0.5rem; z-index: 5;
+    display: none; position: absolute; bottom: 100%; left: 0.4rem; right: 0.4rem;
+    max-height: 260px; overflow: hidden; background: #fff; border: 1px solid var(--border);
+    border-radius: 12px; box-shadow: var(--shadow); z-index: 8; flex-direction: column;
   }
-  .emoji-pop.open { display: block; }
-  .emoji-cat { font-size: 0.75rem; font-weight: 700; color: #c2410c; margin: 0.35rem 0 0.25rem; }
-  .emoji-grid { display: flex; flex-wrap: wrap; gap: 0.15rem; }
+  .emoji-pop.open { display: flex; }
+  .emoji-toolbar {
+    display: flex; gap: 0.15rem; padding: 0.4rem 0.45rem; border-bottom: 1px solid var(--border);
+    overflow-x: auto; flex-shrink: 0;
+  }
+  .emoji-toolbar button {
+    border: none; background: transparent; font-size: 1.1rem; width: 2rem; height: 2rem;
+    border-radius: 6px; cursor: pointer; flex-shrink: 0;
+  }
+  .emoji-toolbar button.active, .emoji-toolbar button:hover { background: #f3f4f6; }
+  .emoji-search {
+    margin: 0.4rem 0.5rem 0; padding: 0.4rem 0.55rem; border: 1px solid var(--border);
+    border-radius: 8px; font-family: inherit; width: calc(100% - 1rem);
+  }
+  .emoji-body { overflow-y: auto; padding: 0.4rem 0.5rem 0.6rem; flex: 1; }
+  .emoji-cat { font-size: 0.72rem; font-weight: 700; color: #c2410c; margin: 0.35rem 0 0.2rem; }
+  .emoji-grid { display: flex; flex-wrap: wrap; gap: 0.1rem; }
   .emoji-grid button {
-    border: none; background: transparent; font-size: 1.25rem; width: 2rem; height: 2rem;
+    border: none; background: transparent; font-size: 1.3rem; width: 2.05rem; height: 2.05rem;
     cursor: pointer; border-radius: 6px;
   }
   .emoji-grid button:hover { background: #f3f4f6; }
   .notes-box { flex: 1; padding: 1rem; display: none; flex-direction: column; gap: 0.75rem; }
   .notes-box.open { display: flex; }
   .notes-box textarea {
-    flex: 1; min-height: 200px; border: 1px solid var(--border); border-radius: 12px;
+    flex: 1; min-height: 180px; border: 1px solid var(--border); border-radius: 12px;
     padding: 0.75rem; font-family: inherit; resize: vertical;
   }
-  .msg-empty { color: var(--text-muted); text-align: center; padding: 2rem 1rem; }
+  .msg-empty { color: var(--text-muted); text-align: center; padding: 1.5rem 1rem; }
   .msg-search {
-    margin: 0.5rem 0.75rem; padding: 0.45rem 0.65rem; border: 1px solid var(--border);
-    border-radius: 8px; width: calc(100% - 1.5rem); font-family: inherit;
+    margin: 0.45rem 0.7rem; padding: 0.4rem 0.6rem; border: 1px solid var(--border);
+    border-radius: 8px; width: calc(100% - 1.4rem); font-family: inherit;
   }
+  .msg-create-btn {
+    border: none; background: var(--forest); color: #fff; border-radius: 8px;
+    padding: 0.35rem 0.65rem; font-size: 0.78rem; font-weight: 700; cursor: pointer;
+  }
+  .modal-backdrop {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 50;
+    align-items: center; justify-content: center; padding: 1rem;
+  }
+  .modal-backdrop.open { display: flex; }
+  .modal-card {
+    background: var(--paper); border-radius: 14px; max-width: 420px; width: 100%;
+    padding: 1.1rem; box-shadow: var(--shadow);
+  }
+  .modal-card h3 { margin: 0 0 0.75rem; }
+  .modal-card label { display: block; font-size: 0.85rem; font-weight: 600; margin: 0.5rem 0 0.25rem; }
+  .modal-card input, .modal-card select {
+    width: 100%; padding: 0.5rem 0.65rem; border: 1px solid var(--border); border-radius: 8px;
+    font-family: inherit;
+  }
+  .member-pick {
+    max-height: 160px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; padding: 0.35rem;
+  }
+  .member-pick label { display: flex; gap: 0.4rem; align-items: center; font-weight: 400; margin: 0.2rem 0; }
+  .modal-actions { display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1rem; }
 </style>
 </head>
 <body>
@@ -107,36 +144,49 @@
   <div class="section-head" style="text-align:left;margin-left:0;">
     <span class="eyebrow">Members</span>
     <h2 style="margin:0;">Messages</h2>
-    <p style="color:var(--text-muted);max-width:640px;">Chat with other active members. Use Personal space to keep private notes and drafts.</p>
+    <p style="color:var(--text-muted);max-width:640px;">Direct chats, group conversations, and a private personal space for drafts.</p>
   </div>
 </div>
 
 <div class="msg-shell">
   <aside class="msg-panel msg-sidebar">
-    <div class="msg-side-head"><h2>Inbox</h2></div>
+    <div class="msg-side-head">
+      <h2>Inbox</h2>
+      <button type="button" class="msg-create-btn" id="new-group-btn">+ Group</button>
+    </div>
     <div class="msg-tabs">
-      <button type="button" class="msg-tab active" data-tab="chats">Chats</button>
-      <button type="button" class="msg-tab" data-tab="notes">Personal space</button>
+      <button type="button" class="msg-tab active" data-tab="chats">Direct</button>
+      <button type="button" class="msg-tab" data-tab="groups">Groups</button>
+      <button type="button" class="msg-tab" data-tab="notes">Personal</button>
     </div>
     <div id="chats-pane">
       <input type="search" class="msg-search" id="member-search" placeholder="Search members..." />
-      <div class="msg-list" id="member-list"><div class="msg-empty">Loading members...</div></div>
+      <div class="msg-list" id="member-list"><div class="msg-empty">Loading...</div></div>
+    </div>
+    <div id="groups-pane" style="display:none;">
+      <div class="msg-list" id="group-list"><div class="msg-empty">Loading groups...</div></div>
     </div>
   </aside>
 
   <section class="msg-panel msg-chat" id="chat-panel">
     <div class="msg-chat-head" id="chat-head">
-      <div class="msg-avatar" id="chat-avatar">?</div>
-      <div>
-        <h2 id="chat-title">Select a member</h2>
-        <div style="font-size:0.8rem;color:var(--text-muted);" id="chat-sub">Start a conversation</div>
+      <div style="display:flex;align-items:center;gap:0.75rem;min-width:0;">
+        <div class="msg-avatar" id="chat-avatar">?</div>
+        <div style="min-width:0;">
+          <h2 id="chat-title">Select a chat</h2>
+          <div style="font-size:0.8rem;color:var(--text-muted);" id="chat-sub">Direct or group</div>
+        </div>
       </div>
     </div>
 
-    <div class="msg-thread" id="thread"><div class="msg-empty">Choose someone on the left to message them.</div></div>
+    <div class="msg-thread" id="thread"><div class="msg-empty">Choose a member or group to start messaging.</div></div>
 
     <div class="msg-composer" id="composer" style="display:none;">
-      <div class="emoji-pop" id="emoji-pop" aria-hidden="true"></div>
+      <div class="emoji-pop" id="emoji-pop" aria-hidden="true">
+        <div class="emoji-toolbar" id="emoji-toolbar"></div>
+        <input type="search" class="emoji-search" id="emoji-search" placeholder="Search emoji..." />
+        <div class="emoji-body" id="emoji-body"></div>
+      </div>
       <div class="msg-composer-row">
         <button type="button" class="msg-icon-btn" id="emoji-btn" title="Emoji">😊</button>
         <textarea id="message-input" rows="2" placeholder="Write a message..."></textarea>
@@ -145,12 +195,28 @@
     </div>
 
     <div class="notes-box" id="notes-box">
-      <p style="margin:0;color:var(--text-muted);font-size:0.9rem;">Personal space — save draft messages, links, and notes. Only you can see this.</p>
+      <p style="margin:0;color:var(--text-muted);font-size:0.9rem;">Personal space — drafts, links, and notes. Only you can see this.</p>
       <textarea id="notes-input" placeholder="Write private notes or drafts here..."></textarea>
       <button type="button" class="btn btn-gold" id="notes-save">Save notes</button>
       <div id="notes-status" style="font-size:0.8rem;color:var(--text-muted);"></div>
     </div>
   </section>
+</div>
+
+<div class="modal-backdrop" id="group-modal">
+  <div class="modal-card">
+    <h3>Create group</h3>
+    <label for="group-name">Group name</label>
+    <input id="group-name" type="text" placeholder="e.g. Year 2 WhatsApp vibes" />
+    <label for="group-desc">Description (optional)</label>
+    <input id="group-desc" type="text" placeholder="What is this group for?" />
+    <label>Add members</label>
+    <div class="member-pick" id="group-member-pick"></div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-outline" id="group-cancel">Cancel</button>
+      <button type="button" class="btn btn-gold" id="group-create">Create</button>
+    </div>
+  </div>
 </div>
 
 <div id="app-footer"></div>
@@ -166,53 +232,100 @@
   const me = await requireApprovedMember();
   if (!me) throw new Error('redirect');
 
-  const EMOJIS = {
-    'Smileys & emotion': ['😀','😁','😂','🤣','😃','😄','😅','😆','😉','😊','😋','😎','😍','😘','🥰','😗','😙','😚','🙂','🤗','🤩','🤔','🤨','😐','😑','😶','🙄','😏','😣','😥','😮','🤐','😯','😪','😫','🥱','😴','😌','😛','😜','😝','🤤','😒','😓','😔','😕','🙃','🤑','😲','☹️','🙁','😖','😞','😟','😤','😢','😭','😦','😧','😨','😩','🤯','😬','😰','😱','🥵','🥶','😳','🤪','😵','😡','😠','🤬','😷','🤒','🤕','🤢','🤮','🤧','😇','🥳','🥺','🤠','🤡','🤥'],
-    'Gestures': ['👍','👎','👏','🙌','👐','🤝','🙏','✌️','🤞','🤟','🤘','🤙','👈','👉','👆','👇','☝️','✋','🤚','🖐','🖖','👋','💪','🦾'],
-    'Hearts': ['❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💔','❣️','💕','💞','💓','💗','💖','💘','💝'],
+  const EMOJI_PACKS = {
+    recent: { icon: '🕒', label: 'Recent', list: ['😀','😂','❤️','👍','🙏','🔥','✨','😅','😍','👏'] },
+    smileys: { icon: '😊', label: 'Smileys & emotion', list: ['😀','😁','😂','🤣','😃','😄','😅','😆','😉','😊','😋','😎','😍','😘','🥰','😗','😙','😚','☺️','🙂','🤗','🤩','🤔','🤨','😐','😑','😶','🫥','🙄','😏','😣','😥','😮','🤐','😯','😪','😫','🥱','😴','😌','😛','😜','😝','🤤','😒','😓','😔','😕','🙃','🫠','🤑','😲','☹️','🙁','😖','😞','😟','😤','😢','😭','😦','😧','😨','😩','🤯','😬','😰','😱','🥵','🥶','😳','🤪','😵','😡','😠','🤬','😷','🤒','🤕','🤢','🤮','🤧','😇','🥳','🥺','🤠','🤡','🤥','🤫','🤭','🫢','🫣','🫡','🤓','😈','👿','👹','👺','💀','☠️','👻','👽','👾','🤖','💩','😺','😸','😹','😻','😼','😽','🙀','😿','😾'] },
+    people: { icon: '👤', label: 'People & body', list: ['👋','🤚','🖐','✋','🖖','👌','🤌','🤏','✌️','🤞','🫰','🤟','🤘','🤙','👈','👉','👆','🖕','👇','☝️','👍','👎','✊','👊','🤛','🤜','👏','🙌','🫶','👐','🤲','🤝','🙏','✍️','💅','🤳','💪','🦾','🦿','🦵','🦶','👂','🦻','👃','🧠','👀','👁️','👅','👄','💋','🩸','👶','👧','🧒','👦','👩','🧑','👨','👱','🧔','👵','🧓','👴','👲','👳','👮','👷','💂','🕵️','👩‍⚕️','👨‍⚕️','👩‍🌾','👨‍🌾','👩‍🍳','👨‍🍳','👩‍🎓','👨‍🎓','👩‍🎤','👨‍🎤','👩‍🏫','👨‍🏫','👩‍🏭','👨‍🏭','👩‍💻','👨‍💻','👩‍💼','👨‍💼','👩‍🔧','👨‍🔧','👩‍🔬','👨‍🔬','👩‍🎨','👨‍🎨','👩‍🚒','👨‍🚒','👩‍✈️','👨‍✈️','👩‍🚀','👨‍🚀','👩‍⚖️','👨‍⚖️','👰','🤵','👸','🤴','🦸','🦹','🤶','🎅','🧙','🧝','🧛','🧟','🧞','🧜','🧚','👼','🤰','🤱','🙇','💁','🙅','🙆','🙋','🤦','shrug','💇','💆','🧖','💃','🕺','🕴','👯','🚶','🏃','🧍','🧎','👫','👬','👭','💏','💑','👪'] },
+    nature: { icon: '🌿', label: 'Animals & nature', list: ['🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐻‍❄️','🐨','🐯','🦁','🐮','🐷','🐸','🐵','🙈','🙉','🙊','🐒','🐔','🐧','🐦','🐤','🐣','🐥','🦆','🦅','🦉','🦇','🐺','🐗','🐴','🦄','🐝','🪱','🐛','🦋','🐌','🐞','🐜','🪰','🪲','🪳','🦟','🦗','🕷','🦂','🐢','🐍','🦎','🦖','🦕','🐙','🦑','🦐','🦞','🦀','🐡','🐠','🐟','🐬','🐳','🐋','🦈','🐊','🐅','🐆','🦓','🦍','🦧','🦣','🐘','🦛','🦏','🐪','🐫','🦒','🦘','🦬','🐃','🐂','🐄','🐎','🐖','🐏','🐑','🦙','🐐','🦌','🐕','🐩','🦮','🐕‍🦺','🐈','🐈‍⬛','🪶','🐓','🦃','🦤','🦚','🦜','🦢','🦩','🕊','🐇','🦝','🦨','🦡','🦫','🦦','🦥','🐁','🐀','🐿','🦔','🐾','🐉','🐲','🌵','🎄','🌲','🌳','🌴','🪵','🌱','🌿','☘️','🍀','🎍','🪴','🎋','🍃','🍂','🍁','🍄','🐚','🪨','🌾','💐','🌷','🌹','🥀','🌺','🌸','🌼','🌻','🌞','🌝','🌛','🌜','🌚','🌕','🌖','🌗','🌘','🌑','🌒','🌓','🌔','🌙','🌎','🌍','🌏','🪐','💫','⭐','🌟','✨','⚡','☄️','💥','🔥','🌪','🌈','☀️','🌤','⛅','🌥','☁️','🌦','🌧','⛈','🌩','🌨','❄️','☃️','⛄','🌬','💨','💧','💦','🫧','☔','☂️','🌊','🌫'] },
+    food: { icon: '🍕', label: 'Food & drink', list: ['🍏','🍎','🍐','🍊','🍋','🍌','🍉','🍇','🍓','🫐','🍈','🍒','🍑','🥭','🍍','🥥','🥝','🍅','🍆','🥑','🥦','🥬','🥒','🌶','🫑','🌽','🥕','🫒','🧄','🧅','🥔','🍠','🥐','🥯','🍞','🥖','🥨','🧀','🥚','🍳','🧈','🥞','🧇','🥓','🥩','🍗','🍖','🦴','🌭','🍔','🍟','🍕','🫓','🥪','🥙','🧆','🌮','🌯','🫔','🥗','🥘','🫕','🥫','🍝','🍜','🍲','🍛','🍣','🍱','🥟','🦪','🍤','🍙','🍚','🍘','🍥','🥠','🥮','🍢','🍡','🍧','🍨','🍦','🥧','🧁','🍰','🎂','🍮','🍭','🍬','🍫','🍿','🍩','🍪','🌰','🥜','🍯','🥛','🍼','🫖','☕','🍵','🧃','🥤','🧋','🍶','🍺','🍻','🥂','🍷','🥃','🍸','🍹','🧉','🍾','🧊','🥄','🍴','🍽','🥣','🥡','🥢','🧂'] },
+    travel: { icon: '✈️', label: 'Travel & places', list: ['🚗','🚕','🚙','🚌','🚎','🏎','🚓','🚑','🚒','🚐','🛻','🚚','🚛','🚜','🦯','🦽','🦼','🛴','🚲','🛵','🏍','🛺','🚨','🚔','🚍','🚘','🚖','🚡','🚠','🚟','🚃','🚋','🚞','🚝','🚄','🚅','🚈','🚂','🚆','🚇','🚊','🚉','✈️','🛫','🛬','🛩','💺','🛰','🚀','🛸','🚁','🛶','⛵','🚤','🛥','🛳','⛴','🚢','⚓','🪝','⛽','🚧','🚦','🚥','🚏','🗺','🗿','🗽','🗼','🏰','🏯','🏟','🎡','🎢','🎠','⛲','⛱️','🏖','🏝','🏜','🌋','⛰','🏔','🗻','🏕','⛺','🛖','🏠','🏡','🏢','🏣','🏤','🏥','🏦','🏨','🏪','🏫','🏩','💒','🏛','⛪','🕌','🕍','🛕','🕋','⛩','🛤','🛣','🗾','🎑','🏞','🌅','🌄','🌠','🎇','🎆','🌇','🌆','🏙','🌃','🌌','🌉','🌁'] },
+    activities: { icon: '⚽', label: 'Activities', list: ['⚽','🏀','🏈','⚾','🥎','🎾','🏐','🏉','🥏','🎱','🪀','🏓','🏸','🏒','🏑','🥍','🏏','🪃','🥅','⛳','🪁','🏹','🎣','🤿','🥊','🥋','🎽','🛹','🛼','🛷','⛸','🥌','🎿','⛷','🏂','🪂','🏋️','🤼','🤸','⛹️','🤺','🤾','🏌️','🏇','🧘','🏄','🏊','🤽','🚣','🧗','🚵','🚴','🏆','🥇','🥈','🥉','🏅','🎖','🏵','🎗','🎫','🎟','🎪','🤹','🎭','🩰','🎨','🎬','🎤','🎧','🎼','🎹','🥁','🪘','🎷','🎺','🪗','🎸','🪕','🎻','🎲','♟','🎯','🎳','🎮','🎰','🧩'] },
+    objects: { icon: '💡', label: 'Objects', list: ['⌚','📱','📲','💻','⌨️','🖥','🖨','🖱','🖲','🕹','🗜','💽','💾','💿','📀','📼','📷','📸','📹','🎥','📽','🎞','📞','☎️','📟','📠','📺','📻','🎙','🎚','🎛','🧭','⏱','⏲','⏰','🕰','⌛','⏳','📡','🔋','🔌','💡','🔦','🕯','🪔','🧯','🛢','💸','💵','💴','💶','💷','🪙','💰','💳','💎','⚖️','🪜','🧰','🪛','🔧','🔨','⚒','🛠','⛏','🪚','🔩','⚙️','🪤','🧱','⛓','🧲','🔫','💣','🧨','🪓','🔪','🗡','⚔️','🛡','🚬','⚰️','🪦','⚱️','🏺','🔮','📿','🧿','💈','⚗️','🔭','🔬','🕳','🩹','🩺','💊','💉','🩸','🧬','🦠','🧫','🧪','🌡','🧹','🪠','🧺','🧻','🚽','🚰','🚿','🛁','🛀','🧼','🪥','🪒','🧽','🪣','🧴','🛎','🔑','🗝','🚪','🪑','🛋','🛏','🛌','🧸','🖼','🪞','🪟','🛍','🛒','🎁','🎈','🎏','🎀','🪄','🪅','🎊','🎉','🎎','🏮','🎐','🧧','✉️','📩','📨','📧','💌','📥','📤','📦','🏷','🪧','📪','📫','📬','📭','📮','📯','📜','📃','📄','📑','🧾','📊','📈','📉','🗒','🗓','📆','📅','🗑','📇','🗃','🗳','🗄','📋','📁','📂','🗂','🗞','📰','📓','📔','📒','📕','📗','📘','📙','📚','📖','🔖','🧷','🔗','📎','🖇','📐','📏','🧮','📌','📍','✂️','🖊','🖋','✒️','🖌','🖍','📝','✏️','🔍','🔎','🔏','🔐','🔒','🔓'] },
+    symbols: { icon: '☮️', label: 'Symbols', list: ['❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💔','❣️','💕','💞','💓','💗','💖','💘','💝','💟','☮️','✝️','☪️','🕉','☸️','✡️','🔯','🕎','☯️','☦️','🛐','⛎','♈','♉','♊','♋','♌','♍','♎','♏','♐','♑','♒','♓','🆔','⚛️','🉑','☢️','☣️','📴','📳','🈶','🈚️','🈸','🈺','🈷️','✴️','🆚','💮','🉐','㊙️','㊗️','🈴','🈵','🈹','🈲','🅰️','🅱️','🆎','🆑','🅾️','🆘','❌','⭕️','🛑','⛔','📛','🚫','💯','💢','♨️','🚷','🚯','🚳','🚱','🔞','📵','🚭','❗️','❕','❓','❔','‼️','⁉️','🔅','🔆','〽️','⚠️','🚸','🔱','⚜️','🔰','♻️','✅','🈯️','💹','❇️','✳️','❎','🌐','💠','Ⓜ️','🌀','💤','🏧','🚾','♿','🅿️','🛗','🈳','🈂️','🛂','🛃','🛄','🛅','🚹','🚺','🚼','⚧','🚻','🚮','🎦','📶','🈁','🔣','ℹ️','🔤','🔡','🔠','🆖','🆗','🆙','🆒','🆕','🆓','0️⃣','1️⃣','2️⃣','3️⃣','4️⃣','5️⃣','6️⃣','7️⃣','8️⃣','9️⃣','🔟','🔢','#️⃣','*️⃣','⏏️','▶️','⏸','⏯','⏹','⏺','⏭','⏮','⏩','⏪','⏫','⏬','◀️','🔼','🔽','➡️','⬅️','⬆️','⬇️','↗️','↘️','↙️','↖️','↕️','↔️','↪️','↩️','⤴️','⤵️','🔀','🔁','🔂','🔄','🔃','🎵','🎶','➕','➖','➗','✖️','♾','💲','💱','™️','©️','®️','👁️‍🗨️','🔚','🔙','🔛','🔝','🔜','〰️','➰','➿','✔️','☑️','🔘','🔴','🟠','🟡','🟢','🔵','🟣','⚫','⚪','🟤','🔺','🔻','🔸','🔹','🔶','🔷','🔳','🔲','▪️','▫️','◾','◽','◼️','◻️','🟥','🟧','🟨','🟩','🟦','🟪','⬛','⬜','🟫','🔈','🔇','🔉','🔊','🔔','🔕','📣','📢','💬','💭','🗯','♠️','♣️','♥️','♦️','🃏','🎴','🀄️'] },
+    flags: { icon: '🏳️', label: 'Flags', list: ['🏳️','🏴','🏁','🚩','🏳️‍🌈','🏳️‍⚧️','🇺🇳','🇺🇬','🇰🇪','🇹🇿','🇷🇼','🇧🇮','🇸🇸','🇪🇹','🇸🇴','🇨🇩','🇪🇬','🇳🇬','🇬🇭','🇿🇦','🇬🇧','🇺🇸','🇨🇦','🇫🇷','🇩🇪','🇮🇹','🇪🇸','🇵🇹','🇳🇱','🇧🇪','🇨🇭','🇦🇹','🇸🇪','🇳🇴','🇩🇰','🇫🇮','🇵🇱','🇺🇦','🇷🇺','🇹🇷','🇸🇦','🇦🇪','🇮🇳','🇨🇳','🇯🇵','🇰🇷','🇦🇺','🇳🇿','🇧🇷','🇦🇷','🇲🇽'] },
   };
+
+  let recentEmojis = JSON.parse(localStorage.getItem('nsa_recent_emoji') || 'null') || EMOJI_PACKS.recent.list.slice();
+  let activePack = 'smileys';
 
   const emojiPop = document.getElementById('emoji-pop');
   const emojiBtn = document.getElementById('emoji-btn');
+  const emojiToolbar = document.getElementById('emoji-toolbar');
+  const emojiBody = document.getElementById('emoji-body');
+  const emojiSearch = document.getElementById('emoji-search');
   const input = document.getElementById('message-input');
   const sendBtn = document.getElementById('send-btn');
   const thread = document.getElementById('thread');
   const memberList = document.getElementById('member-list');
+  const groupList = document.getElementById('group-list');
   const composer = document.getElementById('composer');
   const notesBox = document.getElementById('notes-box');
   const chatsPane = document.getElementById('chats-pane');
+  const groupsPane = document.getElementById('groups-pane');
 
   let members = [];
-  let activeId = null;
+  let groups = [];
+  let active = null; // { type: 'dm'|'group', id }
   let pollTimer = null;
 
-  // Build emoji panel
-  for (const [cat, list] of Object.entries(EMOJIS)) {
-    const h = document.createElement('div');
-    h.className = 'emoji-cat';
-    h.textContent = cat;
-    emojiPop.appendChild(h);
-    const grid = document.createElement('div');
-    grid.className = 'emoji-grid';
-    for (const em of list) {
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.textContent = em;
-      b.addEventListener('click', () => {
-        const start = input.selectionStart ?? input.value.length;
-        const end = input.selectionEnd ?? input.value.length;
-        input.value = input.value.slice(0, start) + em + input.value.slice(end);
-        input.focus();
-        input.selectionStart = input.selectionEnd = start + em.length;
-      });
-      grid.appendChild(b);
-    }
-    emojiPop.appendChild(grid);
+  function insertEmoji(em) {
+    const start = input.selectionStart ?? input.value.length;
+    const end = input.selectionEnd ?? input.value.length;
+    input.value = input.value.slice(0, start) + em + input.value.slice(end);
+    input.focus();
+    input.selectionStart = input.selectionEnd = start + em.length;
+    recentEmojis = [em, ...recentEmojis.filter(x => x !== em)].slice(0, 24);
+    localStorage.setItem('nsa_recent_emoji', JSON.stringify(recentEmojis));
   }
 
-  emojiBtn.addEventListener('click', () => {
-    emojiPop.classList.toggle('open');
-  });
+  function renderEmojiToolbar() {
+    emojiToolbar.innerHTML = '';
+    for (const [key, pack] of Object.entries(EMOJI_PACKS)) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = pack.icon;
+      b.title = pack.label;
+      b.className = key === activePack ? 'active' : '';
+      b.addEventListener('click', () => { activePack = key; renderEmojiToolbar(); renderEmojiBody(); });
+      emojiToolbar.appendChild(b);
+    }
+  }
+
+  function renderEmojiBody() {
+    const q = (emojiSearch.value || '').trim().toLowerCase();
+    emojiBody.innerHTML = '';
+    const entries = activePack === 'recent'
+      ? [['Recent', recentEmojis]]
+      : Object.entries(EMOJI_PACKS)
+          .filter(([k]) => !q || k === activePack)
+          .map(([k, p]) => [p.label, p.list]);
+
+    for (const [label, list] of entries) {
+      let items = list;
+      if (q) items = items.filter(e => e.includes(q) || label.toLowerCase().includes(q));
+      if (!items.length && q) continue;
+      const h = document.createElement('div');
+      h.className = 'emoji-cat';
+      h.textContent = label;
+      emojiBody.appendChild(h);
+      const grid = document.createElement('div');
+      grid.className = 'emoji-grid';
+      for (const em of (q ? items : list)) {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.textContent = em;
+        b.addEventListener('click', () => insertEmoji(em));
+        grid.appendChild(b);
+      }
+      emojiBody.appendChild(grid);
+      if (!q && activePack !== 'recent') break;
+    }
+  }
+
+  renderEmojiToolbar();
+  renderEmojiBody();
+  emojiSearch.addEventListener('input', renderEmojiBody);
+  emojiBtn.addEventListener('click', () => emojiPop.classList.toggle('open'));
   document.addEventListener('click', (e) => {
     if (!emojiPop.contains(e.target) && e.target !== emojiBtn) emojiPop.classList.remove('open');
   });
@@ -228,30 +341,38 @@
   }
   function formatTime(iso) {
     try {
-      const d = new Date(iso);
-      return d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+      return new Date(iso).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
     } catch { return ''; }
   }
 
-  // Tabs
   document.querySelectorAll('.msg-tab').forEach(tab => {
     tab.addEventListener('click', () => {
       document.querySelectorAll('.msg-tab').forEach(t => t.classList.remove('active'));
       tab.classList.add('active');
       const mode = tab.dataset.tab;
+      notesBox.classList.remove('open');
+      document.getElementById('chat-head').style.display = 'flex';
       if (mode === 'notes') {
         chatsPane.style.display = 'none';
+        groupsPane.style.display = 'none';
         thread.style.display = 'none';
         composer.style.display = 'none';
         document.getElementById('chat-head').style.display = 'none';
         notesBox.classList.add('open');
         loadNotes();
+      } else if (mode === 'groups') {
+        chatsPane.style.display = 'none';
+        groupsPane.style.display = 'block';
+        thread.style.display = 'flex';
+        if (active?.type === 'group') composer.style.display = 'flex';
+        else composer.style.display = 'none';
+        loadGroups();
       } else {
         chatsPane.style.display = 'block';
-        notesBox.classList.remove('open');
-        document.getElementById('chat-head').style.display = 'flex';
+        groupsPane.style.display = 'none';
         thread.style.display = 'flex';
-        if (activeId) composer.style.display = 'flex';
+        if (active?.type === 'dm') composer.style.display = 'flex';
+        else composer.style.display = 'none';
       }
     });
   });
@@ -268,124 +389,194 @@
       return;
     }
     members = data || [];
+    if (!members.length) {
+      memberList.innerHTML = `<div class="msg-empty">No other active members yet.</div>`;
+      return;
+    }
     renderMembers();
+    // fill group modal picks
+    document.getElementById('group-member-pick').innerHTML = members.map(m => `
+      <label><input type="checkbox" value="${m.id}" /> ${escapeHtml(m.full_name || m.email)}</label>
+    `).join('');
   }
 
   function renderMembers(filter = '') {
     const q = filter.trim().toLowerCase();
-    const list = members.filter(m => {
-      if (!q) return true;
-      return (m.full_name || '').toLowerCase().includes(q) || (m.email || '').toLowerCase().includes(q);
-    });
-    if (!list.length) {
-      memberList.innerHTML = `<div class="msg-empty">No members found.</div>`;
-      return;
-    }
+    const list = members.filter(m => !q || (m.full_name || '').toLowerCase().includes(q) || (m.email || '').toLowerCase().includes(q));
     memberList.innerHTML = list.map(m => `
-      <button type="button" class="msg-person ${m.id === activeId ? 'active' : ''}" data-id="${m.id}">
+      <button type="button" class="msg-person ${active?.type==='dm' && active.id===m.id ? 'active' : ''}" data-id="${m.id}">
         <div class="msg-avatar">${m.avatar_url ? `<img src="${escapeHtml(m.avatar_url)}" alt="" />` : escapeHtml(initials(m.full_name))}</div>
         <div style="min-width:0;">
           <div class="msg-person-name">${escapeHtml(m.full_name || 'Member')}</div>
           <div class="msg-person-sub">${escapeHtml(m.email || '')}</div>
         </div>
       </button>
-    `).join('');
+    `).join('') || `<div class="msg-empty">No members found.</div>`;
     memberList.querySelectorAll('.msg-person').forEach(btn => {
-      btn.addEventListener('click', () => openChat(btn.dataset.id));
+      btn.addEventListener('click', () => openChat('dm', btn.dataset.id));
     });
   }
 
-  document.getElementById('member-search').addEventListener('input', (e) => {
-    renderMembers(e.target.value);
-  });
+  document.getElementById('member-search').addEventListener('input', (e) => renderMembers(e.target.value));
 
-  async function openChat(userId) {
-    activeId = userId;
-    const person = members.find(m => m.id === userId);
+  async function loadGroups() {
+    const { data: memberships, error } = await supabase
+      .from('chat_group_members')
+      .select('group_id, chat_groups(id, name, description, created_at)')
+      .eq('user_id', me.id);
+    if (error) {
+      groupList.innerHTML = `<div class="msg-empty">${escapeHtml(error.message)}</div>`;
+      return;
+    }
+    groups = (memberships || []).map(m => m.chat_groups).filter(Boolean);
+    if (!groups.length) {
+      groupList.innerHTML = `<div class="msg-empty">No groups yet. Tap + Group to create one.</div>`;
+      return;
+    }
+    groupList.innerHTML = groups.map(g => `
+      <button type="button" class="msg-person ${active?.type==='group' && active.id===g.id ? 'active' : ''}" data-id="${g.id}">
+        <div class="msg-avatar">👥</div>
+        <div style="min-width:0;">
+          <div class="msg-person-name">${escapeHtml(g.name)}</div>
+          <div class="msg-person-sub">${escapeHtml(g.description || 'Group chat')}</div>
+        </div>
+      </button>
+    `).join('');
+    groupList.querySelectorAll('.msg-person').forEach(btn => {
+      btn.addEventListener('click', () => openChat('group', btn.dataset.id));
+    });
+  }
+
+  async function openChat(type, id) {
+    active = { type, id };
     renderMembers(document.getElementById('member-search').value);
-    document.getElementById('chat-title').textContent = person?.full_name || 'Member';
-    document.getElementById('chat-sub').textContent = person?.email || '';
-    const av = document.getElementById('chat-avatar');
-    if (person?.avatar_url) av.innerHTML = `<img src="${escapeHtml(person.avatar_url)}" alt="" />`;
-    else av.textContent = initials(person?.full_name);
-    composer.style.display = 'flex';
+    if (type === 'group') loadGroups();
+
     notesBox.classList.remove('open');
-    document.querySelectorAll('.msg-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === 'chats'));
-    chatsPane.style.display = 'block';
-    thread.style.display = 'flex';
     document.getElementById('chat-head').style.display = 'flex';
+    thread.style.display = 'flex';
+    composer.style.display = 'flex';
+
+    if (type === 'dm') {
+      const person = members.find(m => m.id === id);
+      document.getElementById('chat-title').textContent = person?.full_name || 'Member';
+      document.getElementById('chat-sub').textContent = person?.email || 'Direct message';
+      const av = document.getElementById('chat-avatar');
+      if (person?.avatar_url) av.innerHTML = `<img src="${escapeHtml(person.avatar_url)}" alt="" />`;
+      else av.textContent = initials(person?.full_name);
+    } else {
+      const g = groups.find(x => x.id === id) || { name: 'Group' };
+      document.getElementById('chat-title').textContent = g.name || 'Group';
+      document.getElementById('chat-sub').textContent = g.description || 'Group chat';
+      document.getElementById('chat-avatar').textContent = '👥';
+    }
+
     await loadThread();
     clearInterval(pollTimer);
-    pollTimer = setInterval(loadThread, 8000);
+    pollTimer = setInterval(loadThread, 7000);
   }
 
   async function loadThread() {
-    if (!activeId) return;
-    const { data, error } = await supabase
-      .from('direct_messages')
-      .select('id, sender_id, recipient_id, body, created_at')
-      .or(`and(sender_id.eq.${me.id},recipient_id.eq.${activeId}),and(sender_id.eq.${activeId},recipient_id.eq.${me.id})`)
-      .order('created_at', { ascending: true })
-      .limit(200);
-    if (error) {
-      thread.innerHTML = `<div class="msg-empty">${escapeHtml(error.message)}</div>`;
-      return;
+    if (!active) return;
+    if (active.type === 'dm') {
+      const { data, error } = await supabase
+        .from('direct_messages')
+        .select('id, sender_id, body, created_at')
+        .or(`and(sender_id.eq.${me.id},recipient_id.eq.${active.id}),and(sender_id.eq.${active.id},recipient_id.eq.${me.id})`)
+        .order('created_at', { ascending: true })
+        .limit(250);
+      if (error) { thread.innerHTML = `<div class="msg-empty">${escapeHtml(error.message)}</div>`; return; }
+      renderBubbles(data || [], false);
+      await supabase.from('direct_messages').update({ read_at: new Date().toISOString() })
+        .eq('recipient_id', me.id).eq('sender_id', active.id).is('read_at', null);
+    } else {
+      const { data, error } = await supabase
+        .from('group_messages')
+        .select('id, sender_id, body, created_at, profiles:sender_id(full_name)')
+        .eq('group_id', active.id)
+        .order('created_at', { ascending: true })
+        .limit(250);
+      if (error) { thread.innerHTML = `<div class="msg-empty">${escapeHtml(error.message)}</div>`; return; }
+      renderBubbles(data || [], true);
     }
-    if (!data?.length) {
+  }
+
+  function renderBubbles(rows, showSender) {
+    if (!rows.length) {
       thread.innerHTML = `<div class="msg-empty">No messages yet. Say hello.</div>`;
       return;
     }
-    thread.innerHTML = data.map(m => {
+    thread.innerHTML = rows.map(m => {
       const mine = m.sender_id === me.id;
-      return `<div class="msg-bubble ${mine ? 'mine' : 'theirs'}">${escapeHtml(m.body)}<div class="msg-time">${formatTime(m.created_at)}</div></div>`;
+      const name = m.profiles?.full_name || '';
+      return `<div class="msg-bubble ${mine ? 'mine' : 'theirs'}">
+        ${showSender && !mine ? `<div class="msg-sender">${escapeHtml(name)}</div>` : ''}
+        ${escapeHtml(m.body)}
+        <div class="msg-time">${formatTime(m.created_at)}</div>
+      </div>`;
     }).join('');
     thread.scrollTop = thread.scrollHeight;
-
-    // Mark incoming as read
-    await supabase.from('direct_messages')
-      .update({ read_at: new Date().toISOString() })
-      .eq('recipient_id', me.id)
-      .eq('sender_id', activeId)
-      .is('read_at', null);
   }
 
   async function sendMessage() {
     const body = input.value.trim();
-    if (!body || !activeId) return;
+    if (!body || !active) return;
     sendBtn.disabled = true;
-    const { error } = await supabase.from('direct_messages').insert({
-      sender_id: me.id,
-      recipient_id: activeId,
-      body,
-    });
-    sendBtn.disabled = false;
-    if (error) {
-      alert(error.message);
-      return;
+    let error;
+    if (active.type === 'dm') {
+      ({ error } = await supabase.from('direct_messages').insert({
+        sender_id: me.id, recipient_id: active.id, body,
+      }));
+    } else {
+      ({ error } = await supabase.from('group_messages').insert({
+        group_id: active.id, sender_id: me.id, body,
+      }));
     }
+    sendBtn.disabled = false;
+    if (error) { alert(error.message); return; }
     input.value = '';
     await loadThread();
   }
 
   sendBtn.addEventListener('click', sendMessage);
   input.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
-    }
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+  });
+
+  // Group create modal
+  const modal = document.getElementById('group-modal');
+  document.getElementById('new-group-btn').addEventListener('click', () => modal.classList.add('open'));
+  document.getElementById('group-cancel').addEventListener('click', () => modal.classList.remove('open'));
+  document.getElementById('group-create').addEventListener('click', async () => {
+    const name = document.getElementById('group-name').value.trim();
+    if (!name) { alert('Enter a group name'); return; }
+    const description = document.getElementById('group-desc').value.trim() || null;
+    const picks = [...document.querySelectorAll('#group-member-pick input:checked')].map(i => i.value);
+
+    const { data: gid, error } = await supabase.rpc('create_chat_group', {
+      p_name: name,
+      p_description: description,
+      p_member_ids: picks,
+    });
+    if (error) { alert(error.message); return; }
+
+    modal.classList.remove('open');
+    document.getElementById('group-name').value = '';
+    document.getElementById('group-desc').value = '';
+    document.querySelectorAll('#group-member-pick input').forEach(i => { i.checked = false; });
+    document.querySelector('.msg-tab[data-tab="groups"]').click();
+    await loadGroups();
+    openChat('group', gid);
   });
 
   async function loadNotes() {
     const { data } = await supabase.from('personal_notes').select('content').eq('user_id', me.id).maybeSingle();
     document.getElementById('notes-input').value = data?.content || '';
   }
-
   document.getElementById('notes-save').addEventListener('click', async () => {
     const content = document.getElementById('notes-input').value;
     const { error } = await supabase.from('personal_notes').upsert({
-      user_id: me.id,
-      content,
-      updated_at: new Date().toISOString(),
+      user_id: me.id, content, updated_at: new Date().toISOString(),
     }, { onConflict: 'user_id' });
     document.getElementById('notes-status').textContent = error ? error.message : 'Saved.';
   });
