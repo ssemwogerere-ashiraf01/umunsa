@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex, nofollow" />
+<title>Discussion: Nkobazambogo Students' Association</title>
+<meta property="og:type" content="article" />
+<meta property="og:title" content="Discussion" id="og-title" />
+<meta property="og:description" content="" id="og-desc" />
+<meta property="og:url" content="" id="og-url" />
+<meta property="og:image" content="https://umunsa.vercel.app/assets/img/og-default.jpg" id="og-image" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Discussion" id="tw-title" />
+<meta name="twitter:description" content="" id="tw-desc" />
+<meta name="twitter:image" content="https://umunsa.vercel.app/assets/img/og-default.jpg" id="tw-image" />
+<link rel="stylesheet" href="../assets/css/style.css" />
+<style>
+  .detail-wrap { max-width: 800px; margin: 1.25rem auto 3rem; padding: 0 1rem; }
+  .detail-card { background: var(--paper); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 1.25rem 1.35rem; margin-bottom: 1rem; }
+  .detail-card h1 { margin: 0 0 0.4rem; font-size: 1.4rem; color: var(--ink-navy); }
+  .detail-meta { font-size: 0.82rem; color: var(--text-muted); margin-bottom: 0.85rem; }
+  .detail-content { white-space: pre-wrap; line-height: 1.55; }
+  .share-row { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem; padding-top: 0.85rem; border-top: 1px solid var(--border); }
+  .share-row a, .share-row button {
+    border: 1px solid var(--border); background: #fff; border-radius: 8px; padding: 0.4rem 0.7rem;
+    font-size: 0.85rem; cursor: pointer; text-decoration: none; color: var(--text); font-family: inherit;
+  }
+  .reply { border-top: 1px solid var(--border); padding: 0.9rem 0; }
+  .reply-name { font-weight: 700; font-size: 0.9rem; }
+  .reply-time { font-size: 0.75rem; color: var(--text-muted); }
+  .back-link { font-size: 0.9rem; }
+</style>
+</head>
+<body>
+<div id="app-nav"></div>
+<div class="detail-wrap">
+  <a class="back-link" href="index.html">← Discussions</a>
+  <div id="topic" class="detail-card"><p style="color:var(--text-muted);">Loading...</p></div>
+  <div id="replies"></div>
+  <div class="detail-card" id="reply-box" style="display:none;">
+    <h3 style="margin-top:0;">Reply</h3>
+    <textarea id="reply-content" rows="4" style="width:100%;" placeholder="Write a reply..."></textarea>
+    <button type="button" class="btn btn-gold" id="reply-btn" style="margin-top:0.5rem;">Post reply</button>
+  </div>
+</div>
+<div id="app-footer"></div>
+<script type="module">
+  import { supabase } from '../assets/js/supabase-client.js';
+  import { mountNav, mountFooter } from '../assets/js/nav.js';
+  import { requireApprovedMember } from '../assets/js/session-guard.js';
+  mountNav('forum');
+  mountFooter();
+  const me = await requireApprovedMember();
+  if (!me) throw new Error('redirect');
+
+  const id = new URLSearchParams(location.search).get('id');
+  const topicEl = document.getElementById('topic');
+  const repliesEl = document.getElementById('replies');
+  function escapeHtml(str) { const d = document.createElement('div'); d.textContent = str ?? ''; return d.innerHTML; }
+
+  if (!id) {
+    topicEl.innerHTML = '<p>Topic not found.</p>';
+  } else {
+    const { data: topic, error } = await supabase
+      .from('forum_topics')
+      .select('*, profiles:author_id(full_name)')
+      .eq('id', id)
+      .maybeSingle();
+    if (error || !topic) {
+      topicEl.innerHTML = `<p>${escapeHtml(error?.message || 'Not found')}</p>`;
+    } else {
+      const url = `${location.origin}/forum/topic.html?id=${encodeURIComponent(topic.id)}`;
+      document.title = topic.title + ' · NSA';
+      document.getElementById('og-title')?.setAttribute('content', topic.title);
+      document.getElementById('tw-title')?.setAttribute('content', topic.title);
+      document.getElementById('og-desc')?.setAttribute('content', (topic.content || '').slice(0, 160));
+      document.getElementById('og-url')?.setAttribute('content', url);
+      const enc = encodeURIComponent;
+      topicEl.innerHTML = `
+        <h1>${escapeHtml(topic.title)}</h1>
+        <div class="detail-meta">${escapeHtml(topic.profiles?.full_name || 'Member')} · ${new Date(topic.created_at).toLocaleString()}${topic.category ? ' · ' + escapeHtml(topic.category) : ''}</div>
+        <div class="detail-content">${escapeHtml(topic.content || '')}</div>
+        <div class="share-row">
+          <button type="button" id="copy-link">Copy link</button>
+          <a target="_blank" rel="noopener" href="https://wa.me/?text=${enc(topic.title + ' ' + url)}">WhatsApp</a>
+          <a target="_blank" rel="noopener" href="https://twitter.com/intent/tweet?text=${enc(topic.title)}&url=${enc(url)}">X</a>
+          <a target="_blank" rel="noopener" href="https://www.facebook.com/sharer/sharer.php?u=${enc(url)}">Facebook</a>
+        </div>`;
+      document.getElementById('copy-link')?.addEventListener('click', async () => {
+        try { await navigator.clipboard.writeText(url); alert('Link copied'); } catch { prompt('Copy:', url); }
+      });
+      document.getElementById('reply-box').style.display = topic.is_locked ? 'none' : 'block';
+
+      const { data: replies } = await supabase
+        .from('forum_replies')
+        .select('*, profiles:author_id(full_name)')
+        .eq('topic_id', id)
+        .order('created_at', { ascending: true });
+      repliesEl.innerHTML = (replies || []).map(r => `
+        <div class="detail-card reply">
+          <div class="reply-name">${escapeHtml(r.profiles?.full_name || 'Member')}</div>
+          <div class="reply-time">${new Date(r.created_at).toLocaleString()}</div>
+          <div class="detail-content" style="margin-top:0.4rem;">${escapeHtml(r.content)}</div>
+        </div>`).join('') || '<p style="color:var(--text-muted);">No replies yet.</p>';
+
+      document.getElementById('reply-btn')?.addEventListener('click', async () => {
+        const content = document.getElementById('reply-content').value.trim();
+        if (!content) return;
+        const { error: rErr } = await supabase.from('forum_replies').insert({
+          topic_id: id, author_id: me.id, content,
+        });
+        if (rErr) alert(rErr.message); else location.reload();
+      });
+    }
+  }
+</script>
+</body>
+</html>

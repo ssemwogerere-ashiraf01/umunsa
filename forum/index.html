@@ -338,55 +338,13 @@
 
     topicsList.innerHTML = topics.map(topic => {
       const isActive = topic.id === selectedTopicId;
-      const words = (topic.content || '').trim().split(/\s+/).filter(Boolean);
-      const shouldTruncate = words.length > 15;
-      const shortContent = shouldTruncate ? words.slice(0, 15).join(' ') : (topic.content || '');
       return `
-        <button type="button" class="forum-topic-btn ${isActive ? 'active' : ''}" data-topic-id="${topic.id}">
+        <a class="forum-topic-btn ${isActive ? 'active' : ''}" href="topic.html?id=${encodeURIComponent(topic.id)}" style="display:block;text-decoration:none;">
           <div class="forum-topic-title">${escapeHtml(topic.title)}</div>
           <div class="forum-topic-meta">${escapeHtml(topic.category || 'General')} · ${new Date(topic.created_at).toLocaleDateString()}</div>
-          ${topic.content ? `
-            <div class="forum-topic-preview" data-topic-preview>
-              ${shouldTruncate
-                ? `
-                  <span class="forum-topic-preview-short">${escapeHtml(shortContent)}...</span>
-                  <span class="forum-topic-preview-full" hidden>${escapeHtml(topic.content || '')}</span>
-                  <button type="button" class="forum-topic-toggle" data-topic-toggle>Readmore</button>
-                `
-                : `<span>${escapeHtml(topic.content || '')}</span>`
-              }
-            </div>
-          ` : ''}
-        </button>
+        </a>
       `;
     }).join('');
-
-    topicsList.querySelectorAll('[data-topic-id]').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        selectedTopicId = btn.dataset.topicId;
-        const url = new URL(window.location.href);
-        url.searchParams.set('topic', selectedTopicId);
-        window.history.replaceState({}, '', url);
-        renderTopicsList();
-        await loadTopicDetail();
-      });
-    });
-
-    topicsList.querySelectorAll('[data-topic-toggle]').forEach(button => {
-      button.addEventListener('click', (event) => {
-        event.stopPropagation();
-        const buttonEl = button;
-        const preview = buttonEl.closest('[data-topic-preview]');
-        if (!preview) return;
-        const isExpanded = preview.dataset.expanded === 'true';
-        preview.dataset.expanded = isExpanded ? 'false' : 'true';
-        buttonEl.textContent = isExpanded ? 'Readmore' : 'Read less';
-        const shortSpan = preview.querySelector('.forum-topic-preview-short');
-        const fullSpan = preview.querySelector('.forum-topic-preview-full');
-        if (shortSpan) shortSpan.hidden = isExpanded;
-        if (fullSpan) fullSpan.hidden = !isExpanded;
-      });
-    });
   }
 
   async function loadTopicDetail() {
