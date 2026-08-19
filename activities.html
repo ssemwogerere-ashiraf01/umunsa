@@ -200,9 +200,7 @@
       const month = months[date.getMonth()];
       const day = date.getDate();
       const time = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      const descPreview = (activity.description || '').length > 140
-        ? activity.description.slice(0, 140) + '…'
-        : (activity.description || '');
+      const descPreview = "";
       const ended = date.getTime() < now;
       const status = ended
         ? '<span class="event-status ended">Ended</span>'
@@ -224,7 +222,7 @@
             <span class="day">${day}</span>
           </div>
           <div class="event-umu-body">
-            <h3>${escapeHtml(activity.title)} ${status}</h3>
+            <h3><a href="activity-detail.html?id=${activity.id}" style="color:inherit;text-decoration:none;">${escapeHtml(activity.title)}</a> ${status}</h3>
             <p>${escapeHtml(descPreview)}</p>
             ${venue}
             ${rsvpBtn}

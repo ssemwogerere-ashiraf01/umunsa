@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Activity: Nkobazambogo Students' Association</title>
+<meta property="og:type" content="article" />
+<meta property="og:title" content="Activity" id="og-title" />
+<meta property="og:description" content="" id="og-desc" />
+<meta property="og:url" content="" id="og-url" />
+<meta property="og:image" content="https://umunsa.vercel.app/assets/img/og-default.jpg" id="og-image" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Activity" id="tw-title" />
+<meta name="twitter:description" content="" id="tw-desc" />
+<meta name="twitter:image" content="https://umunsa.vercel.app/assets/img/og-default.jpg" id="tw-image" />
+<link rel="stylesheet" href="assets/css/style.css" />
+<style>
+  .detail-wrap { max-width: 720px; margin: 1.5rem auto 3rem; padding: 0 1rem; }
+  .detail-card { background: var(--paper); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+  .detail-media img { width: 100%; max-height: 360px; object-fit: cover; display: block; }
+  .detail-body { padding: 1.35rem 1.4rem 1.6rem; }
+  .detail-body h1 { margin: 0 0 0.4rem; font-size: 1.55rem; color: var(--ink-navy); }
+  .detail-meta { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.75rem; }
+  .detail-content { white-space: pre-wrap; line-height: 1.6; }
+  .share-row { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+  .share-row a, .share-row button {
+    border: 1px solid var(--border); background: #fff; border-radius: 8px; padding: 0.45rem 0.75rem;
+    font-size: 0.85rem; cursor: pointer; text-decoration: none; color: var(--text); font-family: inherit;
+  }
+  .back-link { display: inline-block; margin-bottom: 0.75rem; font-size: 0.9rem; }
+</style>
+</head>
+<body>
+<div id="app-nav"></div>
+<div class="detail-wrap">
+  <a class="back-link" href="activities.html">← All activities</a>
+  <div id="detail" class="detail-card"><div class="detail-body"><p style="color:var(--text-muted);">Loading...</p></div></div>
+</div>
+<div id="app-footer"></div>
+<script type="module">
+  import { supabase } from './assets/js/supabase-client.js';
+  import { mountNav, mountFooter } from './assets/js/nav.js';
+  mountNav('activities');
+  mountFooter();
+  const id = new URLSearchParams(location.search).get('id');
+  const root = document.getElementById('detail');
+  function escapeHtml(str) { const d = document.createElement('div'); d.textContent = str ?? ''; return d.innerHTML; }
+  function setMeta(title, desc, url, image) {
+    document.title = title + ' · NSA';
+    [['og-title', title], ['tw-title', title], ['og-desc', desc], ['tw-desc', desc], ['og-url', url], ['og-image', image], ['tw-image', image]]
+      .forEach(([eid, val]) => { const el = document.getElementById(eid); if (el) el.setAttribute('content', val); });
+  }
+  if (!id) {
+    root.innerHTML = `<div class="detail-body"><p>Not found. <a href="activities.html">Back</a></p></div>`;
+  } else {
+    const { data: a, error } = await supabase.from('activities').select('*').eq('id', id).maybeSingle();
+    if (error || !a) {
+      root.innerHTML = `<div class="detail-body"><p>${escapeHtml(error?.message || 'Not found')}</p></div>`;
+    } else {
+      const url = `${location.origin}/activity-detail.html?id=${encodeURIComponent(a.id)}`;
+      const desc = (a.description || '').slice(0, 160);
+      const image = a.image_url || 'https://umunsa.vercel.app/assets/img/og-default.jpg';
+      setMeta(a.title, desc, url, image);
+      const media = a.image_url ? `<div class="detail-media"><img src="${escapeHtml(a.image_url)}" alt="" /></div>` : '';
+      const doc = a.document_url ? `<p><a href="${escapeHtml(a.document_url)}" target="_blank" rel="noopener">📄 Open attachment</a></p>` : '';
+      const when = a.activity_date ? new Date(a.activity_date).toLocaleString() : '';
+      const enc = encodeURIComponent;
+      root.innerHTML = `${media}<div class="detail-body">
+        <h1>${escapeHtml(a.title)}</h1>
+        <div class="detail-meta">${escapeHtml(when)}${a.location ? ' · ' + escapeHtml(a.location) : ''}</div>
+        <div class="detail-content">${escapeHtml(a.description || '')}</div>
+        ${doc}
+        <div class="share-row">
+          <button type="button" id="copy-link">Copy link</button>
+          <a target="_blank" rel="noopener" href="https://wa.me/?text=${enc(a.title + ' ' + url)}">WhatsApp</a>
+          <a target="_blank" rel="noopener" href="https://twitter.com/intent/tweet?text=${enc(a.title)}&url=${enc(url)}">X</a>
+          <a target="_blank" rel="noopener" href="https://www.facebook.com/sharer/sharer.php?u=${enc(url)}">Facebook</a>
+        </div>
+      </div>`;
+      document.getElementById('copy-link')?.addEventListener('click', async () => {
+        try { await navigator.clipboard.writeText(url); alert('Link copied'); } catch { prompt('Copy:', url); }
+      });
+    }
+  }
+</script>
+</body>
+</html>

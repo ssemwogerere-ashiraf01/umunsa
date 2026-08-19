@@ -148,7 +148,7 @@
     const dates = [p.start_date, p.end_date].filter(Boolean).map(d => new Date(d).toLocaleDateString()).join(' - ');
     return `
       <div class="project-card">
-        <h3>${escapeHtml(p.title)}</h3>
+        <h3><a href="project-detail.html?id=${p.id}" style="color:inherit;text-decoration:none;">${escapeHtml(p.title)}</a></h3>
         <div class="project-meta">
           <span class="pill pill-${p.status}">${escapeHtml(p.status)}</span>
           ${myRole === 'lead' ? '<span class="pill pill-lead">Project Lead</span>' : ''}
