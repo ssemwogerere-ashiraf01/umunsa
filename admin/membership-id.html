@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Membership ID Cards: Nkobazambogo Students' Association</title>
+  <link rel="stylesheet" href="../assets/css/style.css" />
+  <style>
+    :root { --forest: #1b4332; --gold: #d4af37; --border: #e2e8f0; --radius: 8px; --text-muted: #64748b; }
+    .admin-container { padding: 2rem; max-width: 1200px; margin: 0 auto; }
+    .card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    .admin-table { width: 100%; border-collapse: collapse; margin-top: 1rem; font-size: 0.9rem; }
+    .admin-table th, .admin-table td { padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    .admin-table th { background: #f8fafc; font-weight: 600; }
+    .member-avatar-img { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; display: block; }
+    .member-avatar-fallback { width: 36px; height: 36px; border-radius: 50%; background: var(--forest); color: #fff; font-weight: 700; font-size: 0.8rem; display: flex; align-items: center; justify-content: center; }
+    .mini-btn { padding: 0.4rem 0.85rem; font-size: 0.82rem; border-radius: 4px; border: none; cursor: pointer; font-weight: 600; background: var(--forest); color: #fff; }
+    .mini-btn:disabled { opacity: 0.6; cursor: wait; }
+    .search-row { display: flex; gap: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap; }
+    .search-row input { flex: 1; min-width: 220px; padding: 0.55rem 0.75rem; border: 1px solid var(--border); border-radius: 4px; font-family: inherit; }
+    #preview-wrap { display: none; margin-top: 1.5rem; }
+    .card-preview-row { display: flex; gap: 1.5rem; flex-wrap: wrap; align-items: flex-start; }
+    .card-preview-row figure { margin: 0; text-align: center; }
+    .card-preview-row canvas { width: 340px; max-width: 100%; height: auto; border-radius: 12px; box-shadow: 0 4px 16px rgba(22,35,58,0.15); border: 1px solid var(--border); }
+    .card-preview-row figcaption { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.5rem; font-weight: 600; }
+    .download-row { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-top: 1.25rem; }
+    .btn-gold-sm { background: var(--gold); color: #1b1b1b; border: none; padding: 0.6rem 1.1rem; border-radius: 4px; font-weight: 700; cursor: pointer; font-size: 0.88rem; }
+    .btn-outline-sm { background: none; border: 1px solid var(--border); padding: 0.6rem 1.1rem; border-radius: 4px; font-weight: 600; cursor: pointer; font-size: 0.88rem; }
+    #status-msg { font-size: 0.85rem; color: var(--text-muted); margin-top: 0.5rem; }
+    .no-card-note { font-size: 0.8rem; color: #b91c1c; }
+  </style>
+</head>
+<body>
+  <div id="app-nav"></div>
+
+  <main class="admin-container">
+    <h2>Membership ID Cards</h2>
+    <p style="color:var(--text-muted);margin-top:-0.5rem;margin-bottom:1.25rem;font-size:0.92rem;">
+      Generate a downloadable ID card (front + back) for any <strong>active</strong> member. A card number is
+      assigned automatically the first time a member is approved. The QR code on the back opens
+      <code>verify.html</code>, which shows the member's live bio when scanned.
+      <a href="./index.html">← Admin Dashboard</a>
+    </p>
+
+    <div class="card">
+      <div class="search-row">
+        <input type="text" id="search" placeholder="Search by name, email, or student ID…" />
+      </div>
+      <div class="admin-table-wrap" style="overflow-x:auto;">
+        <table class="admin-table">
+          <thead><tr><th></th><th>Name</th><th>Programme</th><th>Card No.</th><th>Student ID</th><th></th></tr></thead>
+          <tbody id="member-rows"><tr><td colspan="6">Loading active members…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card" id="preview-wrap">
+      <h3 style="margin-top:0;" id="preview-name">Preview</h3>
+      <div class="card-preview-row">
+        <figure><canvas id="canvas-front"></canvas><figcaption>FRONT</figcaption></figure>
+        <figure><canvas id="canvas-back"></canvas><figcaption>BACK</figcaption></figure>
+      </div>
+      <div class="download-row">
+        <button class="btn-gold-sm" id="dl-combined">Download ID Card (PNG)</button>
+        <button class="btn-outline-sm" id="dl-front">Front only</button>
+        <button class="btn-outline-sm" id="dl-back">Back only</button>
+      </div>
+      <p id="status-msg"></p>
+    </div>
+  </main>
+
+  <div id="app-footer"></div>
+
+  <script type="module">
+    import { supabase } from '../assets/js/supabase-client.js';
+    import { requireAdmin } from '../assets/js/admin-guard.js';
+    import { mountNav, mountFooter } from '../assets/js/nav.js';
+    import { drawCardFront, drawCardBack, downloadCanvas, downloadCombined } from '../assets/js/membership-card.js';
+
+    const me = await requireAdmin();
+    if (!me) throw new Error('not authorized');
+    mountNav();
+    mountFooter();
+    let members = [];
+
+    async function loadMembers() {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, full_name, email, programme, year_of_study, avatar_url, registration_number, student_id, membership_card_number, card_issued_at, membership_status')
+        .eq('membership_status', 'active')
+        .order('full_name');
+      if (error) {
+        document.getElementById('member-rows').innerHTML = `<tr><td colspan="6">Could not load members: ${error.message}</td></tr>`;
+        return;
+      }
+      members = data || [];
+      renderRows(members);
+    }
+
+    function initials(name) {
+      if (!name) return '?';
+      return name.trim().split(/\s+/).slice(0, 2).map(w => w[0]?.toUpperCase()).join('');
+    }
+
+    function renderRows(list) {
+      const tbody = document.getElementById('member-rows');
+      if (!list.length) { tbody.innerHTML = '<tr><td colspan="6">No active members found.</td></tr>'; return; }
+      tbody.innerHTML = list.map(m => `
+        <tr>
+          <td>${m.avatar_url ? `<img class="member-avatar-img" src="${m.avatar_url}" alt="" />` : `<div class="member-avatar-fallback">${initials(m.full_name)}</div>`}</td>
+          <td>${escapeHtml(m.full_name)}</td>
+          <td>${escapeHtml(m.programme || '—')}</td>
+          <td>${m.membership_card_number || '<span class="no-card-note">not yet assigned</span>'}</td>
+          <td>${m.student_id || '<span class="no-card-note">no registration no.</span>'}</td>
+          <td><button class="mini-btn" data-generate="${m.id}" ${m.membership_card_number ? '' : 'disabled title="Card number not yet assigned"'}>Generate</button></td>
+        </tr>
+      `).join('');
+    }
+
+    function escapeHtml(s) {
+      return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+
+    document.getElementById('search').addEventListener('input', (e) => {
+      const q = e.target.value.trim().toLowerCase();
+      if (!q) { renderRows(members); return; }
+      renderRows(members.filter(m =>
+        (m.full_name || '').toLowerCase().includes(q) ||
+        (m.email || '').toLowerCase().includes(q) ||
+        (m.student_id || '').toLowerCase().includes(q)
+      ));
+    });
+
+    document.getElementById('member-rows').addEventListener('click', async (e) => {
+      const btn = e.target.closest('button[data-generate]');
+      if (!btn) return;
+      const member = members.find(m => m.id === btn.dataset.generate);
+      if (!member) return;
+      btn.disabled = true;
+      const original = btn.textContent;
+      btn.textContent = 'Generating…';
+      const statusMsg = document.getElementById('status-msg');
+      statusMsg.textContent = '';
+      try {
+        document.getElementById('preview-wrap').style.display = 'block';
+        document.getElementById('preview-name').textContent = `Preview — ${member.full_name}`;
+        const frontCanvas = document.getElementById('canvas-front');
+        const backCanvas = document.getElementById('canvas-back');
+        await drawCardFront(frontCanvas, member);
+        await drawCardBack(backCanvas, member);
+        document.getElementById('preview-wrap').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+        const fileBase = `NSA-ID-${(member.membership_card_number || member.full_name).replace(/\s+/g, '_')}`;
+        document.getElementById('dl-combined').onclick = () => downloadCombined(frontCanvas, backCanvas, `${fileBase}.png`);
+        document.getElementById('dl-front').onclick = () => downloadCanvas(frontCanvas, `${fileBase}-front.png`);
+        document.getElementById('dl-back').onclick = () => downloadCanvas(backCanvas, `${fileBase}-back.png`);
+      } catch (err) {
+        statusMsg.textContent = `Could not generate card: ${err.message}`;
+        statusMsg.style.color = '#b91c1c';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = original;
+      }
+    });
+
+    loadMembers();
+  </script>
+</body>
+</html>
