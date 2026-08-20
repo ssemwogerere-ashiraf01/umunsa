@@ -106,6 +106,7 @@
     function renderRows(list) {
       const tbody = document.getElementById('member-rows');
       if (!list.length) { tbody.innerHTML = '<tr><td colspan="6">No active members found.</td></tr>'; return; }
+      // Allow Generate even if membership_card_number is not yet assigned — clicking will request the DB to assign it.
       tbody.innerHTML = list.map(m => `
         <tr>
           <td>${m.avatar_url ? `<img class="member-avatar-img" src="${m.avatar_url}" alt="" />` : `<div class="member-avatar-fallback">${initials(m.full_name)}</div>`}</td>
@@ -113,7 +114,7 @@
           <td>${escapeHtml(m.programme || '—')}</td>
           <td>${m.membership_card_number || '<span class="no-card-note">not yet assigned</span>'}</td>
           <td>${m.student_id || '<span class="no-card-note">no registration no.</span>'}</td>
-          <td><button class="mini-btn" data-generate="${m.id}" ${m.membership_card_number ? '' : 'disabled title="Card number not yet assigned"'}>Generate</button></td>
+          <td><button class="mini-btn" data-generate="${m.id}" title="Generate card">Generate</button></td>
         </tr>
       `).join('');
     }
@@ -135,7 +136,8 @@
     document.getElementById('member-rows').addEventListener('click', async (e) => {
       const btn = e.target.closest('button[data-generate]');
       if (!btn) return;
-      const member = members.find(m => m.id === btn.dataset.generate);
+      const memberId = btn.dataset.generate;
+      let member = members.find(m => m.id === memberId);
       if (!member) return;
       btn.disabled = true;
       const original = btn.textContent;
@@ -143,6 +145,22 @@
       const statusMsg = document.getElementById('status-msg');
       statusMsg.textContent = '';
       try {
+        // If the member doesn't have a membership_card_number yet, trigger the DB to assign one.
+        if (!member.membership_card_number) {
+          // Perform a harmless update to trigger the assign_membership_card_number trigger.
+          const { data: upd, error: updErr } = await supabase
+            .from('profiles')
+            .update({ membership_status: 'active' })
+            .eq('id', member.id)
+            .select('*')
+            .single();
+          if (updErr) throw updErr;
+          member = upd;
+          // update members array
+          members = members.map(m => m.id === member.id ? member : m);
+          renderRows(members);
+        }
+
         document.getElementById('preview-wrap').style.display = 'block';
         document.getElementById('preview-name').textContent = `Preview — ${member.full_name}`;
         const frontCanvas = document.getElementById('canvas-front');
@@ -155,6 +173,8 @@
         document.getElementById('dl-combined').onclick = () => downloadCombined(frontCanvas, backCanvas, `${fileBase}.png`);
         document.getElementById('dl-front').onclick = () => downloadCanvas(frontCanvas, `${fileBase}-front.png`);
         document.getElementById('dl-back').onclick = () => downloadCanvas(backCanvas, `${fileBase}-back.png`);
+
+        // Also update the member's profile to link to admin dashboard (optional UI change): nothing to persist here.
       } catch (err) {
         statusMsg.textContent = `Could not generate card: ${err.message}`;
         statusMsg.style.color = '#b91c1c';
