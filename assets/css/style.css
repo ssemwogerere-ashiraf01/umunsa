@@ -237,15 +237,20 @@ a:hover { text-decoration: underline; }
 .form-group { margin-bottom: 1.1rem; }
 .form-group label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--text); }
 .form-group input, .form-group select, .form-group textarea {
-  width: 100%; padding: 0.65rem 0.8rem; border: 1px solid var(--border); border-radius: var(--radius);
+  width: 100%; padding: 0.7rem 0.9rem; border: 1.5px solid var(--border); border-radius: 10px;
   font-size: 0.95rem; font-family: inherit;
   background: var(--paper);
   color: var(--text);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
 }
 .form-group input::placeholder, .form-group textarea::placeholder { color: var(--text-muted); opacity: 0.85; }
+.form-group input:hover, .form-group select:hover, .form-group textarea:hover {
+  border-color: color-mix(in srgb, var(--forest) 45%, var(--border));
+}
 .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
   border-color: var(--forest);
   outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--forest) 22%, transparent);
 }
 
 .btn-block { width: 100%; text-align: center; }
@@ -1376,4 +1381,195 @@ body.login-page {
 }
 [data-theme="dark"] .data-table tbody tr:hover {
   background: #121a26;
+}
+
+
+/* ============================================================
+   Dropdowns / <select> — site-wide polished design
+   ============================================================ */
+select,
+.form-group select,
+select.input,
+.input[type="select"],
+.field select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  width: 100%;
+  max-width: 100%;
+  padding: 0.72rem 2.6rem 0.72rem 0.95rem;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--text);
+  background-color: var(--paper);
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--text-muted) 50%),
+    linear-gradient(135deg, var(--text-muted) 50%, transparent 50%);
+  background-position:
+    calc(100% - 1.15rem) 55%,
+    calc(100% - 0.75rem) 55%;
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+  box-shadow: 0 1px 2px rgba(22, 35, 58, 0.04);
+}
+
+select:hover {
+  border-color: color-mix(in srgb, var(--forest) 50%, var(--border));
+}
+
+select:focus {
+  border-color: var(--forest);
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--forest) 22%, transparent);
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--forest) 50%),
+    linear-gradient(135deg, var(--forest) 50%, transparent 50%);
+  background-position:
+    calc(100% - 1.15rem) 55%,
+    calc(100% - 0.75rem) 55%;
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+}
+
+select:disabled,
+select[disabled] {
+  opacity: 0.55;
+  cursor: not-allowed;
+  background-color: color-mix(in srgb, var(--paper) 85%, var(--border));
+  box-shadow: none;
+}
+
+select option,
+select optgroup {
+  font-family: inherit;
+  font-weight: 500;
+  color: #16233a;
+  background: #ffffff;
+  padding: 0.5rem;
+}
+
+select option:disabled {
+  color: #8a94a6;
+}
+
+select option:checked {
+  background: color-mix(in srgb, #1a6b4a 18%, #fff);
+  color: #16233a;
+}
+
+/* Compact selects (tables / filters) */
+select.select-sm,
+.table-actions select,
+.filter-bar select {
+  padding: 0.4rem 2.2rem 0.4rem 0.65rem;
+  font-size: 0.85rem;
+  border-radius: 8px;
+  background-position:
+    calc(100% - 0.95rem) 55%,
+    calc(100% - 0.6rem) 55%;
+}
+
+/* Inline / auto-width selects */
+select.select-inline {
+  width: auto;
+  min-width: 8rem;
+  display: inline-block;
+}
+
+/* Invalid state */
+select:invalid:not(:focus):not([value=""]):not(:placeholder-shown),
+select.is-invalid {
+  border-color: #c0392b;
+}
+
+select.is-valid {
+  border-color: var(--forest);
+}
+
+/* Apply / auth panels with light fields on dark cyan */
+.apply-form select,
+.auth-panel select {
+  background-color: #ffffff;
+  color: #1b1b1b;
+  border: 1.5px solid rgba(255, 255, 255, 0.4);
+  background-image:
+    linear-gradient(45deg, transparent 50%, #5a6a7a 50%),
+    linear-gradient(135deg, #5a6a7a 50%, transparent 50%);
+  background-position:
+    calc(100% - 1.15rem) 55%,
+    calc(100% - 0.75rem) 55%;
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+.apply-form select:focus,
+.auth-panel select:focus {
+  border-color: #0d5c63;
+  box-shadow: 0 0 0 3px rgba(13, 92, 99, 0.25);
+  background-image:
+    linear-gradient(45deg, transparent 50%, #0d5c63 50%),
+    linear-gradient(135deg, #0d5c63 50%, transparent 50%);
+  background-position:
+    calc(100% - 1.15rem) 55%,
+    calc(100% - 0.75rem) 55%;
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+}
+
+/* Dark mode */
+[data-theme="dark"] select,
+[data-theme="dark"] .form-group select {
+  background-color: #121a26;
+  color: var(--text);
+  border-color: var(--border);
+  background-image:
+    linear-gradient(45deg, transparent 50%, #9aa8bc 50%),
+    linear-gradient(135deg, #9aa8bc 50%, transparent 50%);
+  background-position:
+    calc(100% - 1.15rem) 55%,
+    calc(100% - 0.75rem) 55%;
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+[data-theme="dark"] select:hover {
+  border-color: color-mix(in srgb, var(--gold) 40%, var(--border));
+}
+[data-theme="dark"] select:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--gold) 25%, transparent);
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--gold) 50%),
+    linear-gradient(135deg, var(--gold) 50%, transparent 50%);
+  background-position:
+    calc(100% - 1.15rem) 55%,
+    calc(100% - 0.75rem) 55%;
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+}
+[data-theme="dark"] select option,
+[data-theme="dark"] select optgroup {
+  background: #1a2332;
+  color: #e8ecf4;
+}
+[data-theme="dark"] select:disabled {
+  background-color: #0e141c;
+}
+
+/* Remove IE/Edge default arrow */
+select::-ms-expand { display: none; }
+
+/* Firefox focus ring cleanup */
+select:-moz-focusring {
+  color: transparent;
+  text-shadow: 0 0 0 var(--text);
+}
+[data-theme="dark"] select:-moz-focusring {
+  text-shadow: 0 0 0 var(--text);
 }
