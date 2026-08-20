@@ -76,7 +76,7 @@
     import { supabase } from '../assets/js/supabase-client.js';
     import { requireAdmin } from '../assets/js/admin-guard.js';
     import { mountNav, mountFooter } from '../assets/js/nav.js';
-    import { drawCardFront, drawCardBack, downloadCanvas, downloadCombined } from '../assets/js/membership-card.js';
+    import { drawCardFront, drawCardBack, downloadCanvas, downloadCombined, CARD_W, CARD_H } from '../assets/js/membership-card.js';
 
     const me = await requireAdmin();
     if (!me) throw new Error('not authorized');
@@ -84,10 +84,38 @@
     mountFooter();
     let members = [];
 
+    // Upload a canvas as PNG to storage and persist the public URL to profiles.membership_card_url
+    async function uploadCardForMember(memberId, canvas) {
+      return new Promise((resolve, reject) => {
+        canvas.toBlob(async (blob) => {
+          try {
+            if (!blob) throw new Error('Could not create image blob');
+            const safePath = `${memberId}/membership-card/membership-card.png`;
+            const { error: upErr } = await supabase.storage
+              .from('content-media')
+              .upload(safePath, blob, { upsert: true });
+            if (upErr) throw upErr;
+            const { data: urlData } = supabase.storage.from('content-media').getPublicUrl(safePath);
+            const publicUrl = urlData?.publicUrl ? `${urlData.publicUrl}?t=${Date.now()}` : null;
+            if (publicUrl) {
+              const { error: dbErr } = await supabase
+                .from('profiles')
+                .update({ membership_card_url: publicUrl })
+                .eq('id', memberId);
+              if (dbErr) console.warn('Could not save membership_card_url:', dbErr.message);
+            }
+            resolve(publicUrl);
+          } catch (err) {
+            reject(err);
+          }
+        }, 'image/png');
+      });
+    }
+
     async function loadMembers() {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, full_name, email, programme, year_of_study, avatar_url, registration_number, student_id, membership_card_number, card_issued_at, membership_status')
+        .select('id, full_name, email, programme, year_of_study, avatar_url, registration_number, student_id, membership_card_number, card_issued_at, membership_status, membership_card_url')
         .eq('membership_status', 'active')
         .order('full_name');
       if (error) {
@@ -106,7 +134,6 @@
     function renderRows(list) {
       const tbody = document.getElementById('member-rows');
       if (!list.length) { tbody.innerHTML = '<tr><td colspan="6">No active members found.</td></tr>'; return; }
-      // Allow Generate even if membership_card_number is not yet assigned — clicking will request the DB to assign it.
       tbody.innerHTML = list.map(m => `
         <tr>
           <td>${m.avatar_url ? `<img class="member-avatar-img" src="${m.avatar_url}" alt="" />` : `<div class="member-avatar-fallback">${initials(m.full_name)}</div>`}</td>
@@ -114,7 +141,7 @@
           <td>${escapeHtml(m.programme || '—')}</td>
           <td>${m.membership_card_number || '<span class="no-card-note">not yet assigned</span>'}</td>
           <td>${m.student_id || '<span class="no-card-note">no registration no.</span>'}</td>
-          <td><button class="mini-btn" data-generate="${m.id}" title="Generate card">Generate</button></td>
+          <td><button class="mini-btn" data-generate="${m.id}">Generate</button> ${m.membership_card_url ? `<a href="${m.membership_card_url}" target="_blank" class="mini-btn btn-outline" style="margin-left:0.5rem;">View</a>` : ''}</td>
         </tr>
       `).join('');
     }
@@ -147,7 +174,6 @@
       try {
         // If the member doesn't have a membership_card_number yet, trigger the DB to assign one.
         if (!member.membership_card_number) {
-          // Perform a harmless update to trigger the assign_membership_card_number trigger.
           const { data: upd, error: updErr } = await supabase
             .from('profiles')
             .update({ membership_status: 'active' })
@@ -156,7 +182,6 @@
             .single();
           if (updErr) throw updErr;
           member = upd;
-          // update members array
           members = members.map(m => m.id === member.id ? member : m);
           renderRows(members);
         }
@@ -174,7 +199,32 @@
         document.getElementById('dl-front').onclick = () => downloadCanvas(frontCanvas, `${fileBase}-front.png`);
         document.getElementById('dl-back').onclick = () => downloadCanvas(backCanvas, `${fileBase}-back.png`);
 
-        // Also update the member's profile to link to admin dashboard (optional UI change): nothing to persist here.
+        // Upload combined image and persist URL to profile
+        try {
+          const gap = 40;
+          const combined = document.createElement('canvas');
+          combined.width = CARD_W;
+          combined.height = CARD_H * 2 + gap;
+          const combCtx = combined.getContext('2d');
+          combCtx.fillStyle = '#e9e5d9';
+          combCtx.fillRect(0, 0, combined.width, combined.height);
+          combCtx.drawImage(frontCanvas, 0, 0);
+          combCtx.drawImage(backCanvas, 0, CARD_H + gap);
+
+          const publicUrl = await uploadCardForMember(member.id, combined);
+          if (publicUrl) {
+            statusMsg.textContent = 'Card uploaded and linked to profile.';
+            statusMsg.style.color = '';
+            member.membership_card_url = publicUrl;
+            members = members.map(m => (m.id === member.id ? member : m));
+            renderRows(members);
+          }
+        } catch (uErr) {
+          console.warn('Upload/save card failed:', uErr);
+          statusMsg.textContent = 'Card generated but upload/save failed (see console).';
+          statusMsg.style.color = '#b91c1c';
+        }
+
       } catch (err) {
         statusMsg.textContent = `Could not generate card: ${err.message}`;
         statusMsg.style.color = '#b91c1c';
