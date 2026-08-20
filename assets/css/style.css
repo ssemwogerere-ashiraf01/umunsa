@@ -1779,3 +1779,38 @@ select:-moz-focusring {
   background: var(--gold);
   color: #16233a;
 }
+
+/* Native select left in DOM for forms; visual replaced by .ns-select */
+select.ns-select-native-hidden {
+  position: absolute !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  width: 1px !important;
+  height: 1px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  clip: rect(0, 0, 0, 0);
+}
+.ns-select-host {
+  position: relative;
+  width: 100%;
+  display: block;
+}
+/* Compact variant for table/filter bars */
+.member-filter-select + .ns-select-host .ns-select-btn,
+.action-select + .ns-select-host .ns-select-btn,
+.filter-bar .ns-select-btn {
+  padding: 0.45rem 0.7rem;
+  font-size: 0.85rem;
+  border-radius: 8px;
+}
+.member-filters .ns-select-host,
+.filter-bar .ns-select-host {
+  min-width: 140px;
+  flex: 1 1 140px;
+}
+
+.ns-select-option.no-rank {
+  grid-template-columns: 1fr 22px;
+}
