@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex, nofollow" />
+<title>Verify Membership: Nkobazambogo Students' Association</title>
+<link rel="icon" href="favicon.ico" sizes="any" />
+<link rel="stylesheet" href="assets/css/style.css" />
+<style>
+  .verify-wrap { max-width: 460px; margin: 2.5rem auto; padding: 0 1.25rem 3rem; }
+  .verify-card { background: var(--paper); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow); overflow: hidden; }
+  .verify-head { background: linear-gradient(135deg, var(--forest), var(--forest-dark)); color: #fff; padding: 1.25rem 1.5rem; text-align: center; }
+  .verify-head .seal { display: inline-flex; align-items: center; justify-content: center; width: 56px; height: 56px; border: 2px solid var(--gold); border-radius: 50%; font-weight: 700; color: var(--gold); margin-bottom: 0.6rem; }
+  .verify-body { padding: 1.75rem; text-align: center; }
+  .verify-avatar { width: 108px; height: 108px; border-radius: 50%; object-fit: cover; border: 3px solid var(--gold); margin: 0 auto 1rem; display: block; background: #e6e6e2; }
+  .verify-avatar-fallback { width: 108px; height: 108px; border-radius: 50%; background: var(--forest); color: #fff; font-family: 'Fraunces', serif; font-size: 2rem; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; }
+  .verify-name { margin: 0 0 0.15rem; }
+  .verify-programme { color: var(--text-muted); margin: 0 0 0.9rem; }
+  .status-pill { display: inline-block; padding: 0.3rem 0.9rem; border-radius: 20px; font-weight: 700; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 1.25rem; }
+  .status-active { background: #dcfce7; color: #15803d; }
+  .status-pending { background: #fef9c3; color: #a16207; }
+  .status-suspended, .status-rejected { background: #fee2e2; color: #b91c1c; }
+  .verify-fields { text-align: left; border-top: 1px solid var(--border); padding-top: 1.1rem; margin-top: 0.25rem; }
+  .verify-fields dt { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--gold); font-weight: 700; margin-top: 0.7rem; }
+  .verify-fields dt:first-child { margin-top: 0; }
+  .verify-fields dd { margin: 0.1rem 0 0; font-weight: 600; color: var(--ink-navy); }
+  .verify-state { padding: 3rem 1.5rem; text-align: center; color: var(--text-muted); }
+  .verify-state svg { margin-bottom: 0.75rem; }
+</style>
+</head>
+<body>
+<div id="app-nav"></div>
+
+<div class="verify-wrap">
+  <div class="verify-card">
+    <div class="verify-head">
+      <div class="seal">NSA</div>
+      <div style="font-weight:700;">Membership Verification</div>
+      <div style="font-size:0.82rem;opacity:0.85;">Nkobazambogo Students' Association</div>
+    </div>
+    <div class="verify-body" id="verify-body">
+      <div class="verify-state" id="loading-state">Looking up card…</div>
+    </div>
+  </div>
+</div>
+
+<div id="app-footer"></div>
+
+<script type="module">
+  import { supabase } from './assets/js/supabase-client.js';
+  import { mountNav, mountFooter } from './assets/js/nav.js';
+
+  mountNav();
+  mountFooter();
+
+  const params = new URLSearchParams(window.location.search);
+  const card = (params.get('card') || '').trim();
+  const body = document.getElementById('verify-body');
+
+  function escapeHtml(s) {
+    return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+
+  function initials(name) {
+    if (!name) return '?';
+    return name.trim().split(/\s+/).slice(0, 2).map(w => w[0]?.toUpperCase()).join('');
+  }
+
+  const STATUS_LABEL = { active: 'Active Member', pending: 'Pending Approval', suspended: 'Suspended', rejected: 'Not a Member' };
+
+  async function run() {
+    if (!card) {
+      body.innerHTML = `<div class="verify-state">No card number was provided in the link.</div>`;
+      return;
+    }
+
+    const { data, error } = await supabase.rpc('get_member_card_info', { p_card_number: card });
+    const record = Array.isArray(data) ? data[0] : data;
+
+    if (error || !record) {
+      body.innerHTML = `
+        <div class="verify-state">
+          <div style="font-size:2.5rem;">⚠️</div>
+          <p><strong>Card not recognized.</strong><br />This membership card number could not be verified against the official register.</p>
+        </div>`;
+      return;
+    }
+
+    const statusClass = `status-${record.membership_status}`;
+    body.innerHTML = `
+      ${record.avatar_url
+        ? `<img class="verify-avatar" src="${record.avatar_url}" alt="" />`
+        : `<div class="verify-avatar-fallback">${initials(record.full_name)}</div>`}
+      <h2 class="verify-name">${escapeHtml(record.full_name)}</h2>
+      <p class="verify-programme">${escapeHtml(record.programme || '')}${record.year_of_study ? ` · Year ${record.year_of_study}` : ''}</p>
+      <span class="status-pill ${statusClass}">${STATUS_LABEL[record.membership_status] || record.membership_status}</span>
+      <dl class="verify-fields">
+        <dt>Membership No.</dt><dd>${escapeHtml(record.membership_card_number)}</dd>
+        <dt>Student ID</dt><dd>${escapeHtml(record.student_id)}</dd>
+        <dt>Registration No.</dt><dd>${escapeHtml(record.registration_number)}</dd>
+        <dt>Card Issued</dt><dd>${record.card_issued_at ? new Date(record.card_issued_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}</dd>
+      </dl>`;
+  }
+
+  run();
+</script>
+</body>
+</html>
