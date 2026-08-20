@@ -85,24 +85,16 @@ and `_headers` file are included), Vercel, GitHub Pages, or any static host.
 `admin/membership-id.html` generates a downloadable front+back PNG card for
 any **active** member (`assets/js/membership-card.js`); the QR code on the
 back opens `verify.html?card=...`, a public page anyone can scan to see the
-member's live status. Members can also view and download their own card
-from `dashboard.html` (the "Membership Card" quick-access tile) — same
-renderer, just scoped to their own profile row instead of the admin's pick.
-Card numbers (`NSA-000123`) are assigned automatically by a database
-trigger the first time a member becomes active
+member's live status. Card numbers (`NSA-000123`) are assigned automatically
+by a database trigger the first time a member becomes active
 (`sql/007_membership_card.sql`). If you already had active members before
 running that migration, also run `sql/024_membership_card_backfill.sql` once
-so they get a card number too — otherwise "Generate" stays disabled for them
-(and members would see "Not issued yet" on the dashboard).
+so they get a card number too — otherwise "Generate" stays disabled for them.
 
-The QR library loads from a CDN at runtime — `assets/js/membership-card.js`
-tries jsDelivr, then cdnjs, then unpkg in turn, so one being unreachable on
-a given network doesn't fail card generation. All three are allow-listed in
-`_headers` / `vercel.json`'s Content-Security-Policy, alongside
-`https://get.geojs.io` for location detection below. If you tighten that
-policy later, keep those hosts (or swap in your own equivalents — or vendor
-the QR library into the repo directly if you'd rather have zero external
-dependency at all).
+The QR library loads from `https://cdn.jsdelivr.net`, and location detection
+below calls `https://get.geojs.io` — both are allow-listed in `_headers` /
+`vercel.json`'s Content-Security-Policy. If you tighten that policy later,
+keep those two hosts (or swap in your own equivalents).
 
 ## Location detection
 
