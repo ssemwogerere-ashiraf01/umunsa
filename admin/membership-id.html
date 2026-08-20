@@ -76,7 +76,7 @@
     import { supabase } from '../assets/js/supabase-client.js';
     import { requireAdmin } from '../assets/js/admin-guard.js';
     import { mountNav, mountFooter } from '../assets/js/nav.js';
-    import { drawCardFront, drawCardBack, downloadCanvas, downloadCombined, CARD_W, CARD_H } from '../assets/js/membership-card.js';
+    import { drawCardFront, drawCardBack, downloadCanvas, downloadCombined } from '../assets/js/membership-card.js';
 
     const me = await requireAdmin();
     if (!me) throw new Error('not authorized');
@@ -84,38 +84,10 @@
     mountFooter();
     let members = [];
 
-    // Upload a canvas as PNG to storage and persist the public URL to profiles.membership_card_url
-    async function uploadCardForMember(memberId, canvas) {
-      return new Promise((resolve, reject) => {
-        canvas.toBlob(async (blob) => {
-          try {
-            if (!blob) throw new Error('Could not create image blob');
-            const safePath = `${memberId}/membership-card/membership-card.png`;
-            const { error: upErr } = await supabase.storage
-              .from('content-media')
-              .upload(safePath, blob, { upsert: true });
-            if (upErr) throw upErr;
-            const { data: urlData } = supabase.storage.from('content-media').getPublicUrl(safePath);
-            const publicUrl = urlData?.publicUrl ? `${urlData.publicUrl}?t=${Date.now()}` : null;
-            if (publicUrl) {
-              const { error: dbErr } = await supabase
-                .from('profiles')
-                .update({ membership_card_url: publicUrl })
-                .eq('id', memberId);
-              if (dbErr) console.warn('Could not save membership_card_url:', dbErr.message);
-            }
-            resolve(publicUrl);
-          } catch (err) {
-            reject(err);
-          }
-        }, 'image/png');
-      });
-    }
-
     async function loadMembers() {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, full_name, email, programme, year_of_study, avatar_url, registration_number, student_id, membership_card_number, card_issued_at, membership_status, membership_card_url')
+        .select('id, full_name, email, programme, year_of_study, avatar_url, registration_number, student_id, membership_card_number, card_issued_at, membership_status')
         .eq('membership_status', 'active')
         .order('full_name');
       if (error) {
@@ -141,7 +113,7 @@
           <td>${escapeHtml(m.programme || '—')}</td>
           <td>${m.membership_card_number || '<span class="no-card-note">not yet assigned</span>'}</td>
           <td>${m.student_id || '<span class="no-card-note">no registration no.</span>'}</td>
-          <td><button class="mini-btn" data-generate="${m.id}">Generate</button> ${m.membership_card_url ? `<a href="${m.membership_card_url}" target="_blank" class="mini-btn btn-outline" style="margin-left:0.5rem;">View</a>` : ''}</td>
+          <td><button class="mini-btn" data-generate="${m.id}" ${m.membership_card_number ? '' : 'disabled title="Card number not yet assigned"'}>Generate</button></td>
         </tr>
       `).join('');
     }
@@ -163,8 +135,7 @@
     document.getElementById('member-rows').addEventListener('click', async (e) => {
       const btn = e.target.closest('button[data-generate]');
       if (!btn) return;
-      const memberId = btn.dataset.generate;
-      let member = members.find(m => m.id === memberId);
+      const member = members.find(m => m.id === btn.dataset.generate);
       if (!member) return;
       btn.disabled = true;
       const original = btn.textContent;
@@ -172,20 +143,6 @@
       const statusMsg = document.getElementById('status-msg');
       statusMsg.textContent = '';
       try {
-        // If the member doesn't have a membership_card_number yet, trigger the DB to assign one.
-        if (!member.membership_card_number) {
-          const { data: upd, error: updErr } = await supabase
-            .from('profiles')
-            .update({ membership_status: 'active' })
-            .eq('id', member.id)
-            .select('*')
-            .single();
-          if (updErr) throw updErr;
-          member = upd;
-          members = members.map(m => m.id === member.id ? member : m);
-          renderRows(members);
-        }
-
         document.getElementById('preview-wrap').style.display = 'block';
         document.getElementById('preview-name').textContent = `Preview — ${member.full_name}`;
         const frontCanvas = document.getElementById('canvas-front');
@@ -198,33 +155,6 @@
         document.getElementById('dl-combined').onclick = () => downloadCombined(frontCanvas, backCanvas, `${fileBase}.png`);
         document.getElementById('dl-front').onclick = () => downloadCanvas(frontCanvas, `${fileBase}-front.png`);
         document.getElementById('dl-back').onclick = () => downloadCanvas(backCanvas, `${fileBase}-back.png`);
-
-        // Upload combined image and persist URL to profile
-        try {
-          const gap = 40;
-          const combined = document.createElement('canvas');
-          combined.width = CARD_W;
-          combined.height = CARD_H * 2 + gap;
-          const combCtx = combined.getContext('2d');
-          combCtx.fillStyle = '#e9e5d9';
-          combCtx.fillRect(0, 0, combined.width, combined.height);
-          combCtx.drawImage(frontCanvas, 0, 0);
-          combCtx.drawImage(backCanvas, 0, CARD_H + gap);
-
-          const publicUrl = await uploadCardForMember(member.id, combined);
-          if (publicUrl) {
-            statusMsg.textContent = 'Card uploaded and linked to profile.';
-            statusMsg.style.color = '';
-            member.membership_card_url = publicUrl;
-            members = members.map(m => (m.id === member.id ? member : m));
-            renderRows(members);
-          }
-        } catch (uErr) {
-          console.warn('Upload/save card failed:', uErr);
-          statusMsg.textContent = 'Card generated but upload/save failed (see console).';
-          statusMsg.style.color = '#b91c1c';
-        }
-
       } catch (err) {
         statusMsg.textContent = `Could not generate card: ${err.message}`;
         statusMsg.style.color = '#b91c1c';
