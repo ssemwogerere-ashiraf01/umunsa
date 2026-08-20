@@ -75,6 +75,19 @@
   .register-modal-content h3 { margin-top: 0; }
   .register-modal-content p { color: var(--text-muted); font-size: 0.9rem; }
   @media (max-width: 640px) { .activities-grid { grid-template-columns:1fr; } }
+
+  .activity-news-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:1.25rem; margin-top:1.25rem; }
+  .activity-news-card {
+    background: var(--paper); border: 1px solid var(--border); border-radius: var(--radius);
+    box-shadow: var(--shadow); overflow: hidden; text-decoration: none; color: inherit;
+    display: flex; flex-direction: column; transition: transform .15s ease, box-shadow .15s ease;
+  }
+  .activity-news-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.08); }
+  .activity-news-card .media { width:100%; height:180px; background:#e8e4dc; display:flex; align-items:center; justify-content:center; overflow:hidden; }
+  .activity-news-card .media img { width:100%; height:100%; object-fit:cover; }
+  .activity-news-card .body { padding: 1rem 1.1rem 1.15rem; }
+  .activity-news-card h3 { margin: 0 0 0.35rem; font-size: 1.05rem; color: var(--ink-navy); line-height:1.3; }
+  .activity-news-meta { font-size: 0.78rem; color: var(--text-muted); }
 </style>
 </head>
 <body>
@@ -88,7 +101,7 @@
 
 <div class="section" style="padding-top:0;">
   <div id="alert-box"></div>
-  <div id="activities-container" class="events-umu-list">
+  <div id="activities-container" class="activity-news-grid">
     <div class="activities-empty">Loading activities...</div>
   </div>
 </div>
@@ -197,52 +210,23 @@
 
     container.innerHTML = activities.map(activity => {
       const date = new Date(activity.activity_date);
-      const month = months[date.getMonth()];
-      const day = date.getDate();
-      const time = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      const descPreview = "";
-      const ended = date.getTime() < now;
-      const status = ended
-        ? '<span class="event-status ended">Ended</span>'
-        : '<span class="event-status coming">Upcoming</span>';
-      const venue = activity.location
-        ? `<p class="venue">Venue: <strong>${escapeHtml(activity.location)}</strong> · ${time}</p>`
-        : `<p class="venue">${time}</p>`;
-      const thumb = activity.image_url
-        ? `<img class="event-umu-thumb" src="${escapeHtml(activity.image_url)}" alt="" loading="lazy" />`
-        : `<img class="event-umu-thumb" src="assets/img/campus-bg.jpg" alt="" loading="lazy" />`;
-      const rsvpBtn = ended
-        ? ''
-        : `<button type="button" class="btn btn-umu-red rsvp-btn" data-activity-id="${activity.id}" style="margin-top:0.5rem;padding:0.45rem 0.9rem;font-size:0.82rem;">RSVP</button>`;
-
-      return `
-        <article class="event-umu-item" data-activity-id="${activity.id}">
-          <div class="event-date-badge" aria-hidden="true">
-            <span class="mon">${month}</span>
-            <span class="day">${day}</span>
-          </div>
-          <div class="event-umu-body">
-            <h3><a href="activity-detail.html?id=${activity.id}" style="color:inherit;text-decoration:none;">${escapeHtml(activity.title)}</a> ${status}</h3>
-            <p>${escapeHtml(descPreview)}</p>
-            ${venue}
-            ${rsvpBtn}
-          </div>
-          ${thumb}
-        </article>`;
+      const when = date.toLocaleString();
+      let media = '';
+      if (activity.image_url) media = `<div class="media"><img src="${escapeHtml(activity.image_url)}" alt="" loading="lazy" /></div>`;
+      else if (activity.document_url) media = `<div class="media"><div style="text-align:center;color:var(--text-muted);"><span style="font-size:2rem;">📄</span><div>Document</div></div></div>`;
+      else media = `<div class="media"><div style="font-size:2rem;opacity:.5;">📅</div></div>`;
+      const ended = date.getTime() < Date.now();
+      const status = ended ? 'Ended' : 'Upcoming';
+      return `<a class="activity-news-card" href="activity-detail.html?id=${encodeURIComponent(activity.id)}">
+        ${media}
+        <div class="body">
+          <h3>${escapeHtml(activity.title)}</h3>
+          <div class="activity-news-meta">${escapeHtml(when)}${activity.location ? ' · ' + escapeHtml(activity.location) : ''} · ${status}</div>
+        </div>
+      </a>`;
     }).join('');
+    // keep RSVP via detail page; no inline buttons on list
 
-    container.querySelectorAll('.rsvp-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const id = btn.getAttribute('data-activity-id');
-        const activity = activities.find(e => e.id === id);
-        if (!activity) return;
-        selectedActivityId = id;
-        document.getElementById('reg-modal-title').textContent = activity.title;
-        document.getElementById('reg-modal-desc').textContent = `Confirm you're going to ${activity.title}.`;
-        regAlert.innerHTML = '';
-        regModal.hidden = false;
-      });
-    });
   }
 
 

@@ -143,19 +143,18 @@
     container.innerHTML = rows.map(p => projectCard(p)).join('');
   }
 
-  function projectCard(p, myRole) {
-    if (!p) return '';
-    const dates = [p.start_date, p.end_date].filter(Boolean).map(d => new Date(d).toLocaleDateString()).join(' - ');
-    return `
-      <div class="project-card">
-        <h3><a href="project-detail.html?id=${p.id}" style="color:inherit;text-decoration:none;">${escapeHtml(p.title)}</a></h3>
-        <div class="project-meta">
-          <span class="pill pill-${p.status}">${escapeHtml(p.status)}</span>
-          ${myRole === 'lead' ? '<span class="pill pill-lead">Project Lead</span>' : ''}
-          ${dates ? ` · ${dates}` : ''}
-        </div>
-        ${p.description ? `<p style="font-size:0.9rem;color:var(--text);margin:0;">${escapeHtml(p.description)}</p>` : ''}
-      </div>`;
+  function projectCard(p, role) {
+    let media = '';
+    if (p.image_url) media = `<div class="media"><img src="${escapeHtml(p.image_url)}" alt="" loading="lazy" /></div>`;
+    else if (p.document_url) media = `<div class="media" style="height:140px;display:flex;align-items:center;justify-content:center;background:#e8e4dc;"><span style="font-size:2rem;">📄</span></div>`;
+    else media = `<div class="media" style="height:140px;display:flex;align-items:center;justify-content:center;background:#e8e4dc;"><span style="font-size:2rem;opacity:.45;">📁</span></div>`;
+    return `<a class="news-card" href="project-detail.html?id=${encodeURIComponent(p.id)}" style="text-decoration:none;color:inherit;display:flex;flex-direction:column;background:var(--paper);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);">
+      ${media}
+      <div style="padding:1rem 1.1rem;">
+        <h3 style="margin:0 0 0.35rem;font-size:1.05rem;color:var(--ink-navy);">${escapeHtml(p.title)}</h3>
+        <div style="font-size:0.78rem;color:var(--text-muted);">${escapeHtml(p.status || '')}${role ? ' · ' + escapeHtml(role) : ''}</div>
+      </div>
+    </a>`;
   }
 
   function escapeHtml(str) {
