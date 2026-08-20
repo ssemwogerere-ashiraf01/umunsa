@@ -4,6 +4,7 @@ import { logout } from './auth.js';
 import { applyTheme, cycleTheme, getStoredTheme, themeLabel } from './theme.js';
 import { initUiChrome } from './ui-chrome.js';
 import { enhanceAllSelects } from './ns-select.js';
+import { enhancePhoneFields } from './phone-input.js';
 
 applyTheme();
 
@@ -312,3 +313,5 @@ function escapeHtml(str) {
 // Upgrade native selects site-wide after chrome mounts
 setTimeout(() => { try { enhanceAllSelects(document); } catch (e) { console.warn(e); } }, 50);
 setTimeout(() => { try { enhanceAllSelects(document); } catch (e) {} }, 800);
+setTimeout(() => { try { enhancePhoneFields(document); } catch (e) {} }, 120);
+setTimeout(() => { try { enhancePhoneFields(document); } catch (e) {} }, 900);
