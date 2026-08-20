@@ -47,6 +47,12 @@
   .list-item { padding:0.85rem 0; border-bottom:1px solid var(--border); }
   .list-item:last-child { border-bottom:none; }
   .list-item .meta { font-size:0.8rem; color:var(--text-muted); }
+
+  .card-preview-row { display:flex; gap:1.5rem; flex-wrap:wrap; align-items:flex-start; }
+  .card-preview-row figure { margin:0; text-align:center; }
+  .card-preview-row canvas { width:320px; max-width:100%; height:auto; border-radius:12px; box-shadow:0 4px 16px rgba(22,35,58,0.15); border:1px solid var(--border); }
+  .card-preview-row figcaption { font-size:0.8rem; color:var(--text-muted); margin-top:0.5rem; font-weight:600; }
+  .card-download-row { display:flex; gap:0.6rem; flex-wrap:wrap; margin-top:1.25rem; }
 </style>
 </head>
 <body>
@@ -93,6 +99,29 @@
       <p style="color:var(--text-muted);margin:0;font-size:0.92rem;">Apply for a position or vote for your executive committee.</p>
       <span class="soon-tag" id="elections-status-tag">No election open right now</span>
     </a>
+
+    <a class="quick-card" href="#my-card" aria-label="View my membership card">
+      <div class="icon" style="font-size:0.85rem;">ID</div>
+      <h3 style="margin:0;">Membership Card</h3>
+      <p style="color:var(--text-muted);margin:0;font-size:0.92rem;">View and download your official NSA ID card.</p>
+      <span class="soon-tag" id="card-status-tag">Loading...</span>
+    </a>
+  </div>
+</div>
+
+<div class="section" id="my-card" style="padding-top:0;">
+  <div class="card">
+    <h3 style="margin-top:0;">My Membership Card</h3>
+    <p style="color:var(--text-muted);font-size:0.9rem;margin-top:-0.5rem;" id="card-note"></p>
+    <div class="card-preview-row" id="card-preview-row" style="display:none;">
+      <figure><canvas id="canvas-front"></canvas><figcaption>FRONT</figcaption></figure>
+      <figure><canvas id="canvas-back"></canvas><figcaption>BACK</figcaption></figure>
+    </div>
+    <div class="card-download-row" id="card-download-row" style="display:none;">
+      <button class="btn btn-gold" id="dl-combined">Download ID Card (PNG)</button>
+      <button class="btn" id="dl-front">Front only</button>
+      <button class="btn" id="dl-back">Back only</button>
+    </div>
   </div>
 </div>
 
@@ -128,6 +157,7 @@
   import { supabase } from './assets/js/supabase-client.js';
   import { requireApprovedMember } from './assets/js/session-guard.js';
   import { mountNav, mountFooter } from './assets/js/nav.js';
+  import { drawCardFront, drawCardBack, downloadCanvas, downloadCombined } from './assets/js/membership-card.js';
 
   mountNav('dashboard');
   mountFooter();
@@ -140,6 +170,46 @@
   const statusLabel = { active: 'Active Member', pending: 'Pending Approval', suspended: 'Suspended', rejected: 'Rejected' };
   badge.textContent = statusLabel[profile.membership_status] || profile.membership_status;
   badge.classList.add(`badge-${profile.membership_status}`);
+
+  // My membership card — requireApprovedMember() already guarantees
+  // membership_status === 'active' by the time we get here, but a card
+  // number is only assigned by a DB trigger on approval (or the one-time
+  // backfill in sql/024), so guard for it being briefly/rarely absent.
+  await renderMyCard(profile);
+
+  async function renderMyCard(member) {
+    const cardTag = document.getElementById('card-status-tag');
+    const note = document.getElementById('card-note');
+    const previewRow = document.getElementById('card-preview-row');
+    const downloadRow = document.getElementById('card-download-row');
+
+    if (!member.membership_card_number) {
+      cardTag.textContent = 'Not issued yet';
+      note.textContent = "Your card number hasn't been assigned yet — check back shortly, or contact an admin if this persists.";
+      return;
+    }
+
+    try {
+      const frontCanvas = document.getElementById('canvas-front');
+      const backCanvas = document.getElementById('canvas-back');
+      await drawCardFront(frontCanvas, member);
+      await drawCardBack(backCanvas, member);
+
+      previewRow.style.display = 'flex';
+      downloadRow.style.display = 'flex';
+      note.textContent = `Membership No. ${member.membership_card_number} · Scan the QR on the back to verify.`;
+      cardTag.textContent = 'Ready to download';
+      cardTag.classList.add('soon-tag-live');
+
+      const fileBase = `NSA-ID-${member.membership_card_number}`;
+      document.getElementById('dl-combined').onclick = () => downloadCombined(frontCanvas, backCanvas, `${fileBase}.png`);
+      document.getElementById('dl-front').onclick = () => downloadCanvas(frontCanvas, `${fileBase}-front.png`);
+      document.getElementById('dl-back').onclick = () => downloadCanvas(backCanvas, `${fileBase}-back.png`);
+    } catch (err) {
+      cardTag.textContent = 'Could not load';
+      note.textContent = `Could not generate your card: ${err.message}`;
+    }
+  }
 
   // My activity RSVPs
   const { data: myRsvps } = await supabase.from('activity_participants').select('id').eq('user_id', profile.id).limit(1);
