@@ -317,10 +317,9 @@ Preferred meeting day (multiple_choice: Monday, Wednesday, Friday)"></textarea>
           <input type="hidden" id="leader-id" value="" />
           <div class="form-group" style="grid-column:1/-1;"><label>Full name</label><input type="text" id="leader-name" required placeholder="Leader's full name" /></div>
           <div class="form-group"><label>Position</label>
-            <select id="leader-position" required>
-              <option value="">Loading positions...</option>
-            </select>
-            <p style="font-size:0.75rem;color:var(--text-muted);margin:0.25rem 0 0;">Display order follows rank (President first).</p>
+            <div id="leader-position-mount"></div>
+            <input type="hidden" id="leader-position" value="" required />
+            <p style="font-size:0.75rem;color:var(--text-muted);margin:0.25rem 0 0;">Display order follows rank (President first). Search or scroll the list.</p>
           </div>
           <div class="form-group"><label>Term label</label><input type="text" id="leader-term-label" placeholder="e.g. 2025/26" value="2025/26" /></div>
           <div class="form-group"><label>Term start</label><input type="date" id="leader-term-start" /></div>
@@ -377,7 +376,8 @@ Preferred meeting day (multiple_choice: Monday, Wednesday, Friday)"></textarea>
   <div id="app-footer"></div>
 
   <script type="module">
-    import { supabase } from '../assets/js/supabase-client.js';
+    import { createNsSelect } from '../assets/js/ns-select.js';
+  import { supabase } from '../assets/js/supabase-client.js';
     import { requireAdmin } from '../assets/js/admin-guard.js';
     import { mountNav, mountFooter } from '../assets/js/nav.js';
 
@@ -947,29 +947,48 @@ document.getElementById('news-form').addEventListener('submit', async (e) => {
 
 
     let leadershipPositions = [];
+    let leaderPositionSelect = null;
     async function loadLeadershipPositions() {
-      const sel = document.getElementById('leader-position');
-      if (!sel) return;
+      const mount = document.getElementById('leader-position-mount');
+      const hidden = document.getElementById('leader-position');
+      if (!mount) return;
       const { data, error } = await supabase
         .from('positions')
         .select('id, name, name_luganda, category, display_order, application_fee')
         .order('display_order');
       if (error) {
-        sel.innerHTML = '<option value="">Could not load positions</option>';
+        mount.innerHTML = '<p style="color:var(--danger);font-size:0.85rem;">Could not load positions</p>';
         console.error(error);
         return;
       }
       leadershipPositions = data || [];
-      sel.innerHTML = '<option value="">Select position</option>' + leadershipPositions.map(p => {
-        const label = p.name_luganda ? `${p.name} (${p.name_luganda})` : p.name;
-        return `<option value="${escapeHtml(p.name)}" data-order="${p.display_order}">${escapeHtml(label)}</option>`;
-      }).join('');
+      // Prefer canonical names; drop duplicate legacy labels if both exist
+      const seen = new Set();
+      const opts = [];
+      for (const p of leadershipPositions) {
+        const key = (p.name || '').toLowerCase().replace(/\s+/g, ' ').trim();
+        // skip pure legacy duplicates when a General/Secretary for form exists
+        if (seen.has(key)) continue;
+        seen.add(key);
+        opts.push({
+          value: p.name,
+          label: p.name,
+          sub: p.name_luganda || p.category || '',
+          order: p.display_order,
+        });
+      }
+      leaderPositionSelect = createNsSelect({
+        mount,
+        options: opts,
+        value: hidden?.value || '',
+        placeholder: 'Select position',
+        searchable: true,
+        onChange: (val, item) => {
+          if (hidden) hidden.value = val || '';
+          document.getElementById('leader-order').value = item?.order ?? 99;
+        },
+      });
     }
-    document.getElementById('leader-position')?.addEventListener('change', (e) => {
-      const opt = e.target.selectedOptions?.[0];
-      const order = opt?.dataset?.order ? Number(opt.dataset.order) : 99;
-      document.getElementById('leader-order').value = order;
-    });
     loadLeadershipPositions();
     document.getElementById('leader-photo-file')?.addEventListener('change', async (e) => {
       const file = e.target.files?.[0];
@@ -996,7 +1015,7 @@ document.getElementById('news-form').addEventListener('submit', async (e) => {
     function resetLeaderForm() {
       document.getElementById('leader-id').value = '';
       document.getElementById('leader-name').value = '';
-      document.getElementById('leader-position').value = '';
+      document.getElementById('leader-position').value = ''; if (leaderPositionSelect) leaderPositionSelect.value = '';
       document.getElementById('leader-term-label').value = '2025/26';
       document.getElementById('leader-term-start').value = '';
       document.getElementById('leader-term-end').value = '';
@@ -1040,13 +1059,9 @@ document.getElementById('news-form').addEventListener('submit', async (e) => {
           if (!l) return;
           document.getElementById('leader-id').value = l.id;
           document.getElementById('leader-name').value = l.full_name || '';
-          const posSel = document.getElementById('leader-position');
-          posSel.value = l.position || '';
-          if (l.position && ![...posSel.options].some(o => o.value === l.position)) {
-            const opt = document.createElement('option');
-            opt.value = l.position; opt.textContent = l.position;
-            posSel.appendChild(opt); posSel.value = l.position;
-          }
+          const hiddenPos = document.getElementById('leader-position');
+          if (hiddenPos) hiddenPos.value = l.position || '';
+          if (leaderPositionSelect) leaderPositionSelect.value = l.position || '';
           document.getElementById('leader-term-label').value = l.term_label || (l.is_current ? '2025/26' : '');
           document.getElementById('leader-term-start').value = l.term_start || '';
           document.getElementById('leader-term-end').value = l.term_end || '';
@@ -1080,9 +1095,9 @@ document.getElementById('news-form').addEventListener('submit', async (e) => {
         term_end: document.getElementById('leader-term-end').value || null,
         photo_url: document.getElementById('leader-photo').value.trim() || null,
         display_order: (function(){
-          const sel = document.getElementById('leader-position');
-          const opt = sel?.selectedOptions?.[0];
-          if (opt?.dataset?.order) return Number(opt.dataset.order);
+          const name = document.getElementById('leader-position')?.value?.trim();
+          const found = (leadershipPositions || []).find(p => p.name === name);
+          if (found?.display_order != null) return found.display_order;
           return Number(document.getElementById('leader-order')?.value) || 99;
         })(),
         bio: document.getElementById('leader-bio').value.trim() || null,
