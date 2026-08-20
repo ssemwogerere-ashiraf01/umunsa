@@ -76,6 +76,7 @@
   import { supabase } from '../assets/js/supabase-client.js';
   import { mountNav, mountFooter } from '../assets/js/nav.js';
   import { requireApprovedMember } from '../assets/js/session-guard.js';
+  import { checkCampusProximity } from '../assets/js/geo.js';
 
   mountNav('elections');
   mountFooter();
@@ -355,7 +356,18 @@
 
     pane.querySelectorAll('[data-vote-candidate]').forEach(btn => {
       btn.addEventListener('click', async () => {
-        btn.disabled = true; btn.textContent = 'Voting...';
+        btn.disabled = true; btn.textContent = 'Checking location...';
+
+        // Advisory only: nudges voters to be on campus, but never blocks a
+        // vote outright if location is unavailable, denied, or unsupported
+        // — see assets/js/geo.js for why this can't be a hard guarantee.
+        const campusCheck = await checkCampusProximity();
+        if (campusCheck.status === 'out-of-range') {
+          const proceed = confirm(`${campusCheck.message} Voting is intended to happen on campus. Continue anyway?`);
+          if (!proceed) { btn.disabled = false; btn.textContent = 'Vote'; return; }
+        }
+
+        btn.textContent = 'Voting...';
         const { error } = await supabase.from('votes').insert({
           election_id: election.id,
           position_id: btn.dataset.votePosition,
