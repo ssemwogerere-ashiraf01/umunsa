@@ -318,18 +318,7 @@ Preferred meeting day (multiple_choice: Monday, Wednesday, Friday)"></textarea>
           <div class="form-group" style="grid-column:1/-1;"><label>Full name</label><input type="text" id="leader-name" required placeholder="Leader's full name" /></div>
           <div class="form-group"><label>Position</label>
             <select id="leader-position" required>
-              <option value="">Select position</option>
-              <option value="Chairperson" data-order="1">Chairperson</option>
-              <option value="Vice Chairperson" data-order="2">Vice Chairperson</option>
-              <option value="General Secretary" data-order="3">General Secretary</option>
-              <option value="Treasurer" data-order="4">Treasurer</option>
-              <option value="Organizing Secretary" data-order="5">Organizing Secretary</option>
-              <option value="Publicity Secretary" data-order="6">Publicity Secretary</option>
-              <option value="Academic Secretary" data-order="7">Academic Secretary</option>
-              <option value="Welfare Secretary" data-order="8">Welfare Secretary</option>
-              <option value="Sports Secretary" data-order="9">Sports Secretary</option>
-              <option value="Projects Coordinator" data-order="10">Projects Coordinator</option>
-              <option value="Committee Member" data-order="11">Committee Member</option>
+              <option value="">Loading positions...</option>
             </select>
             <p style="font-size:0.75rem;color:var(--text-muted);margin:0.25rem 0 0;">Display order follows rank (Chairperson first).</p>
           </div>
@@ -957,16 +946,31 @@ document.getElementById('news-form').addEventListener('submit', async (e) => {
 
 
 
-    const LEADER_POSITION_ORDER = {
-      'Chairperson': 1, 'Vice Chairperson': 2, 'General Secretary': 3, 'Treasurer': 4,
-      'Organizing Secretary': 5, 'Publicity Secretary': 6, 'Academic Secretary': 7,
-      'Welfare Secretary': 8, 'Sports Secretary': 9, 'Projects Coordinator': 10, 'Committee Member': 11,
-    };
+    let leadershipPositions = [];
+    async function loadLeadershipPositions() {
+      const sel = document.getElementById('leader-position');
+      if (!sel) return;
+      const { data, error } = await supabase
+        .from('positions')
+        .select('id, name, name_luganda, category, display_order, application_fee')
+        .order('display_order');
+      if (error) {
+        sel.innerHTML = '<option value="">Could not load positions</option>';
+        console.error(error);
+        return;
+      }
+      leadershipPositions = data || [];
+      sel.innerHTML = '<option value="">Select position</option>' + leadershipPositions.map(p => {
+        const label = p.name_luganda ? `${p.name} (${p.name_luganda})` : p.name;
+        return `<option value="${escapeHtml(p.name)}" data-order="${p.display_order}">${escapeHtml(label)}</option>`;
+      }).join('');
+    }
     document.getElementById('leader-position')?.addEventListener('change', (e) => {
-      const name = e.target.value;
-      const order = LEADER_POSITION_ORDER[name] ?? 99;
+      const opt = e.target.selectedOptions?.[0];
+      const order = opt?.dataset?.order ? Number(opt.dataset.order) : 99;
       document.getElementById('leader-order').value = order;
     });
+    loadLeadershipPositions();
     document.getElementById('leader-photo-file')?.addEventListener('change', async (e) => {
       const file = e.target.files?.[0];
       if (!file) return;
@@ -1076,9 +1080,10 @@ document.getElementById('news-form').addEventListener('submit', async (e) => {
         term_end: document.getElementById('leader-term-end').value || null,
         photo_url: document.getElementById('leader-photo').value.trim() || null,
         display_order: (function(){
-          const pos = document.getElementById('leader-position').value.trim();
-          if (typeof LEADER_POSITION_ORDER !== 'undefined' && LEADER_POSITION_ORDER[pos] != null) return LEADER_POSITION_ORDER[pos];
-          return Number(document.getElementById('leader-order').value) || 99;
+          const sel = document.getElementById('leader-position');
+          const opt = sel?.selectedOptions?.[0];
+          if (opt?.dataset?.order) return Number(opt.dataset.order);
+          return Number(document.getElementById('leader-order')?.value) || 99;
         })(),
         bio: document.getElementById('leader-bio').value.trim() || null,
         is_current: document.getElementById('leader-is-current').checked,
