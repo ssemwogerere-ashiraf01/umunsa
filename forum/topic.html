@@ -71,7 +71,7 @@
       topicEl.innerHTML = `<p>${escapeHtml(error?.message || 'Not found')}</p>`;
     } else {
       const pageUrl = `${location.origin}/forum/topic.html?id=${encodeURIComponent(topic.id)}`;
-      const url = `${location.origin}/api/share?type=topic&id=${encodeURIComponent(topic.id)}`;
+      const url = `${location.origin}/s/topic/${encodeURIComponent(topic.id)}`;
       document.title = topic.title + ' · NSA';
       document.getElementById('og-title')?.setAttribute('content', topic.title);
       document.getElementById('tw-title')?.setAttribute('content', topic.title);
