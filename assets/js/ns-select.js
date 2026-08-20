@@ -1,6 +1,5 @@
 /**
- * Custom searchable select for polished mobile/desktop lists.
- * Usage: createNsSelect({ mount, options, value, placeholder, onChange })
+ * Custom searchable select — mobile-friendly list UI.
  * options: [{ value, label, sub?, order? }]
  */
 export function createNsSelect({
@@ -13,6 +12,12 @@ export function createNsSelect({
 }) {
   if (!mount) return null;
 
+  function escape(s) {
+    const d = document.createElement('div');
+    d.textContent = s ?? '';
+    return d.innerHTML;
+  }
+
   const root = document.createElement('div');
   root.className = 'ns-select';
   root.innerHTML = `
@@ -22,13 +27,12 @@ export function createNsSelect({
         <path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     </button>
-    <div class="ns-select-panel" role="listbox" hidden>
-      ${searchable ? `<div class="ns-select-search"><input type="search" placeholder="Search…" autocomplete="off" /></div>` : ''}
+    <div class="ns-select-panel" role="listbox">
+      ${searchable ? '<div class="ns-select-search"><input type="search" placeholder="Search positions…" autocomplete="off" /></div>' : ''}
       <div class="ns-select-list"></div>
     </div>
   `;
 
-  // Keep a hidden native select for form compatibility if provided via data
   const hidden = document.createElement('input');
   hidden.type = 'hidden';
   hidden.value = value || '';
@@ -44,13 +48,7 @@ export function createNsSelect({
   const search = root.querySelector('.ns-select-search input');
 
   let current = value || '';
-  let items = options.slice();
-
-  function escape(s) {
-    const d = document.createElement('div');
-    d.textContent = s ?? '';
-    return d.innerHTML;
-  }
+  let items = Array.isArray(options) ? options.slice() : [];
 
   function selectedItem() {
     return items.find(o => String(o.value) === String(current));
@@ -74,66 +72,67 @@ export function createNsSelect({
       ? items
       : items.filter(o =>
           (o.label || '').toLowerCase().includes(q) ||
-          (o.sub || '').toLowerCase().includes(q) ||
-          String(o.value).toLowerCase().includes(q)
+          (o.sub || '').toLowerCase().includes(q)
         );
 
     if (!filtered.length) {
-      list.innerHTML = `<div class="ns-select-empty">No matches</div>`;
+      list.innerHTML = '<div class="ns-select-empty">No matches</div>';
       return;
     }
 
     list.innerHTML = filtered.map(o => {
       const selected = String(o.value) === String(current);
-      const rank = o.order != null ? `<span class="ns-rank">${escape(String(o.order))}</span>` : '';
+      const rank = o.order != null
+        ? `<span class="ns-rank">${escape(String(o.order))}</span>`
+        : '<span class="ns-rank">–</span>';
       return `
-        <button type="button" class="ns-select-option ${selected ? 'selected' : ''}"
-          role="option" data-value="${escape(String(o.value))}" aria-selected="${selected}">
+        <button type="button"
+          class="ns-select-option${selected ? ' selected' : ''}"
+          role="option"
+          data-value="${escape(String(o.value))}"
+          aria-selected="${selected}">
           ${rank}
           <span class="ns-opt-text">
             <span class="ns-opt-main">${escape(o.label)}</span>
             ${o.sub ? `<span class="ns-opt-sub">${escape(o.sub)}</span>` : ''}
           </span>
-          <span class="ns-check">✓</span>
+          <span class="ns-check" aria-hidden="true">${selected ? '✓' : ''}</span>
         </button>`;
     }).join('');
 
     list.querySelectorAll('.ns-select-option').forEach(el => {
-      el.addEventListener('click', () => {
+      el.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
         current = el.dataset.value;
         hidden.value = current;
         renderValue();
         renderList(search?.value || '');
         close();
-        if (typeof onChange === 'function') {
-          onChange(current, selectedItem());
-        }
+        if (typeof onChange === 'function') onChange(current, selectedItem());
       });
     });
   }
 
   function open() {
     root.classList.add('open');
-    panel.hidden = false;
     btn.setAttribute('aria-expanded', 'true');
     renderList(search?.value || '');
-    if (search) setTimeout(() => search.focus(), 30);
+    if (search) setTimeout(() => search.focus(), 20);
   }
   function close() {
     root.classList.remove('open');
-    panel.hidden = true;
     btn.setAttribute('aria-expanded', 'false');
     if (search) search.value = '';
-  }
-  function toggle() {
-    root.classList.contains('open') ? close() : open();
   }
 
   btn.addEventListener('click', (e) => {
     e.preventDefault();
-    toggle();
+    e.stopPropagation();
+    root.classList.contains('open') ? close() : open();
   });
   search?.addEventListener('input', () => renderList(search.value));
+  search?.addEventListener('click', (e) => e.stopPropagation());
   document.addEventListener('click', (e) => {
     if (!root.contains(e.target)) close();
   });
@@ -142,7 +141,6 @@ export function createNsSelect({
   });
 
   renderValue();
-  renderList();
 
   return {
     get value() { return current; },
@@ -150,12 +148,11 @@ export function createNsSelect({
       current = v || '';
       hidden.value = current;
       renderValue();
-      renderList(search?.value || '');
+      if (root.classList.contains('open')) renderList(search?.value || '');
     },
     setOptions(next) {
       items = next || [];
       renderValue();
-      renderList(search?.value || '');
     },
     el: root,
     hidden,
