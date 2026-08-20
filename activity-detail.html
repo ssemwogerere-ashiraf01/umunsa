@@ -58,7 +58,7 @@
       root.innerHTML = `<div class="detail-body"><p>${escapeHtml(error?.message || 'Not found')}</p></div>`;
     } else {
       const pageUrl = `${location.origin}/activity-detail.html?id=${encodeURIComponent(a.id)}`;
-      const url = `${location.origin}/api/share?type=activity&id=${encodeURIComponent(a.id)}`;
+      const url = `${location.origin}/s/activity/${encodeURIComponent(a.id)}`;
       const desc = (a.description || '').slice(0, 160);
       const image = a.image_url || 'https://umunsa.vercel.app/assets/img/og-default.jpg';
       setMeta(a.title, desc, url, image);
