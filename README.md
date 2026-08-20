@@ -91,10 +91,14 @@ by a database trigger the first time a member becomes active
 running that migration, also run `sql/024_membership_card_backfill.sql` once
 so they get a card number too — otherwise "Generate" stays disabled for them.
 
-The QR library loads from `https://cdn.jsdelivr.net`, and location detection
-below calls `https://get.geojs.io` — both are allow-listed in `_headers` /
-`vercel.json`'s Content-Security-Policy. If you tighten that policy later,
-keep those two hosts (or swap in your own equivalents).
+The QR library loads from a CDN at runtime — `assets/js/membership-card.js`
+tries jsDelivr, then cdnjs, then unpkg in turn, so one being unreachable on
+a given network doesn't fail card generation. All three are allow-listed in
+`_headers` / `vercel.json`'s Content-Security-Policy, alongside
+`https://get.geojs.io` for location detection below. If you tighten that
+policy later, keep those hosts (or swap in your own equivalents — or vendor
+the QR library into the repo directly if you'd rather have zero external
+dependency at all).
 
 ## Location detection
 
