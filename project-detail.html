@@ -52,7 +52,8 @@
     if (error || !p) {
       root.innerHTML = `<div class="detail-body"><p>${escapeHtml(error?.message || 'Not found')}</p></div>`;
     } else {
-      const url = `${location.origin}/project-detail.html?id=${encodeURIComponent(p.id)}`;
+      const pageUrl = `${location.origin}/project-detail.html?id=${encodeURIComponent(p.id)}`;
+      const url = `${location.origin}/api/share?type=project&id=${encodeURIComponent(p.id)}`;
       const desc = (p.description || '').slice(0, 160);
       const image = p.image_url || 'https://umunsa.vercel.app/assets/img/og-default.jpg';
       document.title = p.title + ' · NSA';

@@ -82,7 +82,8 @@
     if (error || !n) {
       root.innerHTML = `<div class="detail-body"><p>${escapeHtml(error?.message || 'Not found.')} <a href="news.html">Back</a></p></div>`;
     } else {
-      const url = `${location.origin}/news-detail.html?id=${encodeURIComponent(n.id)}`;
+      const pageUrl = `${location.origin}/news-detail.html?id=${encodeURIComponent(n.id)}`;
+      const url = `${location.origin}/api/share?type=news&id=${encodeURIComponent(n.id)}`;
       const desc = (n.content || '').slice(0, 160);
       const image = n.image_url || 'https://umunsa.vercel.app/assets/img/og-default.jpg';
       setMeta(n.title, desc, url, image);
