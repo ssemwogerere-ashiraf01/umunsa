@@ -3,6 +3,7 @@ import { BASE_URL, SOCIAL_LINKS, SITE_NAME, SITE_SHORT_SEAL } from './site-confi
 import { logout } from './auth.js';
 import { applyTheme, cycleTheme, getStoredTheme, themeLabel } from './theme.js';
 import { initUiChrome } from './ui-chrome.js';
+import { enhanceAllSelects } from './ns-select.js';
 
 applyTheme();
 
@@ -307,3 +308,7 @@ function escapeHtml(str) {
   div.textContent = str ?? '';
   return div.innerHTML;
 }
+
+// Upgrade native selects site-wide after chrome mounts
+setTimeout(() => { try { enhanceAllSelects(document); } catch (e) { console.warn(e); } }, 50);
+setTimeout(() => { try { enhanceAllSelects(document); } catch (e) {} }, 800);

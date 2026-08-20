@@ -68,12 +68,12 @@ export function createNsSelect({
 
   function renderList(filter = '') {
     const q = filter.trim().toLowerCase();
-    const filtered = !q
+    const filtered = (!q
       ? items
       : items.filter(o =>
           (o.label || '').toLowerCase().includes(q) ||
           (o.sub || '').toLowerCase().includes(q)
-        );
+        ));
 
     if (!filtered.length) {
       list.innerHTML = '<div class="ns-select-empty">No matches</div>';
@@ -82,12 +82,13 @@ export function createNsSelect({
 
     list.innerHTML = filtered.map(o => {
       const selected = String(o.value) === String(current);
-      const rank = o.order != null
+      const hasRank = o.order != null && o.order !== '';
+      const rank = hasRank
         ? `<span class="ns-rank">${escape(String(o.order))}</span>`
-        : '<span class="ns-rank">–</span>';
+        : '';
       return `
         <button type="button"
-          class="ns-select-option${selected ? ' selected' : ''}"
+          class="ns-select-option${selected ? ' selected' : ''}${hasRank ? '' : ' no-rank'}"
           role="option"
           data-value="${escape(String(o.value))}"
           aria-selected="${selected}">
@@ -157,4 +158,100 @@ export function createNsSelect({
     el: root,
     hidden,
   };
+}
+
+
+/**
+ * Upgrade every native <select> in root to the custom picker.
+ * Keeps the original <select> in the DOM (hidden) so forms & change handlers still work.
+ * Skip: [data-native], [data-ns-enhanced], multiple, size>1, already inside .ns-select
+ */
+export function enhanceAllSelects(root = document) {
+  const selects = root.querySelectorAll('select:not([data-native]):not([data-ns-enhanced]):not([multiple])');
+  selects.forEach((sel) => {
+    if (sel.closest('.ns-select')) return;
+    if (sel.size && sel.size > 1) return;
+    if (sel.offsetParent === null && sel.type === 'hidden') return;
+
+    // Build options from native select
+    const options = [];
+    const groups = sel.querySelectorAll(':scope > optgroup, :scope > option');
+    // Flatten options only (skip empty placeholder for list but keep value)
+    Array.from(sel.options).forEach((opt) => {
+      options.push({
+        value: opt.value,
+        label: (opt.textContent || '').trim() || opt.value || '—',
+        sub: opt.dataset.sub || '',
+        order: opt.dataset.order != null ? Number(opt.dataset.order) : undefined,
+        disabled: opt.disabled,
+      });
+    });
+
+    // Mount wrapper before select
+    const wrap = document.createElement('div');
+    wrap.className = 'ns-select-host';
+    sel.parentNode.insertBefore(wrap, sel);
+    sel.setAttribute('data-ns-enhanced', '1');
+    sel.classList.add('ns-select-native-hidden');
+    // keep select for form submit — visually hide
+    sel.style.position = 'absolute';
+    sel.style.opacity = '0';
+    sel.style.pointerEvents = 'none';
+    sel.style.width = '1px';
+    sel.style.height = '1px';
+    sel.tabIndex = -1;
+
+    const placeholder =
+      sel.getAttribute('data-placeholder') ||
+      (sel.options[0] && !sel.options[0].value ? (sel.options[0].textContent || '').trim() : 'Select…');
+
+    // Don't list the empty placeholder option twice as a choosable empty if it's the first blank
+    const listOpts = options.filter((o, i) => !(i === 0 && o.value === '' && !sel.value));
+
+    const instance = createNsSelect({
+      mount: wrap,
+      options: listOpts.length ? listOpts : options,
+      value: sel.value || '',
+      placeholder,
+      searchable: options.length > 8,
+      onChange: (val) => {
+        sel.value = val;
+        sel.dispatchEvent(new Event('change', { bubbles: true }));
+        sel.dispatchEvent(new Event('input', { bubbles: true }));
+      },
+    });
+
+    // Sync if something else changes the native select
+    sel.addEventListener('change', () => {
+      if (instance && instance.value !== sel.value) instance.value = sel.value;
+    });
+
+    // Observe option list changes (dynamic filters)
+    const mo = new MutationObserver(() => {
+      const next = Array.from(sel.options).map((opt) => ({
+        value: opt.value,
+        label: (opt.textContent || '').trim() || opt.value || '—',
+        sub: opt.dataset.sub || '',
+        order: opt.dataset.order != null ? Number(opt.dataset.order) : undefined,
+      }));
+      instance.setOptions(next.filter((o, i) => !(i === 0 && o.value === '')));
+      instance.value = sel.value;
+    });
+    mo.observe(sel, { childList: true, subtree: true, characterData: true });
+  });
+}
+
+/** Call after dynamic HTML injects new selects */
+export function refreshSelects(root = document) {
+  enhanceAllSelects(root);
+}
+
+// Auto-run when loaded as module on pages that import it
+if (typeof document !== 'undefined') {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => enhanceAllSelects());
+  } else {
+    // slight delay so page scripts can finish building selects
+    setTimeout(() => enhanceAllSelects(), 0);
+  }
 }
