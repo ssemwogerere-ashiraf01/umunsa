@@ -21,6 +21,29 @@ function json(body: unknown, status: number, headers: Record<string, string>) {
   });
 }
 
+// Best-effort location lookup for the login_attempts audit log, alongside
+// the raw IP address already captured below. Uses GeoJS (no API key,
+// server-side call so it never depends on the client's browser). Never
+// throws — a failed/slow lookup just means location stays null; it must
+// never block or slow down the login itself by more than ~2.5s.
+async function resolveLoginLocation(ip: string): Promise<string | null> {
+  if (!ip || ip === 'unknown') return null;
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 2500);
+    const res = await fetch(`https://get.geojs.io/v1/ip/geo/${encodeURIComponent(ip)}.json`, {
+      signal: controller.signal,
+    });
+    clearTimeout(timer);
+    if (!res.ok) return null;
+    const data = await res.json();
+    const parts = [data.city, data.country].filter(Boolean);
+    return parts.length ? parts.join(', ') : null;
+  } catch {
+    return null;
+  }
+}
+
 function b64url(bytes: Uint8Array | string): string {
   const raw = typeof bytes === 'string' ? new TextEncoder().encode(bytes) : bytes;
   let s = btoa(String.fromCharCode(...raw));
@@ -129,6 +152,7 @@ Deno.serve(async (req) => {
       email: cleanEmail,
       success,
       ip_address: req.headers.get('x-forwarded-for') ?? 'unknown',
+      location: await resolveLoginLocation((req.headers.get('x-forwarded-for') ?? '').split(',')[0].trim()),
     });
 
     if (!success) {
