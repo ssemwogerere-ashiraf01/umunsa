@@ -316,12 +316,34 @@ Preferred meeting day (multiple_choice: Monday, Wednesday, Friday)"></textarea>
         <form id="leader-form" class="form-row-2" style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:1rem;">
           <input type="hidden" id="leader-id" value="" />
           <div class="form-group" style="grid-column:1/-1;"><label>Full name</label><input type="text" id="leader-name" required placeholder="Leader's full name" /></div>
-          <div class="form-group"><label>Position</label><input type="text" id="leader-position" required placeholder="e.g. Chairperson" /></div>
+          <div class="form-group"><label>Position</label>
+            <select id="leader-position" required>
+              <option value="">Select position</option>
+              <option value="Chairperson" data-order="1">Chairperson</option>
+              <option value="Vice Chairperson" data-order="2">Vice Chairperson</option>
+              <option value="General Secretary" data-order="3">General Secretary</option>
+              <option value="Treasurer" data-order="4">Treasurer</option>
+              <option value="Organizing Secretary" data-order="5">Organizing Secretary</option>
+              <option value="Publicity Secretary" data-order="6">Publicity Secretary</option>
+              <option value="Academic Secretary" data-order="7">Academic Secretary</option>
+              <option value="Welfare Secretary" data-order="8">Welfare Secretary</option>
+              <option value="Sports Secretary" data-order="9">Sports Secretary</option>
+              <option value="Projects Coordinator" data-order="10">Projects Coordinator</option>
+              <option value="Committee Member" data-order="11">Committee Member</option>
+            </select>
+            <p style="font-size:0.75rem;color:var(--text-muted);margin:0.25rem 0 0;">Display order follows rank (Chairperson first).</p>
+          </div>
           <div class="form-group"><label>Term label</label><input type="text" id="leader-term-label" placeholder="e.g. 2025/26" value="2025/26" /></div>
           <div class="form-group"><label>Term start</label><input type="date" id="leader-term-start" /></div>
           <div class="form-group"><label>Term end</label><input type="date" id="leader-term-end" /></div>
-          <div class="form-group"><label>Photo URL (optional)</label><input type="url" id="leader-photo" placeholder="https://..." /></div>
-          <div class="form-group"><label>Display order</label><input type="number" id="leader-order" value="0" /></div>
+          <div class="form-group" style="grid-column:1/-1;">
+            <label>Profile photo</label>
+            <input type="file" id="leader-photo-file" accept="image/*" />
+            <input type="hidden" id="leader-photo" value="" />
+            <div id="leader-photo-preview" style="margin-top:0.5rem;"></div>
+            <p style="font-size:0.75rem;color:var(--text-muted);margin:0.25rem 0 0;">Upload a photo (optional). Order is set by position rank.</p>
+          </div>
+          <input type="hidden" id="leader-order" value="1" />
           <div class="form-group" style="grid-column:1/-1;"><label>Bio (optional)</label><textarea id="leader-bio" rows="2"></textarea></div>
           <div class="form-group" style="grid-column:1/-1;">
             <label><input type="checkbox" id="leader-is-current" checked /> Current term (2025/26)</label>
@@ -934,6 +956,38 @@ document.getElementById('news-form').addEventListener('submit', async (e) => {
     }
 
 
+
+    const LEADER_POSITION_ORDER = {
+      'Chairperson': 1, 'Vice Chairperson': 2, 'General Secretary': 3, 'Treasurer': 4,
+      'Organizing Secretary': 5, 'Publicity Secretary': 6, 'Academic Secretary': 7,
+      'Welfare Secretary': 8, 'Sports Secretary': 9, 'Projects Coordinator': 10, 'Committee Member': 11,
+    };
+    document.getElementById('leader-position')?.addEventListener('change', (e) => {
+      const name = e.target.value;
+      const order = LEADER_POSITION_ORDER[name] ?? 99;
+      document.getElementById('leader-order').value = order;
+    });
+    document.getElementById('leader-photo-file')?.addEventListener('change', async (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      if (file.size > 5 * 1024 * 1024) { alert('Photo must be under 5MB'); e.target.value = ''; return; }
+      const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+      const path = `leaders/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const { error: upErr } = await supabase.storage.from('avatars').upload(path, file, { upsert: true, cacheControl: '3600' });
+      if (upErr) {
+        // try content-media bucket as fallback
+        const { error: up2 } = await supabase.storage.from('content-media').upload(path, file, { upsert: true });
+        if (up2) { alert('Photo upload failed: ' + (upErr.message || up2.message)); return; }
+        const { data: pub } = supabase.storage.from('content-media').getPublicUrl(path);
+        document.getElementById('leader-photo').value = pub.publicUrl;
+        document.getElementById('leader-photo-preview').innerHTML = `<img src="${pub.publicUrl}" alt="" style="width:72px;height:72px;object-fit:cover;border-radius:50%;" />`;
+        return;
+      }
+      const { data: pub } = supabase.storage.from('avatars').getPublicUrl(path);
+      document.getElementById('leader-photo').value = pub.publicUrl;
+      document.getElementById('leader-photo-preview').innerHTML = `<img src="${pub.publicUrl}" alt="" style="width:72px;height:72px;object-fit:cover;border-radius:50%;" />`;
+    });
+
     // ---------- Leadership CRUD ----------
     function resetLeaderForm() {
       document.getElementById('leader-id').value = '';
@@ -982,12 +1036,20 @@ document.getElementById('news-form').addEventListener('submit', async (e) => {
           if (!l) return;
           document.getElementById('leader-id').value = l.id;
           document.getElementById('leader-name').value = l.full_name || '';
-          document.getElementById('leader-position').value = l.position || '';
+          const posSel = document.getElementById('leader-position');
+          posSel.value = l.position || '';
+          if (l.position && ![...posSel.options].some(o => o.value === l.position)) {
+            const opt = document.createElement('option');
+            opt.value = l.position; opt.textContent = l.position;
+            posSel.appendChild(opt); posSel.value = l.position;
+          }
           document.getElementById('leader-term-label').value = l.term_label || (l.is_current ? '2025/26' : '');
           document.getElementById('leader-term-start').value = l.term_start || '';
           document.getElementById('leader-term-end').value = l.term_end || '';
           document.getElementById('leader-photo').value = l.photo_url || '';
           document.getElementById('leader-order').value = l.display_order ?? 0;
+          const prev = document.getElementById('leader-photo-preview');
+          if (prev) prev.innerHTML = l.photo_url ? `<img src="${escapeHtml(l.photo_url)}" alt="" style="width:72px;height:72px;object-fit:cover;border-radius:50%;" />` : '';
           document.getElementById('leader-bio').value = l.bio || '';
           document.getElementById('leader-is-current').checked = !!l.is_current;
           document.getElementById('leader-save-btn').textContent = 'Update leader';
@@ -1013,7 +1075,11 @@ document.getElementById('news-form').addEventListener('submit', async (e) => {
         term_start: document.getElementById('leader-term-start').value || null,
         term_end: document.getElementById('leader-term-end').value || null,
         photo_url: document.getElementById('leader-photo').value.trim() || null,
-        display_order: Number(document.getElementById('leader-order').value) || 0,
+        display_order: (function(){
+          const pos = document.getElementById('leader-position').value.trim();
+          if (typeof LEADER_POSITION_ORDER !== 'undefined' && LEADER_POSITION_ORDER[pos] != null) return LEADER_POSITION_ORDER[pos];
+          return Number(document.getElementById('leader-order').value) || 99;
+        })(),
         bio: document.getElementById('leader-bio').value.trim() || null,
         is_current: document.getElementById('leader-is-current').checked,
       };
