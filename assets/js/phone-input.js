@@ -3,6 +3,14 @@
  * Usage: mountPhoneInput(el, { value, onChange, required, defaultIso: "UG" })
  * Stores E.164-ish string in hidden input (e.g. +256700000000).
  */
+import { getIpGeolocation } from './geo.js';
+
+// Kicked off once at module load so every phone field on the page shares
+// the same lookup instead of firing one request per field.
+const detectedCountryPromise = typeof window !== 'undefined'
+  ? getIpGeolocation().then((geo) => geo?.countryCode || null).catch(() => null)
+  : Promise.resolve(null);
+
 const COUNTRIES = [
   { iso: "UG", name: 'Uganda', dial: "256", flag: "🇺🇬" },
   { iso: "AF", name: 'Afghanistan', dial: "93", flag: "🇦🇫" },
@@ -252,6 +260,7 @@ export function mountPhoneInput(mount, {
 
   let currentIso = parsed.iso;
   let currentDial = parsed.dial;
+  let userPickedCountry = false; // set true once the visitor touches the picker or types a number
 
   mount.innerHTML = `
     <div class="phone-intl" data-phone-intl>
@@ -327,6 +336,7 @@ export function mountPhoneInput(mount, {
         e.stopPropagation();
         const c = COUNTRIES.find(x => x.iso === btn.dataset.iso);
         if (!c) return;
+        userPickedCountry = true;
         currentIso = c.iso;
         currentDial = c.dial;
         renderCc();
@@ -357,13 +367,27 @@ export function mountPhoneInput(mount, {
   });
   search.addEventListener("input", () => renderList(search.value));
   search.addEventListener("click", (e) => e.stopPropagation());
-  numberEl.addEventListener("input", syncFull);
+  numberEl.addEventListener("input", () => { userPickedCountry = true; syncFull(); });
   document.addEventListener("click", (e) => {
     if (!root.contains(e.target)) close();
   });
 
   renderCc();
   syncFull();
+
+  // If this field started blank, adopt the visitor's IP-detected country
+  // once we know it — unless they've already picked one or started typing.
+  if (!value) {
+    detectedCountryPromise.then((iso) => {
+      if (!iso || userPickedCountry) return;
+      const match = COUNTRIES.find(c => c.iso === iso);
+      if (!match || match.iso === currentIso) return;
+      currentIso = match.iso;
+      currentDial = match.dial;
+      renderCc();
+      syncFull();
+    });
+  }
 
   return {
     get value() { return fullEl.value; },
