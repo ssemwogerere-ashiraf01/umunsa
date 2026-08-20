@@ -1,47 +1,207 @@
-@@
-   const profile = await requireApprovedMember();
-   if (profile) {
- 
-   document.getElementById('welcome-name').textContent = `Welcome back, ${profile.full_name?.split(' ')[0] || 'member'}`;
-@@
-   document.getElementById('projects-list').innerHTML = (myProjects && myProjects.length)
-     ? myProjects.map(pm => `<div class="list-item"><strong>${escapeHtml(pm.projects?.title || 'Project')}</strong><div class="meta">${escapeHtml(pm.role_in_project)} · ${escapeHtml(pm.projects?.[...]")
-     : `<p style="color:var(--text-muted);font-size:0.9rem;">You haven't been assigned to a project yet.</p>`;
-+
-+  // --- Membership card preview (if admin saved one) ---
-+  try {
-+    const cardSection = document.createElement('div');
-+    cardSection.className = 'card';
-+    if (profile.membership_card_url) {
-+      cardSection.innerHTML = `
-+        <h3>My Membership Card</h3>
-+        <p style="color:var(--text-muted);margin-top:0.25rem;">Your official NSA membership card; download or show it when needed.</p>
-+        <div style="display:flex;gap:1rem;align-items:center;margin-top:1rem;">
-+          <img src="${profile.membership_card_url}" alt="Membership card" style="max-width:240px;border-radius:8px;border:1px solid var(--border);box-shadow:var(--shadow);" />
-+          <div>
-+            <p style="margin:0 0 0.75rem;">Card number: <strong>${profile.membership_card_number || '—'}</strong></p>
-+            <p style="margin:0 0 0.75rem;">Issued: ${profile.card_issued_at ? new Date(profile.card_issued_at).toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' }) : '—'}</p>
-+            <div style="display:flex;gap:0.5rem;margin-top:0.5rem;">
-+              <a class="btn btn-gold" href="${profile.membership_card_url}" download>Download PNG</a>
-+              <a class="btn btn-outline" href="/admin/membership-id.html">Admin: manage cards</a>
-+            </div>
-+          </div>
-+        </div>
-+      `;
-+    } else {
-+      cardSection.innerHTML = `
-+        <h3>My Membership Card</h3>
-+        <p style="color:var(--text-muted);margin-top:0.25rem;">You don't have a saved membership card image yet. If you have been approved and assigned a card number, ask an admin to generate and save it for you via the Admin Dashboard.</p>
-+        <p style="margin-top:0.5rem;"><a class="btn btn-outline" href="/admin/membership-id.html">Admin: manage cards</a></p>
-+      `;
-+    }
-+    document.querySelector('.section')?.insertAdjacentElement('afterbegin', cardSection);
-+  } catch (err) {
-+    console.warn('Could not render membership card preview:', err);
-+  }
-@@
-   function escapeHtml(str) {
-     const div = document.createElement('div');
-     div.textContent = str ?? '';
-     return div.innerHTML;
-   }
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex, nofollow" />
+<title>Dashboard: Nkobazambogo Students' Association</title>
+<meta name="description" content="The official home of the Nkobazambogo Students' Association at Uganda Martyrs University, Nkozi: news, activities, projects, and membership." />
+<!-- Social / Open Graph (link previews) -->
+<meta property="og:site_name" content="Nkobazambogo Students' Association" />
+<meta property="og:type" content="website" />
+<meta property="og:title" content="Dashboard: Nkobazambogo Students' Association" />
+<meta property="og:description" content="The official home of the Nkobazambogo Students' Association at Uganda Martyrs University, Nkozi: news, activities, projects, and membership." />
+<meta property="og:url" content="https://umunsa.vercel.app/dashboard.html" />
+<meta property="og:image" content="https://umunsa.vercel.app/assets/img/og-default.jpg" />
+<meta property="og:image:secure_url" content="https://umunsa.vercel.app/assets/img/og-default.jpg" />
+<meta property="og:image:type" content="image/jpeg" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:alt" content="Nkobazambogo Students' Association" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Dashboard: Nkobazambogo Students' Association" />
+<meta name="twitter:description" content="The official home of the Nkobazambogo Students' Association at Uganda Martyrs University, Nkozi: news, activities, projects, and membership." />
+<meta name="twitter:image" content="https://umunsa.vercel.app/assets/img/og-default.jpg" />
+
+<link rel="icon" href="favicon.ico" sizes="any" />
+<link rel="icon" type="image/png" href="assets/img/favicon-32.png" />
+<link rel="stylesheet" href="assets/css/style.css" />
+<style>
+  .welcome-bar {
+    background: var(--paper); border-bottom: 1px solid var(--border);
+    padding: 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;
+  }
+  .welcome-bar h1 { font-size: 1.6rem; margin: 0 0 0.25rem; }
+  .badge { display:inline-block; padding:0.25rem 0.7rem; border-radius:20px; font-size:0.78rem; font-weight:600; }
+  .badge-active { background:#eaf4ec; color:#1f4b3f; }
+  .badge-pending { background:#fdf3e0; color:#8a6100; }
+  .badge-suspended, .badge-rejected { background:#fdecec; color:#9c2b2b; }
+  .quick-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:1.25rem; }
+  .quick-card { background:var(--paper); border:1px solid var(--border); border-radius:var(--radius); padding:1.5rem; box-shadow:var(--shadow); display:flex; flex-direction:column; gap:0.6rem; }
+  a.quick-card { text-decoration:none; color:inherit; transition:transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease; }
+  a.quick-card:hover { transform:translateY(-2px); box-shadow:0 18px 30px rgba(14, 25, 40, 0.12); border-color:#c8b67a; }
+  a.quick-card:focus-visible { outline:3px solid rgba(196, 160, 74, 0.35); outline-offset:3px; }
+  .quick-card .icon { width:40px; height:40px; border-radius:50%; background:var(--forest); color:#fff; display:flex; align-items:center; justify-content:center; font-family:'Fraunces',serif; font-weight:700; }
+  .soon-tag { font-size:0.72rem; background:var(--border); color:var(--text-muted); padding:0.15rem 0.5rem; border-radius:12px; align-self:flex-start; }
+  .soon-tag-live { background:#eaf4ec; color:#1f4b3f; border:1px solid #b9d8c0; font-weight:700; }
+  .list-item { padding:0.85rem 0; border-bottom:1px solid var(--border); }
+  .list-item:last-child { border-bottom:none; }
+  .list-item .meta { font-size:0.8rem; color:var(--text-muted); }
+</style>
+</head>
+<body>
+<div id="app-nav"></div>
+
+<div class="welcome-bar">
+  <div>
+    <h1 id="welcome-name">Welcome back</h1>
+    <span class="badge" id="status-badge"></span>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-head" style="text-align:left;margin-left:0;">
+    <span class="eyebrow">Quick access</span>
+    <h2 style="margin:0;">What would you like to do?</h2>
+  </div>
+
+  <div class="quick-grid">
+    <a class="quick-card" href="activities.html" aria-label="Open activities">
+      <div class="icon">A</div>
+      <h3 style="margin:0;">Activities</h3>
+      <p style="color:var(--text-muted);margin:0;font-size:0.92rem;">Browse club activities and mark yourself as going.</p>
+      <span class="soon-tag" id="activities-joined-tag">Not RSVP'd to anything yet</span>
+    </a>
+
+    <a class="quick-card" href="projects.html" aria-label="Open projects">
+      <div class="icon">P</div>
+      <h3 style="margin:0;">My Projects</h3>
+      <p style="color:var(--text-muted);margin:0;font-size:0.92rem;">See the club projects you're assigned to.</p>
+      <span class="soon-tag" id="projects-count-tag">Loading...</span>
+    </a>
+
+    <a class="quick-card" href="forum/index.html" aria-label="Open discussions">
+      <div class="icon">D</div>
+      <h3 style="margin:0;">Discussions</h3>
+      <p style="color:var(--text-muted);margin:0;font-size:0.92rem;">Read posts, reply to members, and share ideas.</p>
+      <span class="soon-tag" style="background:#eaf4ec;color:#1f4b3f;border:1px solid #b9d8c0;">Open discussions</span>
+    </a>
+
+    <a class="quick-card" href="elections/index.html" aria-label="Open elections">
+      <div class="icon">E</div>
+      <h3 style="margin:0;">Elections</h3>
+      <p style="color:var(--text-muted);margin:0;font-size:0.92rem;">Apply for a position or vote for your executive committee.</p>
+      <span class="soon-tag" id="elections-status-tag">No election open right now</span>
+    </a>
+  </div>
+</div>
+
+<div class="section" style="padding-top:0;">
+  <div class="card-grid" style="grid-template-columns: 1fr 1fr;">
+    <div class="card">
+      <h3>Upcoming Activities</h3>
+      <div id="activities-list"><p style="color:var(--text-muted);font-size:0.9rem;">Loading...</p></div>
+    </div>
+    <div class="card">
+      <h3>Latest News</h3>
+      <div id="news-list"><p style="color:var(--text-muted);font-size:0.9rem;">Loading...</p></div>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="padding-top:0;">
+  <div class="card-grid" style="grid-template-columns: 1fr 1fr;">
+    <div class="card">
+      <h3>My Projects</h3>
+      <div id="projects-list"><p style="color:var(--text-muted);font-size:0.9rem;">Loading...</p></div>
+    </div>
+    <div class="card">
+      <h3>Discussion Highlights</h3>
+      <div id="forum-list"><p style="color:var(--text-muted);font-size:0.9rem;">Loading...</p></div>
+    </div>
+  </div>
+</div>
+
+<div id="app-footer"></div>
+
+<script type="module">
+  import { supabase } from './assets/js/supabase-client.js';
+  import { requireApprovedMember } from './assets/js/session-guard.js';
+  import { mountNav, mountFooter } from './assets/js/nav.js';
+
+  mountNav('dashboard');
+  mountFooter();
+
+  const profile = await requireApprovedMember();
+  if (profile) {
+
+  document.getElementById('welcome-name').textContent = `Welcome back, ${profile.full_name?.split(' ')[0] || 'member'}`;
+  const badge = document.getElementById('status-badge');
+  const statusLabel = { active: 'Active Member', pending: 'Pending Approval', suspended: 'Suspended', rejected: 'Rejected' };
+  badge.textContent = statusLabel[profile.membership_status] || profile.membership_status;
+  badge.classList.add(`badge-${profile.membership_status}`);
+
+  // My activity RSVPs
+  const { data: myRsvps } = await supabase.from('activity_participants').select('id').eq('user_id', profile.id).limit(1);
+  if (myRsvps && myRsvps.length) {
+    document.getElementById('activities-joined-tag').textContent = "You're RSVP'd to an activity";
+  }
+
+  // My project count
+  const { data: myProjects } = await supabase
+    .from('project_members')
+    .select('project_id, role_in_project, projects(title, status)')
+    .eq('user_id', profile.id);
+  document.getElementById('projects-count-tag').textContent = myProjects?.length
+    ? `On ${myProjects.length} project${myProjects.length === 1 ? '' : 's'}`
+    : 'Not on a project yet';
+  document.getElementById('projects-list').innerHTML = (myProjects && myProjects.length)
+    ? myProjects.map(pm => `<div class="list-item"><strong>${escapeHtml(pm.projects?.title || 'Project')}</strong><div class="meta">${escapeHtml(pm.role_in_project)} · ${escapeHtml(pm.projects?.status || '')}</div></div>`).join('') + `<p style="margin:0.75rem 0 0;"><a href="projects.html" style="font-weight:700;">View all my projects &rarr;</a></p>`
+    : `<p style="color:var(--text-muted);font-size:0.9rem;">You haven't been assigned to a project yet.</p>`;
+
+  // Surface a live election on the dashboard when voting is open.
+  const { data: elections } = await supabase
+    .from('elections')
+    .select('id, status, start_date, end_date')
+    .eq('status', 'active')
+    .order('start_date', { ascending: false })
+    .limit(1);
+
+  const activeElection = elections?.find((election) => {
+    const now = new Date();
+    return now >= new Date(election.start_date) && now <= new Date(election.end_date);
+  });
+
+  const electionsTag = document.getElementById('elections-status-tag');
+    if (activeElection) {
+    electionsTag.textContent = 'LIVE: open to vote!';
+    electionsTag.classList.add('soon-tag-live');
+  }
+
+  // Upcoming activities
+  const { data: activities } = await supabase.from('activities').select('title, activity_date, location').gte('activity_date', new Date().toISOString()).order('activity_date').limit(4);
+  document.getElementById('activities-list').innerHTML = (activities && activities.length)
+    ? activities.map(a => `<div class="list-item"><strong>${escapeHtml(a.title)}</strong><div class="meta">${new Date(a.activity_date).toLocaleDateString()} ${a.location ? '· ' + escapeHtml(a.location) : ''}</div></div>`).join('') + `<p style="margin:0.75rem 0 0;"><a href="activities.html" style="font-weight:700;">View all activities &rarr;</a></p>`
+    : `<p style="color:var(--text-muted);font-size:0.9rem;">No upcoming activities right now.</p>`;
+
+  // Latest news
+  const { data: news } = await supabase.from('news').select('title, published_at').order('published_at', { ascending: false }).limit(4);
+  document.getElementById('news-list').innerHTML = (news && news.length)
+    ? news.map(n => `<div class="list-item"><strong>${escapeHtml(n.title)}</strong><div class="meta">${new Date(n.published_at).toLocaleDateString()}</div></div>`).join('') + `<p style="margin:0.75rem 0 0;"><a href="news.html" style="font-weight:700;">View all news &rarr;</a></p>`
+    : `<p style="color:var(--text-muted);font-size:0.9rem;">No news posted yet.</p>`;
+
+  // Discussion highlights
+  const { data: topics } = await supabase.from('forum_topics').select('title, category, created_at').order('created_at', { ascending: false }).limit(4);
+  document.getElementById('forum-list').innerHTML = (topics && topics.length)
+    ? topics.map(topic => `<div class="list-item"><strong>${escapeHtml(topic.title)}</strong><div class="meta">${escapeHtml(topic.category || 'General')} · ${new Date(topic.created_at).toLocaleDateString()}</div></div>`).join('')
+    : `<p style="color:var(--text-muted);font-size:0.9rem;">No discussions started yet.</p>`;
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str ?? '';
+    return div.innerHTML;
+  }
+</script>
+</body>
+</html>

@@ -79,3 +79,44 @@ drop in your own crest image if you have one.
 
 This is a static site - deploy the folder as-is to Netlify (a `netlify.toml`
 and `_headers` file are included), Vercel, GitHub Pages, or any static host.
+
+## Membership ID cards
+
+`admin/membership-id.html` generates a downloadable front+back PNG card for
+any **active** member (`assets/js/membership-card.js`); the QR code on the
+back opens `verify.html?card=...`, a public page anyone can scan to see the
+member's live status. Card numbers (`NSA-000123`) are assigned automatically
+by a database trigger the first time a member becomes active
+(`sql/007_membership_card.sql`). If you already had active members before
+running that migration, also run `sql/024_membership_card_backfill.sql` once
+so they get a card number too — otherwise "Generate" stays disabled for them.
+
+The QR library loads from `https://cdn.jsdelivr.net`, and location detection
+below calls `https://get.geojs.io` — both are allow-listed in `_headers` /
+`vercel.json`'s Content-Security-Policy. If you tighten that policy later,
+keep those two hosts (or swap in your own equivalents).
+
+## Location detection
+
+Three independent, best-effort uses of location, all client-side unless
+noted, none of them a hard security guarantee (`assets/js/geo.js`):
+
+- **Phone country code** (`assets/js/phone-input.js`) — the phone input on
+  `apply.html`, `onboarding.html`, `profile.html`, and the Super Admin "Add
+  Member" form defaults to the visitor's IP-detected country instead of
+  always assuming Uganda, as long as the field starts empty and the visitor
+  hasn't already picked a country or started typing.
+- **Campus proximity for voting** (`elections/index.html`) — before a vote
+  is submitted, the browser's GPS is checked against the campus coordinates
+  in `assets/js/geo.js` (`CAMPUS_COORDS`, `DEFAULT_CAMPUS_RADIUS_KM`). If the
+  voter appears to be off-campus they get a confirm dialog to continue
+  anyway; if location is denied/unsupported/unavailable, voting proceeds
+  without interruption. This is advisory only — GPS is self-reported by the
+  browser and can be spoofed, so treat it as a nudge, not proof.
+- **Login location logging** (`supabase/functions/login-guard/index.ts`) —
+  every row in `login_attempts` now also gets a best-effort `"City, Country"`
+  resolved server-side from the request's IP (`sql/025_login_location.sql`),
+  alongside the raw IP address already logged. Readable via
+  `login_attempts_super_admin_read` (Super Admin only, from
+  `sql/002_rls_policies.sql`); there's no dedicated viewer page yet, so query
+  the table directly in the Supabase dashboard for now.
