@@ -1814,3 +1814,143 @@ select.ns-select-native-hidden {
 .ns-select-option.no-rank {
   grid-template-columns: 1fr 22px;
 }
+
+/* ========== International phone input ========== */
+.phone-intl-mount { width: 100%; }
+.phone-intl {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  background: var(--paper);
+  overflow: visible;
+}
+.phone-intl:focus-within {
+  border-color: var(--forest);
+  box-shadow: 0 0 0 3px rgba(26, 107, 74, 0.18);
+}
+.phone-intl-cc {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+  padding: 0.65rem 0.55rem 0.65rem 0.7rem;
+  border: none;
+  border-right: 1px solid var(--border);
+  background: color-mix(in srgb, var(--paper) 88%, var(--border));
+  color: var(--text);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 10px 0 0 10px;
+}
+.phone-intl-flag { font-size: 1.15rem; line-height: 1; }
+.phone-intl-dial { font-variant-numeric: tabular-nums; }
+.phone-intl-chevron { width: 14px; height: 14px; color: var(--text-muted); }
+.phone-intl-number {
+  flex: 1;
+  min-width: 0;
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  padding: 0.65rem 0.8rem !important;
+  font: inherit;
+  font-size: 0.95rem;
+  color: var(--text);
+  border-radius: 0 10px 10px 0;
+}
+.phone-intl-number:focus { outline: none; }
+.phone-intl-panel {
+  position: absolute;
+  z-index: 90;
+  left: 0;
+  right: 0;
+  top: calc(100% + 4px);
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 12px 36px rgba(0,0,0,0.16);
+  overflow: hidden;
+  max-height: 280px;
+  display: flex;
+  flex-direction: column;
+}
+.phone-intl-panel[hidden] { display: none !important; }
+.phone-intl-search {
+  padding: 0.5rem 0.6rem;
+  border-bottom: 1px solid var(--border);
+}
+.phone-intl-search input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.45rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font: inherit;
+  font-size: 0.88rem;
+  background: var(--paper);
+  color: var(--text);
+}
+.phone-intl-list {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 0.3rem;
+  max-height: 220px;
+}
+.phone-intl-option {
+  display: grid;
+  grid-template-columns: 1.6rem 1fr auto;
+  gap: 0.55rem;
+  align-items: center;
+  width: 100%;
+  padding: 0.55rem 0.6rem;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.88rem;
+  text-align: left;
+  cursor: pointer;
+}
+.phone-intl-option:hover,
+.phone-intl-option.selected {
+  background: rgba(26, 107, 74, 0.1);
+}
+.phone-intl-option-flag { font-size: 1.1rem; }
+.phone-intl-option-name { font-weight: 500; }
+.phone-intl-option-dial {
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.82rem;
+}
+.phone-intl-empty {
+  padding: 0.85rem;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+[data-theme="dark"] .phone-intl {
+  background: #121a26;
+  border-color: var(--border);
+}
+[data-theme="dark"] .phone-intl:focus-within {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.2);
+}
+[data-theme="dark"] .phone-intl-cc {
+  background: #1a2332;
+  border-right-color: var(--border);
+}
+[data-theme="dark"] .phone-intl-panel {
+  background: #1a2332;
+  box-shadow: 0 14px 40px rgba(0,0,0,0.45);
+}
+[data-theme="dark"] .phone-intl-option:hover,
+[data-theme="dark"] .phone-intl-option.selected {
+  background: rgba(201, 162, 39, 0.12);
+}
