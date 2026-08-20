@@ -330,7 +330,8 @@ export async function drawCardBack(canvas, member) {
 
   ctx.textAlign = 'right';
   const issued = member.card_issued_at ? new Date(member.card_issued_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
-  ctx.fillText(`Issued: ${issued}`, CARD_W - 56, CARD_H - 42);
+  const locationText = member.card_issued_location ? ` · ${member.card_issued_location}` : '';
+  ctx.fillText(`Issued: ${issued}${locationText}`, CARD_W - 56, CARD_H - 42);
 
   ctx.restore(); // clip
 }
