@@ -371,6 +371,9 @@ Preferred meeting day (multiple_choice: Monday, Wednesday, Friday)"></textarea>
           </div>
         </form>
         <h4>Current · 2025/26</h4>
+        <div style="display:flex;justify-content:flex-end;margin-bottom:0.5rem;">
+          <button type="button" class="mini-btn bad" id="purge-incomplete-leaders">Delete incomplete current leaders</button>
+        </div>
         <div id="leaders-current-list"></div>
         <h4 style="margin-top:1.25rem;">Previous terms</h4>
         <div id="leaders-past-list"></div>
@@ -1140,18 +1143,21 @@ document.getElementById('news-form').addEventListener('submit', async (e) => {
       }
       const current = (data || []).filter(l => l.is_current);
       const past = (data || []).filter(l => !l.is_current);
-      const row = (l) => `
-        <div style="display:flex;justify-content:space-between;gap:0.75rem;flex-wrap:wrap;padding:0.65rem 0;border-bottom:1px solid var(--border);align-items:center;">
+      const row = (l) => {
+        const incomplete = !(l.full_name || '').trim();
+        return `
+        <div style="display:flex;justify-content:space-between;gap:0.75rem;flex-wrap:wrap;padding:0.65rem 0;border-bottom:1px solid var(--border);align-items:center;${incomplete ? 'background:#fff7ed;' : ''}">
           <div>
-            <strong>${escapeHtml(l.full_name || '—')}</strong>
+            <strong>${escapeHtml(l.full_name || '⚠ No name')}</strong>
             <span style="color:var(--text-muted);"> · ${escapeHtml(l.position || '')}</span>
-            <div style="font-size:0.8rem;color:var(--text-muted);">${escapeHtml(l.term_label || (l.is_current ? '2025/26' : '—'))}</div>
+            <div style="font-size:0.8rem;color:var(--text-muted);">${escapeHtml(l.term_label || (l.is_current ? '2025/26' : '—'))}${incomplete ? ' · incomplete — delete or edit' : ''}</div>
           </div>
           <div style="display:flex;gap:0.4rem;">
             <button type="button" class="mini-btn" data-edit-leader="${l.id}" style="background:#eef1f5;">Edit</button>
-            <button type="button" class="mini-btn bad" data-del-leader="${l.id}">Delete</button>
+            <button type="button" class="mini-btn bad" data-del-leader="${l.id}">Delete permanently</button>
           </div>
         </div>`;
+      };
       document.getElementById('leaders-current-list').innerHTML = current.map(row).join('') || '<p style="color:var(--text-muted);">No current leaders yet.</p>';
       document.getElementById('leaders-past-list').innerHTML = past.map(row).join('') || '<p style="color:var(--text-muted);">No previous-term leaders yet.</p>';
 
@@ -1178,14 +1184,23 @@ document.getElementById('news-form').addEventListener('submit', async (e) => {
       });
       document.querySelectorAll('[data-del-leader]').forEach(btn => {
         btn.addEventListener('click', async () => {
-          if (!confirm('Delete this leadership record?')) return;
+          if (!confirm('Permanently delete this leadership record? This cannot be undone.')) return;
           const { error: delErr } = await supabase.from('leaders').delete().eq('id', btn.dataset.delLeader);
           if (delErr) alert(delErr.message); else await loadLeadership();
         });
       });
     }
 
-    document.getElementById('leader-form')?.addEventListener('submit', async (e) => {
+    document.getElementById('purge-incomplete-leaders')?.addEventListener('click', async () => {
+      if (!confirm('Permanently delete all CURRENT leaders that have no full name?')) return;
+      const { data: rows } = await supabase.from('leaders').select('id, full_name').eq('is_current', true);
+      const ids = (rows || []).filter(r => !(r.full_name || '').trim()).map(r => r.id);
+      if (!ids.length) { alert('No incomplete current leaders.'); return; }
+      const { error: delErr } = await supabase.from('leaders').delete().in('id', ids);
+      if (delErr) alert(delErr.message); else { alert(`Deleted ${ids.length} incomplete record(s).`); await loadLeadership(); }
+    });
+
+    document.getElementById('leader-form')?.addEventListener('submit, async (e) => {
       e.preventDefault();
       const alertBox = document.getElementById('leadership-alert');
       const id = document.getElementById('leader-id').value.trim();
@@ -1205,6 +1220,14 @@ document.getElementById('news-form').addEventListener('submit', async (e) => {
         bio: document.getElementById('leader-bio').value.trim() || null,
         is_current: document.getElementById('leader-is-current').checked,
       };
+      if (!payload.full_name) {
+        alertBox.innerHTML = `<div class="alert alert-error">Full name is required.</div>`;
+        return;
+      }
+      if (!payload.position) {
+        alertBox.innerHTML = `<div class="alert alert-error">Position is required.</div>`;
+        return;
+      }
       let error;
       if (id) {
         ({ error } = await supabase.from('leaders').update(payload).eq('id', id));
