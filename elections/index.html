@@ -92,7 +92,14 @@
   let selectedElectionId = null;
   let activeTab = 'positions';
 
-  const { data: positionsData } = await supabase.from('positions').select('*').order('display_order');
+  const { data: positionsRaw } = await supabase.from('positions').select('*').order('display_order');
+  // De-duplicate by name (avoids double Information Minister etc. after rename/reseed)
+  const seenPosNames = new Set();
+  const positionsData = (positionsRaw || []).filter(p => {
+    if (!p?.name || seenPosNames.has(p.name)) return false;
+    seenPosNames.add(p.name);
+    return true;
+  });
   positions = positionsData || [];
 
   const { data: electionsData, error: electionsErr } = await supabase
