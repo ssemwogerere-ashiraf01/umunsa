@@ -56,6 +56,28 @@
 </style>
 </head>
 <body>
+<div id="boot-error-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:99999;background:#b91c1c;color:#fff;padding:0.85rem 1rem;font:600 13px/1.4 monospace;white-space:pre-wrap;"></div>
+<script>
+  (function () {
+    var banner = document.getElementById('boot-error-banner');
+    function show(msg) {
+      banner.style.display = 'block';
+      banner.textContent += (banner.textContent ? '\n\n' : '') + msg;
+    }
+    window.addEventListener('error', function (e) {
+      show('Page error: ' + (e.message || e.error) + (e.filename ? ' (' + e.filename + ':' + e.lineno + ')' : ''));
+    });
+    window.addEventListener('unhandledrejection', function (e) {
+      show('Unhandled promise rejection: ' + (e.reason && e.reason.message ? e.reason.message : e.reason));
+    });
+    setTimeout(function () {
+      var navEl = document.getElementById('app-nav');
+      if (navEl && !navEl.innerHTML.trim()) {
+        show('Header never rendered after 8s (likely a hang in mountNav/auth check, not a thrown error).');
+      }
+    }, 8000);
+  })();
+</script>
 <div id="app-nav"></div>
 
 <div class="welcome-bar">
