@@ -261,10 +261,17 @@ export async function drawCardFront(canvas, member) {
   roundedRectPath(ctx, qx - 8, qy - 8, qrSize + 16, qrSize + 16, 8);
   ctx.fill(); ctx.stroke();
 
-  const QRCode = await loadQrLib();
-  const qrCanvas = document.createElement('canvas');
-  await QRCode.toCanvas(qrCanvas, verifyUrl(member.membership_card_number || ''), { width: qrSize, margin: 0, color: { dark: '#16233a', light: '#ffffff00' } });
-  ctx.drawImage(qrCanvas, qx, qy, qrSize, qrSize);
+  const QRCode = await loadQrLib().catch((err) => { console.warn('QR skipped on front:', err); return null; });
+  if (QRCode) {
+    const qrCanvas = document.createElement('canvas');
+    await QRCode.toCanvas(qrCanvas, verifyUrl(member.membership_card_number || ''), { width: qrSize, margin: 0, color: { dark: '#16233a', light: '#ffffff00' } });
+    ctx.drawImage(qrCanvas, qx, qy, qrSize, qrSize);
+  } else {
+    ctx.fillStyle = CARD_COLORS.textMuted;
+    ctx.font = '10px Inter, Arial, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('QR unavailable', qx + qrSize / 2, qy + qrSize / 2);
+  }
 
   ctx.fillStyle = CARD_COLORS.textMuted;
   ctx.font = '700 10px Inter, Arial, sans-serif';
@@ -316,10 +323,18 @@ export async function drawCardBack(canvas, member) {
   roundedRectPath(ctx, qx - 14, qy - 14, qrSize + 28, qrSize + 28, 12);
   ctx.fill(); ctx.stroke();
 
-  const QRCode = await loadQrLib();
-  const qrCanvas = document.createElement('canvas');
-  await QRCode.toCanvas(qrCanvas, verifyUrl(member.membership_card_number || ''), { width: qrSize, margin: 0, color: { dark: '#16233a', light: '#ffffff00' } });
-  ctx.drawImage(qrCanvas, qx, qy, qrSize, qrSize);
+  const QRCode = await loadQrLib().catch((err) => { console.warn('QR skipped on back:', err); return null; });
+  if (QRCode) {
+    const qrCanvas = document.createElement('canvas');
+    await QRCode.toCanvas(qrCanvas, verifyUrl(member.membership_card_number || ''), { width: qrSize, margin: 0, color: { dark: '#16233a', light: '#ffffff00' } });
+    ctx.drawImage(qrCanvas, qx, qy, qrSize, qrSize);
+  } else {
+    ctx.fillStyle = CARD_COLORS.textMuted;
+    ctx.font = '13px Inter, Arial, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('QR code', qx + qrSize / 2, qy + qrSize / 2 - 8);
+    ctx.fillText('unavailable', qx + qrSize / 2, qy + qrSize / 2 + 12);
+  }
 
   const tx = qx + qrSize + 60;
   let ty = bandH + 50;
