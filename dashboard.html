@@ -193,11 +193,15 @@
   badge.textContent = statusLabel[profile.membership_status] || profile.membership_status;
   badge.classList.add(`badge-${profile.membership_status}`);
 
-  // My membership card — requireApprovedMember() already guarantees
-  // membership_status === 'active' by the time we get here, but a card
-  // number is only assigned by a DB trigger on approval (or the one-time
-  // backfill in sql/024), so guard for it being briefly/rarely absent.
-  await renderMyCard(profile);
+  // Membership card is optional UI — never block the rest of the dashboard
+  // (QR CDN can hang on some networks).
+  renderMyCard(profile).catch((err) => {
+    console.warn('membership card:', err);
+    const tag = document.getElementById('card-status-tag');
+    const note = document.getElementById('card-note');
+    if (tag) tag.textContent = 'Card unavailable';
+    if (note) note.textContent = err?.message || 'Could not load membership card.';
+  });
 
   async function renderMyCard(member) {
     const cardTag = document.getElementById('card-status-tag');
