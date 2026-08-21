@@ -1200,7 +1200,7 @@ document.getElementById('news-form').addEventListener('submit', async (e) => {
       if (delErr) alert(delErr.message); else { alert(`Deleted ${ids.length} incomplete record(s).`); await loadLeadership(); }
     });
 
-    document.getElementById('leader-form')?.addEventListener('submit, async (e) => {
+    document.getElementById('leader-form')?.addEventListener('submit', async (e) => {
       e.preventDefault();
       const alertBox = document.getElementById('leadership-alert');
       const id = document.getElementById('leader-id').value.trim();
