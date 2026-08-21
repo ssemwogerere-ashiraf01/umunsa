@@ -1,13 +1,10 @@
--- 023: Allow admins/service role to set approval fields when creating members
-
 create or replace function public.protect_sensitive_profile_fields()
 returns trigger
 language plpgsql
 security definer
 set search_path = public
-as $fn$
+as $$
 begin
-  -- Service role (edge functions) has no auth.uid(); admins may change status.
   if auth.uid() is null or public.is_admin() then
     return new;
   end if;
@@ -47,4 +44,4 @@ begin
 
   return new;
 end;
-$fn$;
+$$;
