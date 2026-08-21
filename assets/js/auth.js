@@ -270,7 +270,7 @@ export async function completeGoogleLoginFromUrl() {
 }
 
 /** Save membership application details after Google sign-in */
-export async function submitMembershipApplication({ fullName, phone, registrationNumber, hostel, faculty }) {
+export async function submitMembershipApplication({ fullName, phone, registrationNumber, hostel, faculty, avatarUrl }) {
   const { data: { user }, error: userErr } = await supabase.auth.getUser();
   if (userErr || !user) return { error: 'Please sign in with your university Google account first.' };
   if (!isUmuEmail(user.email)) {
@@ -284,13 +284,21 @@ export async function submitMembershipApplication({ fullName, phone, registratio
   }
   const name = String(fullName || '').trim();
   if (!name) return { error: 'Full name is required.' };
+  const reg = String(registrationNumber || '').trim();
+  if (!reg) return { error: 'Registration number is required.' };
+  const cleanHostel = String(hostel || '').trim();
+  if (!cleanHostel) return { error: 'Hall / hostel is required.' };
+  const cleanFaculty = String(faculty || '').trim();
+  if (!cleanFaculty) return { error: 'Faculty / school is required.' };
+  if (!avatarUrl) return { error: 'Profile photo is required.' };
 
   const payload = {
     full_name: name,
     phone: cleanPhone,
-    registration_number: String(registrationNumber || '').trim() || null,
-    hostel: String(hostel || '').trim() || null,
-    faculty: String(faculty || '').trim() || null,
+    registration_number: reg,
+    hostel: cleanHostel,
+    faculty: cleanFaculty,
+    avatar_url: avatarUrl,
     onboarding_completed: false,
     updated_at: new Date().toISOString(),
   };
