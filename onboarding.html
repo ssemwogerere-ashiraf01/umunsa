@@ -41,12 +41,40 @@
         <input type="text" id="registration_number" placeholder="e.g. 2026-B101-10000" />
       </div>
       <div class="form-group">
-        <label for="programme">Programme / Course *</label>
-        <input type="text" id="programme" required placeholder="e.g. Bachelor of Science with Education" />
+        <label for="campus">Campus *</label>
+        <select id="campus" required data-placeholder="Select campus">
+          <option value="">Select campus</option>
+        </select>
       </div>
       <div class="form-group">
-        <label for="year_of_study">Year of study</label>
-        <input type="number" id="year_of_study" min="1" max="6" placeholder="e.g. 2" />
+        <label for="faculty">Faculty / School *</label>
+        <select id="faculty" required data-placeholder="Select faculty">
+          <option value="">Select faculty</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="programme">Programme / Course *</label>
+        <select id="programme" required data-placeholder="Select programme">
+          <option value="">Select faculty first</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="academic_year">Academic year *</label>
+        <select id="academic_year" required data-placeholder="Academic year">
+          <option value="">Academic year</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="year_of_study">Year of study *</label>
+        <select id="year_of_study" required data-placeholder="Year of study">
+          <option value="">Year of study</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="semester">Semester *</label>
+        <select id="semester" required data-placeholder="Semester">
+          <option value="">Semester</option>
+        </select>
       </div>
       <div class="form-group">
         <label for="hostel">Hall / Hostel *</label>
@@ -79,10 +107,6 @@
         <input type="text" id="hostel_other" placeholder="Enter your hostel name" />
       </div>
       <div class="form-group">
-        <label for="faculty">Faculty / School *</label>
-        <input type="text" id="faculty" required placeholder="e.g. Faculty of Education" />
-      </div>
-      <div class="form-group">
         <label for="bio">Short bio (optional)</label>
         <textarea id="bio" rows="3" placeholder="A line about yourself"></textarea>
       </div>
@@ -95,8 +119,19 @@
 <div id="app-footer"></div>
 
 <script type="module">
+
+  function titleCase(str) {
+    if (str == null) return str;
+    const s = String(str).trim().replace(/\s+/g, ' ');
+    if (!s) return s;
+    return s.replace(/(^|[\s'’\-])(\S+)/g, (_, sep, word) =>
+      sep + word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+    );
+  }
+
   import { supabase } from './assets/js/supabase-client.js';
   import { routeAfterLogin } from './assets/js/auth.js';
+  import { mountAcademicFields, readAcademicFields } from './assets/js/academic.js';
   import { mountNav, mountFooter } from './assets/js/nav.js';
   import { BASE_URL, isUmuEmail } from './assets/js/site-config.js';
 
@@ -127,9 +162,14 @@
   document.getElementById('full_name').value = profile?.full_name || metaName || '';
   document.getElementById('phone').value = profile?.phone || '';
   document.getElementById('registration_number').value = profile?.registration_number || '';
-  document.getElementById('programme').value = profile?.programme || '';
-  document.getElementById('year_of_study').value = profile?.year_of_study || '';
-  document.getElementById('faculty').value = profile?.faculty || '';
+  await mountAcademicFields(document, {
+    campus: profile?.campus || '',
+    faculty: profile?.faculty || '',
+    programme: profile?.programme || '',
+    academic_year: profile?.academic_year || '',
+    semester: profile?.semester,
+    year_of_study: profile?.year_of_study,
+  });
   document.getElementById('bio').value = profile?.bio || '';
 
   const hostelSel = document.getElementById('hostel');
@@ -198,16 +238,17 @@
     const alertBox = document.getElementById('alert-box');
     btn.disabled = true; btn.textContent = 'Saving...';
 
-    const full_name = document.getElementById('full_name').value.trim();
+    const full_name = titleCase(document.getElementById('full_name').value);
     const phone = document.getElementById('phone').value.trim();
-    const programme = document.getElementById('programme').value.trim();
-    const faculty = document.getElementById('faculty').value.trim();
+    const academic = readAcademicFields(document);
     let hostel = document.getElementById('hostel').value.trim();
     if (hostel === 'Other') {
-      hostel = document.getElementById('hostel_other').value.trim();
+      hostel = titleCase(document.getElementById('hostel_other').value);
+    } else {
+      hostel = titleCase(hostel);
     }
-    if (!full_name || !phone || !programme || !faculty || !hostel) {
-      alertBox.innerHTML = `<div class="alert alert-error">Please fill all required fields (name, phone, programme, hostel, faculty).</div>`;
+    if (!full_name || !phone || !academic.campus || !academic.faculty || !academic.programme || !hostel) {
+      alertBox.innerHTML = `<div class="alert alert-error">Please fill all required fields (name, phone, campus, faculty, programme, hostel).</div>`;
       btn.disabled = false; btn.textContent = 'Save and continue';
       return;
     }
@@ -215,10 +256,13 @@
     const { error } = await supabase.from('profiles').update({
       full_name,
       phone,
-      programme,
-      faculty,
+      campus: academic.campus,
+      faculty: academic.faculty,
+      programme: academic.programme,
+      academic_year: academic.academic_year,
+      semester: academic.semester,
+      year_of_study: academic.year_of_study,
       hostel,
-      year_of_study: document.getElementById('year_of_study').value ? Number(document.getElementById('year_of_study').value) : null,
       registration_number: document.getElementById('registration_number').value.trim() || null,
       bio: document.getElementById('bio').value.trim() || null,
       avatar_url: uploadedPhotoUrl,

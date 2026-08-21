@@ -53,7 +53,19 @@
   .card-preview-row canvas { width:320px; max-width:100%; height:auto; border-radius:12px; box-shadow:0 4px 16px rgba(22,35,58,0.15); border:1px solid var(--border); }
   .card-preview-row figcaption { font-size:0.8rem; color:var(--text-muted); margin-top:0.5rem; font-weight:600; }
   .card-download-row { display:flex; gap:0.6rem; flex-wrap:wrap; margin-top:1.25rem; }
-</style>
+
+  .academic-strip {
+    display: flex; flex-wrap: wrap; gap: 0.45rem; margin-top: 0.75rem; align-items: center;
+  }
+  .academic-chip {
+    display: inline-flex; align-items: center; gap: 0.35rem;
+    padding: 0.3rem 0.7rem; border-radius: 8px; font-size: 0.78rem; font-weight: 600;
+    background: #f1f5f9; color: var(--ink-navy, #16233a); border: 1px solid var(--border);
+  }
+  .academic-chip.gold { background: #fef3c7; color: #92400e; border-color: #f59e0b; }
+  .academic-chip.muted { background: transparent; color: var(--text-muted); font-weight: 500; }
+  .programme-title { margin: 0.35rem 0 0; font-size: 1.05rem; color: var(--ink-navy, #16233a); font-weight: 700; letter-spacing: 0.01em; }
+  </style>
 </head>
 <body>
 <div id="boot-error-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:99999;background:#b91c1c;color:#fff;padding:0.85rem 1rem;font:600 13px/1.4 monospace;white-space:pre-wrap;"></div>
@@ -84,6 +96,8 @@
   <div>
     <h1 id="welcome-name">Welcome back</h1>
     <span class="badge" id="status-badge"></span>
+    <p class="programme-title" id="programme-title" hidden></p>
+    <div class="academic-strip" id="academic-strip"></div>
   </div>
 </div>
 
@@ -193,6 +207,29 @@
   badge.textContent = statusLabel[profile.membership_status] || profile.membership_status;
   badge.classList.add(`badge-${profile.membership_status}`);
 
+  // Academic info strip (campus, programme, year, semester)
+  (function () {
+    const title = document.getElementById('programme-title');
+    const strip = document.getElementById('academic-strip');
+    if (!strip) return;
+    if (profile.programme) {
+      if (title) { title.hidden = false; title.textContent = profile.programme; }
+    }
+    const chips = [];
+    if (profile.academic_year || profile.semester) {
+      const parts = [];
+      if (profile.academic_year) parts.push('ACADEMIC YEAR: ' + profile.academic_year);
+      if (profile.semester) parts.push('SEMESTER ' + profile.semester);
+      chips.push(`<span class="academic-chip gold">${parts.join(' | ')}</span>`);
+    }
+    if (profile.campus) chips.push(`<span class="academic-chip">${escapeHtml(profile.campus)}</span>`);
+    if (profile.year_of_study) chips.push(`<span class="academic-chip">Yr ${profile.year_of_study}${profile.semester ? ' / S' + profile.semester : ''}</span>`);
+    if (profile.registration_number) chips.push(`<span class="academic-chip muted">${escapeHtml(profile.registration_number)}</span>`);
+    if (profile.faculty) chips.push(`<span class="academic-chip muted">${escapeHtml(profile.faculty)}</span>`);
+    strip.innerHTML = chips.join('');
+  })();
+
+
   // Membership card is optional UI — never block the rest of the dashboard
   // (QR CDN can hang on some networks).
   renderMyCard(profile).catch((err) => {
@@ -268,16 +305,23 @@
   }
 
   // My project count
-  const { data: myProjects } = await supabase
-    .from('project_members')
-    .select('project_id, role_in_project, projects(title, status)')
-    .eq('user_id', profile.id);
-  document.getElementById('projects-count-tag').textContent = myProjects?.length
-    ? `On ${myProjects.length} project${myProjects.length === 1 ? '' : 's'}`
-    : 'Not on a project yet';
-  document.getElementById('projects-list').innerHTML = (myProjects && myProjects.length)
-    ? myProjects.map(pm => `<div class="list-item"><strong>${escapeHtml(pm.projects?.title || 'Project')}</strong><div class="meta">${escapeHtml(pm.role_in_project)} · ${escapeHtml(pm.projects?.status || '')}</div></div>`).join('') + `<p style="margin:0.75rem 0 0;"><a href="projects.html" style="font-weight:700;">View all my projects &rarr;</a></p>`
-    : `<p style="color:var(--text-muted);font-size:0.9rem;">You haven't been assigned to a project yet.</p>`;
+  try {
+    const { data: myProjects, error: projErr } = await supabase
+      .from('project_members')
+      .select('project_id, role_in_project, projects(title, status)')
+      .eq('user_id', profile.id);
+    if (projErr) throw projErr;
+    document.getElementById('projects-count-tag').textContent = myProjects?.length
+      ? `On ${myProjects.length} project${myProjects.length === 1 ? '' : 's'}`
+      : 'Not on a project yet';
+    document.getElementById('projects-list').innerHTML = (myProjects && myProjects.length)
+      ? myProjects.map(pm => `<div class="list-item"><strong>${escapeHtml(pm.projects?.title || 'Project')}</strong><div class="meta">${escapeHtml(pm.role_in_project)} · ${escapeHtml(pm.projects?.status || '')}</div></div>`).join('') + `<p style="margin:0.75rem 0 0;"><a href="projects.html" style="font-weight:700;">View all my projects &rarr;</a></p>`
+      : `<p style="color:var(--text-muted);font-size:0.9rem;">You haven't been assigned to a project yet.</p>`;
+  } catch (e) {
+    console.warn(e);
+    document.getElementById('projects-count-tag').textContent = 'Could not load';
+    document.getElementById('projects-list').innerHTML = `<p style="color:var(--text-muted);font-size:0.9rem;">Could not load projects.</p>`;
+  }
 
   // Surface a live election on the dashboard when voting is open.
   const { data: elections } = await supabase

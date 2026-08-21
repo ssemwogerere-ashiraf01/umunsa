@@ -78,10 +78,26 @@
     <h3 style="margin-top:0;" id="edit-heading">Edit my details</h3>
     <div id="alert-box"></div>
     <form id="profile-form">
-      <div class="form-group"><label for="full_name">Full name</label><input type="text" id="full_name" required /></div>
+      <div class="form-group"><label for="full_name">Full name</label><input type="text" id="full_name" required data-titlecase /></div>
       <div class="form-group"><label for="phone">Phone number</label><input type="tel" inputmode="tel" autocomplete="tel" placeholder="+256 700 000000 / +1 …" id="phone" data-phone-intl /></div>
-      <div class="form-group"><label for="programme">Programme / Course</label><input type="text" id="programme" /></div>
-      <div class="form-group"><label for="year_of_study">Year of study</label><input type="number" id="year_of_study" min="1" max="6" /></div>
+      <div class="form-group"><label for="campus">Campus</label>
+        <select id="campus" data-placeholder="Select campus"><option value="">Select campus</option></select>
+      </div>
+      <div class="form-group"><label for="faculty">Faculty / School</label>
+        <select id="faculty" data-placeholder="Select faculty"><option value="">Select faculty</option></select>
+      </div>
+      <div class="form-group"><label for="programme">Programme / Course</label>
+        <select id="programme" data-placeholder="Select programme"><option value="">Select faculty first</option></select>
+      </div>
+      <div class="form-group"><label for="academic_year">Academic year</label>
+        <select id="academic_year" data-placeholder="Academic year"><option value="">Academic year</option></select>
+      </div>
+      <div class="form-group"><label for="year_of_study">Year of study</label>
+        <select id="year_of_study" data-placeholder="Year of study"><option value="">Year of study</option></select>
+      </div>
+      <div class="form-group"><label for="semester">Semester</label>
+        <select id="semester" data-placeholder="Semester"><option value="">Semester</option></select>
+      </div>
       <div class="form-group"><label for="bio">Short bio</label><input type="text" id="bio" /></div>
       <div class="form-group"><label for="security_question">Security question (choose one)</label>
         <select id="security_question">
@@ -148,6 +164,22 @@
 <div id="app-footer"></div>
 
 <script type="module">
+  import { mountAcademicFields, readAcademicFields } from './assets/js/academic.js';
+
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('[data-titlecase]').forEach(el => {
+      el.addEventListener('blur', () => { el.value = titleCase(el.value); });
+    });
+  });
+  // data-titlecase listeners
+  function titleCase(str) {
+    if (str == null) return str;
+    const s = String(str).trim().replace(/\s+/g, ' ');
+    if (!s) return s;
+    return s.replace(/(^|[\s'’\-])(\S)/g, (m, sep, ch) => sep + ch.toUpperCase())
+            .replace(/(^|[\s'’\-])(\S+)/g, (m, sep, word) => sep + word.charAt(0).toUpperCase() + word.slice(1).toLowerCase());
+  }
+
   import { supabase } from './assets/js/supabase-client.js';
   import { requireApprovedMember, requireLoggedIn } from './assets/js/session-guard.js';
   import { mountNav, mountFooter } from './assets/js/nav.js';
@@ -201,8 +233,8 @@
 
     document.getElementById('full_name').value = p.full_name || '';
     document.getElementById('phone').value = p.phone || '';
-    document.getElementById('programme').value = p.programme || '';
-    document.getElementById('year_of_study').value = p.year_of_study || '';
+    
+    
     document.getElementById('bio').value = p.bio || '';
     document.getElementById('security_question').value = p.security_question || '';
     document.getElementById('security_answer').value = '';
@@ -217,6 +249,14 @@
     }
 
     renderAvatar(p.avatar_url, p.full_name);
+    await mountAcademicFields(document, {
+      campus: p.campus || '',
+      faculty: p.faculty || '',
+      programme: p.programme || '',
+      academic_year: p.academic_year || '',
+      semester: p.semester,
+      year_of_study: p.year_of_study,
+    });
   }
 
   // ---- Resolve who we're editing ----
@@ -325,11 +365,16 @@
     btn.textContent = 'Saving...';
     const alertBox = document.getElementById('alert-box');
 
+    const academic = readAcademicFields(document);
     const payload = {
-      full_name: document.getElementById('full_name').value.trim(),
+      full_name: titleCase(document.getElementById('full_name').value),
       phone: document.getElementById('phone').value.trim() || null,
-      programme: document.getElementById('programme').value.trim() || null,
-      year_of_study: document.getElementById('year_of_study').value ? Number(document.getElementById('year_of_study').value) : null,
+      campus: academic.campus,
+      faculty: academic.faculty,
+      programme: academic.programme,
+      academic_year: academic.academic_year,
+      semester: academic.semester,
+      year_of_study: academic.year_of_study,
       bio: document.getElementById('bio').value.trim() || null,
     };
 
