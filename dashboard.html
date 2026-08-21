@@ -41,12 +41,18 @@
   a.quick-card { text-decoration:none; color:inherit; transition:transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease; }
   a.quick-card:hover { transform:translateY(-2px); box-shadow:0 18px 30px rgba(14, 25, 40, 0.12); border-color:#c8b67a; }
   a.quick-card:focus-visible { outline:3px solid rgba(196, 160, 74, 0.35); outline-offset:3px; }
-  .quick-card .icon { width:40px; height:40px; border-radius:50%; background:var(--forest); color:#fff; display:flex; align-items:center; justify-content:center; font-family:'Fraunces',serif; font[...]
+  .quick-card .icon { width:40px; height:40px; border-radius:50%; background:var(--forest); color:#fff; display:flex; align-items:center; justify-content:center; font-family:'Fraunces',serif; font-weight:700; }
   .soon-tag { font-size:0.72rem; background:var(--border); color:var(--text-muted); padding:0.15rem 0.5rem; border-radius:12px; align-self:flex-start; }
   .soon-tag-live { background:#eaf4ec; color:#1f4b3f; border:1px solid #b9d8c0; font-weight:700; }
   .list-item { padding:0.85rem 0; border-bottom:1px solid var(--border); }
   .list-item:last-child { border-bottom:none; }
   .list-item .meta { font-size:0.8rem; color:var(--text-muted); }
+
+  .card-preview-row { display:flex; gap:1.5rem; flex-wrap:wrap; align-items:flex-start; }
+  .card-preview-row figure { margin:0; text-align:center; }
+  .card-preview-row canvas { width:320px; max-width:100%; height:auto; border-radius:12px; box-shadow:0 4px 16px rgba(22,35,58,0.15); border:1px solid var(--border); }
+  .card-preview-row figcaption { font-size:0.8rem; color:var(--text-muted); margin-top:0.5rem; font-weight:600; }
+  .card-download-row { display:flex; gap:0.6rem; flex-wrap:wrap; margin-top:1.25rem; }
 </style>
 </head>
 <body>
@@ -93,6 +99,29 @@
       <p style="color:var(--text-muted);margin:0;font-size:0.92rem;">Apply for a position or vote for your executive committee.</p>
       <span class="soon-tag" id="elections-status-tag">No election open right now</span>
     </a>
+
+    <a class="quick-card" href="#my-card" aria-label="View my membership card">
+      <div class="icon" style="font-size:0.85rem;">ID</div>
+      <h3 style="margin:0;">Membership Card</h3>
+      <p style="color:var(--text-muted);margin:0;font-size:0.92rem;">View and download your official NSA ID card.</p>
+      <span class="soon-tag" id="card-status-tag">Loading...</span>
+    </a>
+  </div>
+</div>
+
+<div class="section" id="my-card" style="padding-top:0;">
+  <div class="card">
+    <h3 style="margin-top:0;">My Membership Card</h3>
+    <p style="color:var(--text-muted);font-size:0.9rem;margin-top:-0.5rem;" id="card-note"></p>
+    <div class="card-preview-row" id="card-preview-row" style="display:none;">
+      <figure><canvas id="canvas-front"></canvas><figcaption>FRONT</figcaption></figure>
+      <figure><canvas id="canvas-back"></canvas><figcaption>BACK</figcaption></figure>
+    </div>
+    <div class="card-download-row" id="card-download-row" style="display:none;">
+      <button class="btn btn-gold" id="dl-combined">Download ID Card (PNG)</button>
+      <button class="btn" id="dl-front">Front only</button>
+      <button class="btn" id="dl-back">Back only</button>
+    </div>
   </div>
 </div>
 
@@ -128,6 +157,7 @@
   import { supabase } from './assets/js/supabase-client.js';
   import { requireApprovedMember } from './assets/js/session-guard.js';
   import { mountNav, mountFooter } from './assets/js/nav.js';
+  import { drawCardFront, drawCardBack, downloadCanvas, downloadCombined } from './assets/js/membership-card.js';
 
   mountNav('dashboard');
   mountFooter();
@@ -141,93 +171,69 @@
   badge.textContent = statusLabel[profile.membership_status] || profile.membership_status;
   badge.classList.add(`badge-${profile.membership_status}`);
 
-  // Membership card renderer + downloads: inserted here so member can view / download their card
-  (async () => {
-    // Create a container card and insert after the welcome section
-    const myCardWrap = document.createElement('div');
-    myCardWrap.className = 'card';
-    myCardWrap.style.marginTop = '1rem';
-    myCardWrap.id = 'my-membership-card';
+  // My membership card — requireApprovedMember() already guarantees
+  // membership_status === 'active' by the time we get here, but a card
+  // number is only assigned by a DB trigger on approval (or the one-time
+  // backfill in sql/024), so guard for it being briefly/rarely absent.
+  await renderMyCard(profile);
 
-    myCardWrap.innerHTML = `
-      <h3 style="margin-top:0;">My Membership</h3>
-      <p id="card-number-line" style="margin:0.25rem 0;">Loading membership details…</p>
-      <div id="card-canvases" style="display:flex;gap:1rem;flex-wrap:wrap;margin-top:0.75rem;"></div>
-      <div style="margin-top:0.75rem;">
-        <button id="dl-front-btn" class="btn btn-gold" style="margin-right:0.5rem;display:none;">Download Front</button>
-        <button id="dl-back-btn" class="btn btn-outline-light" style="margin-right:0.5rem;display:none;">Download Back</button>
-        <button id="dl-combined-btn" class="btn btn-outline-light" style="display:none;">Download Front+Back (PNG)</button>
-        <a id="verify-link" style="margin-left:0.75rem;display:none;text-decoration:none;font-weight:600;"></a>
-      </div>
-    `;
+  async function renderMyCard(member) {
+    const cardTag = document.getElementById('card-status-tag');
+    const note = document.getElementById('card-note');
+    const previewRow = document.getElementById('card-preview-row');
+    const downloadRow = document.getElementById('card-download-row');
 
-    const firstSection = document.querySelector('.section');
-    if (firstSection) firstSection.prepend(myCardWrap);
-    else document.body.insertBefore(myCardWrap, document.getElementById('app-footer'));
-
-    const cardLine = document.getElementById('card-number-line');
-    const verifyLinkEl = document.getElementById('verify-link');
-
-    if (!profile.membership_card_number) {
-      cardLine.innerHTML = '<span style="color:var(--text-muted)">No membership card number assigned yet.</span>';
-      if (profile.student_id) {
-        cardLine.innerHTML += `<br/><small style="color:var(--text-muted)">Student ID: ${escapeHtml(profile.student_id)}</small>`;
-      }
+    if (!member.membership_card_number) {
+      cardTag.textContent = 'Not issued yet';
+      note.textContent = "Your card number hasn't been assigned yet — this page will update automatically once it is.";
+      pollForCardNumber(member.id);
       return;
     }
 
-    cardLine.innerHTML = `Card number: <strong>${escapeHtml(profile.membership_card_number)}</strong>`;
-    verifyLinkEl.href = `verify.html?card=${encodeURIComponent(profile.membership_card_number)}`;
-    verifyLinkEl.textContent = 'View / Verify my card';
-    verifyLinkEl.target = '_blank';
-    verifyLinkEl.style.display = 'inline-block';
-    verifyLinkEl.className = 'btn btn-outline-light';
-
     try {
-      const cardModule = await import('./assets/js/membership-card.js');
-      const { drawCardFront, drawCardBack, downloadCanvas, downloadCombined } = cardModule;
+      const frontCanvas = document.getElementById('canvas-front');
+      const backCanvas = document.getElementById('canvas-back');
+      await drawCardFront(frontCanvas, member);
+      await drawCardBack(backCanvas, member);
 
-      const canvasesWrap = document.getElementById('card-canvases');
-      const frontCanvas = document.createElement('canvas');
-      const backCanvas = document.createElement('canvas');
+      previewRow.style.display = 'flex';
+      downloadRow.style.display = 'flex';
+      note.textContent = `Membership No. ${member.membership_card_number} · Scan the QR on the back to verify.`;
+      cardTag.textContent = 'Ready to download';
+      cardTag.classList.add('soon-tag-live');
 
-      const scale = 0.25;
-      [frontCanvas, backCanvas].forEach(c => {
-        c.style.width = `${Math.round(cardModule.CARD_W * scale)}px`;
-        c.style.height = `${Math.round(cardModule.CARD_H * scale)}px`;
-        c.style.border = '1px solid var(--border)';
-        c.style.borderRadius = '8px';
-        c.style.background = 'white';
-      });
-
-      canvasesWrap.appendChild(frontCanvas);
-      canvasesWrap.appendChild(backCanvas);
-
-      await drawCardFront(frontCanvas, profile);
-      await drawCardBack(backCanvas, profile);
-
-      const dlFrontBtn = document.getElementById('dl-front-btn');
-      const dlBackBtn = document.getElementById('dl-back-btn');
-      const dlCombinedBtn = document.getElementById('dl-combined-btn');
-
-      dlFrontBtn.style.display = 'inline-block';
-      dlBackBtn.style.display = 'inline-block';
-      dlCombinedBtn.style.display = 'inline-block';
-
-      dlFrontBtn.addEventListener('click', () => {
-        downloadCanvas(frontCanvas, `${profile.membership_card_number}-front.png`);
-      });
-      dlBackBtn.addEventListener('click', () => {
-        downloadCanvas(backCanvas, `${profile.membership_card_number}-back.png`);
-      });
-      dlCombinedBtn.addEventListener('click', () => {
-        downloadCombined(frontCanvas, backCanvas, `${profile.membership_card_number}-front-back.png`);
-      });
+      const fileBase = `NSA-ID-${member.membership_card_number}`;
+      document.getElementById('dl-combined').onclick = () => downloadCombined(frontCanvas, backCanvas, `${fileBase}.png`);
+      document.getElementById('dl-front').onclick = () => downloadCanvas(frontCanvas, `${fileBase}-front.png`);
+      document.getElementById('dl-back').onclick = () => downloadCanvas(backCanvas, `${fileBase}-back.png`);
     } catch (err) {
-      console.error('Could not render membership card:', err);
-      cardLine.innerHTML += `<div style="color:var(--text-muted);margin-top:0.5rem;">Could not render card: ${escapeHtml(err.message || String(err))}</div>`;
+      cardTag.textContent = 'Could not load';
+      note.textContent = `Could not generate your card: ${err.message}`;
     }
-  })();
+  }
+
+  // Card numbers are assigned by a DB trigger on approval, which usually
+  // happens instantly — but if this page was already open when an admin
+  // approved the member, the card should still appear without a manual
+  // refresh. Poll briefly for the number and render the card the moment
+  // it shows up.
+  let cardPollTimer = null;
+  function pollForCardNumber(memberId, attempt = 0) {
+    if (attempt >= 24) return; // stop after ~2 minutes
+    clearTimeout(cardPollTimer);
+    cardPollTimer = setTimeout(async () => {
+      const { data: refreshed } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', memberId)
+        .single();
+      if (refreshed?.membership_card_number) {
+        await renderMyCard(refreshed);
+      } else {
+        pollForCardNumber(memberId, attempt + 1);
+      }
+    }, 5000);
+  }
 
   // My activity RSVPs
   const { data: myRsvps } = await supabase.from('activity_participants').select('id').eq('user_id', profile.id).limit(1);
@@ -244,7 +250,7 @@
     ? `On ${myProjects.length} project${myProjects.length === 1 ? '' : 's'}`
     : 'Not on a project yet';
   document.getElementById('projects-list').innerHTML = (myProjects && myProjects.length)
-    ? myProjects.map(pm => `<div class="list-item"><strong>${escapeHtml(pm.projects?.title || 'Project')}</strong><div class="meta">${escapeHtml(pm.role_in_project)} · ${escapeHtml(pm.projects?.[...]
+    ? myProjects.map(pm => `<div class="list-item"><strong>${escapeHtml(pm.projects?.title || 'Project')}</strong><div class="meta">${escapeHtml(pm.role_in_project)} · ${escapeHtml(pm.projects?.status || '')}</div></div>`).join('') + `<p style="margin:0.75rem 0 0;"><a href="projects.html" style="font-weight:700;">View all my projects &rarr;</a></p>`
     : `<p style="color:var(--text-muted);font-size:0.9rem;">You haven't been assigned to a project yet.</p>`;
 
   // Surface a live election on the dashboard when voting is open.
@@ -269,19 +275,19 @@
   // Upcoming activities
   const { data: activities } = await supabase.from('activities').select('title, activity_date, location').gte('activity_date', new Date().toISOString()).order('activity_date').limit(4);
   document.getElementById('activities-list').innerHTML = (activities && activities.length)
-    ? activities.map(a => `<div class="list-item"><strong>${escapeHtml(a.title)}</strong><div class="meta">${new Date(a.activity_date).toLocaleDateString()} ${a.location ? '· ' + escapeHtml(a.lo[...]
+    ? activities.map(a => `<div class="list-item"><strong>${escapeHtml(a.title)}</strong><div class="meta">${new Date(a.activity_date).toLocaleDateString()} ${a.location ? '· ' + escapeHtml(a.location) : ''}</div></div>`).join('') + `<p style="margin:0.75rem 0 0;"><a href="activities.html" style="font-weight:700;">View all activities &rarr;</a></p>`
     : `<p style="color:var(--text-muted);font-size:0.9rem;">No upcoming activities right now.</p>`;
 
   // Latest news
   const { data: news } = await supabase.from('news').select('title, published_at').order('published_at', { ascending: false }).limit(4);
   document.getElementById('news-list').innerHTML = (news && news.length)
-    ? news.map(n => `<div class="list-item"><strong>${escapeHtml(n.title)}</strong><div class="meta">${new Date(n.published_at).toLocaleDateString()}</div></div>`).join('') + `<p style="margin:0.[...]
+    ? news.map(n => `<div class="list-item"><strong>${escapeHtml(n.title)}</strong><div class="meta">${new Date(n.published_at).toLocaleDateString()}</div></div>`).join('') + `<p style="margin:0.75rem 0 0;"><a href="news.html" style="font-weight:700;">View all news &rarr;</a></p>`
     : `<p style="color:var(--text-muted);font-size:0.9rem;">No news posted yet.</p>`;
 
   // Discussion highlights
   const { data: topics } = await supabase.from('forum_topics').select('title, category, created_at').order('created_at', { ascending: false }).limit(4);
   document.getElementById('forum-list').innerHTML = (topics && topics.length)
-    ? topics.map(topic => `<div class="list-item"><strong>${escapeHtml(topic.title)}</strong><div class="meta">${escapeHtml(topic.category || 'General')} · ${new Date(topic.created_at).toLocaleD[...]
+    ? topics.map(topic => `<div class="list-item"><strong>${escapeHtml(topic.title)}</strong><div class="meta">${escapeHtml(topic.category || 'General')} · ${new Date(topic.created_at).toLocaleDateString()}</div></div>`).join('')
     : `<p style="color:var(--text-muted);font-size:0.9rem;">No discussions started yet.</p>`;
   }
 
