@@ -128,6 +128,10 @@
       .members-list { display: none !important; }
       .members-table-desktop { display: block; }
     }
+  
+    .member-card-actions .ns-select { flex: 1 1 140px; min-width: 140px; }
+    .member-card-actions .ns-select-btn { width: 100%; }
+    td .ns-select { min-width: 140px; }
   </style>
 </head>
 <body>
@@ -401,7 +405,7 @@ Preferred meeting day (multiple_choice: Monday, Wednesday, Friday)"></textarea>
   <div id="app-footer"></div>
 
   <script type="module">
-    import { createNsSelect } from '../assets/js/ns-select.js';
+    import { createNsSelect, refreshSelects } from '../assets/js/ns-select.js';
     import { supabase } from '../assets/js/supabase-client.js';
     import { requireAdmin } from '../assets/js/admin-guard.js';
     import { mountNav, mountFooter } from '../assets/js/nav.js';
@@ -427,7 +431,9 @@ Preferred meeting day (multiple_choice: Monday, Wednesday, Friday)"></textarea>
         document.querySelectorAll('.tab-btn[data-tab]').forEach(b => b.classList.remove('active'));
         document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
         btn.classList.add('active');
-        document.getElementById(`tab-${btn.dataset.tab}`).classList.add('active');
+        const panel = document.getElementById(`tab-${btn.dataset.tab}`);
+        if (panel) panel.classList.add('active');
+        try { refreshSelects(panel || document); } catch (e) {}
       });
     });
 
@@ -559,15 +565,24 @@ Preferred meeting day (multiple_choice: Monday, Wednesday, Friday)"></textarea>
       document.querySelectorAll('[data-apply-status]').forEach(btn => {
         btn.addEventListener('click', async () => {
           const id = btn.dataset.applyStatus;
-          const sel = document.querySelector(`select.action-select[data-member="${id}"]`);
+          // Prefer the select next to this button (mobile card or desktop row)
+          const scope = btn.closest('.member-card-actions, td, tr, .member-card') || document;
+          const sel = scope.querySelector(`select.action-select[data-member="${id}"]`)
+            || document.querySelector(`select.action-select[data-member="${id}"]`);
           const newStatus = sel?.value;
-          if (!newStatus) return;
+          if (!newStatus) {
+            alert('Choose a status first.');
+            return;
+          }
           const payload = { membership_status: newStatus };
           if (newStatus === 'active') { payload.approved_by = me.id; payload.approved_at = new Date().toISOString(); }
           const { error } = await supabase.from('profiles').update(payload).eq('id', id);
           if (error) alert(error.message); else await loadMembers();
         });
       });
+
+      // Style Set status / filters like the faculty dropdown (custom ns-select)
+      try { refreshSelects(document.getElementById('tab-members') || document); } catch (e) { console.warn(e); }
     }
 
     async function loadMembers() {
@@ -585,6 +600,7 @@ Preferred meeting day (multiple_choice: Monday, Wednesday, Friday)"></textarea>
       fillFilterOptions('filter-hostel', uniqueSorted(allMembers.map(m => m.hostel)), 'All hostels');
       fillFilterOptions('filter-faculty', uniqueSorted(allMembers.map(m => m.faculty)), 'All faculties');
       renderMembers();
+      try { refreshSelects(document.getElementById('member-filters') || document); } catch (e) {}
     }
 
     ['member-search', 'filter-hostel', 'filter-faculty', 'filter-status'].forEach(id => {

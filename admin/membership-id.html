@@ -7,50 +7,136 @@
   <title>Membership ID Cards: Nkobazambogo Students' Association</title>
   <link rel="stylesheet" href="../assets/css/style.css" />
   <style>
-    :root { --forest: #1b4332; --gold: #d4af37; --border: #e2e8f0; --radius: 8px; --text-muted: #64748b; }
-    .admin-container { padding: 2rem; max-width: 1200px; margin: 0 auto; }
-    .card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-    .admin-table { width: 100%; border-collapse: collapse; margin-top: 1rem; font-size: 0.9rem; }
-    .admin-table th, .admin-table td { padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--border); vertical-align: middle; }
-    .admin-table th { background: #f8fafc; font-weight: 600; }
+    .admin-container { padding: 1.25rem 1rem 3rem; max-width: 1100px; margin: 0 auto; }
+    .page-lead { color: var(--text-muted); margin: -0.35rem 0 1.25rem; font-size: 0.92rem; line-height: 1.45; }
+    .page-lead a { color: var(--forest); font-weight: 600; text-decoration: none; }
+    .card {
+      background: var(--paper); border: 1px solid var(--border); border-radius: 10px;
+      padding: 1.15rem 1.25rem; margin-bottom: 1.25rem; box-shadow: var(--shadow, 0 1px 3px rgba(0,0,0,.05));
+    }
+    .search-row { margin-bottom: 0.85rem; }
+    .search-row input {
+      width: 100%; box-sizing: border-box;
+      padding: 0.65rem 0.85rem; border: 1px solid var(--border); border-radius: 8px;
+      background: var(--paper) !important; color: var(--text) !important;
+      font-family: inherit; font-size: 0.95rem;
+      -webkit-text-fill-color: var(--text);
+    }
+    .search-row input::placeholder { color: var(--text-muted); opacity: 1; }
+    .table-scroll {
+      width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;
+      border: 1px solid var(--border); border-radius: 8px;
+    }
+    .admin-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; min-width: 640px; }
+    .admin-table th, .admin-table td {
+      padding: 0.7rem 0.65rem; text-align: left; border-bottom: 1px solid var(--border); vertical-align: middle;
+      color: var(--text);
+    }
+    .admin-table th {
+      background: var(--paper); font-weight: 600; white-space: nowrap;
+      position: sticky; top: 0; z-index: 1;
+    }
     .member-avatar-img { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; display: block; }
-    .member-avatar-fallback { width: 36px; height: 36px; border-radius: 50%; background: var(--forest); color: #fff; font-weight: 700; font-size: 0.8rem; display: flex; align-items: center; justify-content: center; }
-    .mini-btn { padding: 0.4rem 0.85rem; font-size: 0.82rem; border-radius: 4px; border: none; cursor: pointer; font-weight: 600; background: var(--forest); color: #fff; }
-    .mini-btn:disabled { opacity: 0.6; cursor: wait; }
-    .search-row { display: flex; gap: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap; }
-    .search-row input { flex: 1; min-width: 220px; padding: 0.55rem 0.75rem; border: 1px solid var(--border); border-radius: 4px; font-family: inherit; }
-    #preview-wrap { display: none; margin-top: 1.5rem; }
-    .card-preview-row { display: flex; gap: 1.5rem; flex-wrap: wrap; align-items: flex-start; }
+    .member-avatar-fallback {
+      width: 36px; height: 36px; border-radius: 50%; background: var(--forest, #1b4332);
+      color: #fff; font-weight: 700; font-size: 0.78rem;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .mini-btn {
+      padding: 0.4rem 0.85rem; font-size: 0.82rem; border-radius: 6px; border: none;
+      cursor: pointer; font-weight: 600; background: var(--forest, #1b4332); color: #fff;
+    }
+    .mini-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+    .no-card-note { font-size: 0.78rem; color: #b91c1c; }
+    .status-line { font-size: 0.85rem; color: var(--text-muted); margin: 0.35rem 0 0; }
+    .status-line.error { color: #b91c1c; }
+
+    /* Mobile cards */
+    .member-cards { display: none; }
+    .mcard {
+      border: 1px solid var(--border); border-radius: 10px; padding: 0.9rem 1rem;
+      margin-bottom: 0.65rem; background: var(--paper);
+      display: flex; gap: 0.75rem; align-items: flex-start;
+    }
+    .mcard-body { flex: 1; min-width: 0; }
+    .mcard-body strong { display: block; color: var(--text); }
+    .mcard-meta { font-size: 0.8rem; color: var(--text-muted); margin: 0.2rem 0 0.55rem; word-break: break-word; }
+    .mcard-actions { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+
+    @media (max-width: 720px) {
+      .table-scroll { display: none; }
+      .member-cards { display: block; }
+      .admin-container { padding: 1rem 0.75rem 3rem; }
+    }
+    @media (min-width: 721px) {
+      .member-cards { display: none !important; }
+    }
+
+    #preview-wrap { display: none; margin-top: 0.5rem; }
+    .card-preview-row { display: flex; gap: 1.25rem; flex-wrap: wrap; align-items: flex-start; }
     .card-preview-row figure { margin: 0; text-align: center; }
-    .card-preview-row canvas { width: 340px; max-width: 100%; height: auto; border-radius: 12px; box-shadow: 0 4px 16px rgba(22,35,58,0.15); border: 1px solid var(--border); }
-    .card-preview-row figcaption { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.5rem; font-weight: 600; }
-    .download-row { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-top: 1.25rem; }
-    .btn-gold-sm { background: var(--gold); color: #1b1b1b; border: none; padding: 0.6rem 1.1rem; border-radius: 4px; font-weight: 700; cursor: pointer; font-size: 0.88rem; }
-    .btn-outline-sm { background: none; border: 1px solid var(--border); padding: 0.6rem 1.1rem; border-radius: 4px; font-weight: 600; cursor: pointer; font-size: 0.88rem; }
-    #status-msg { font-size: 0.85rem; color: var(--text-muted); margin-top: 0.5rem; }
-    .no-card-note { font-size: 0.8rem; color: #b91c1c; }
+    .card-preview-row canvas {
+      width: min(340px, 100%); height: auto; border-radius: 12px;
+      box-shadow: 0 4px 16px rgba(22,35,58,0.12); border: 1px solid var(--border);
+    }
+    .card-preview-row figcaption { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.45rem; font-weight: 600; }
+    .download-row { display: flex; gap: 0.55rem; flex-wrap: wrap; margin-top: 1.1rem; }
+    .btn-gold-sm {
+      background: var(--gold, #d4af37); color: #1b1b1b; border: none;
+      padding: 0.55rem 1rem; border-radius: 6px; font-weight: 700; cursor: pointer; font-size: 0.88rem;
+    }
+    .btn-outline-sm {
+      background: var(--paper); color: var(--text); border: 1px solid var(--border);
+      padding: 0.55rem 1rem; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 0.88rem;
+    }
   </style>
 </head>
 <body>
+  <div id="boot-error-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:99999;background:#b91c1c;color:#fff;padding:0.75rem 1rem;font:600 13px/1.4 monospace;white-space:pre-wrap;"></div>
+  <script>
+    (function () {
+      var b = document.getElementById('boot-error-banner');
+      function show(m) { b.style.display = 'block'; b.textContent += (b.textContent ? '\n' : '') + m; }
+      window.addEventListener('error', function (e) {
+        show('Error: ' + (e.message || e.error) + (e.filename ? ' (' + e.filename + ':' + e.lineno + ')' : ''));
+      });
+      window.addEventListener('unhandledrejection', function (e) {
+        show('Promise: ' + (e.reason && e.reason.message ? e.reason.message : e.reason));
+      });
+    })();
+  </script>
   <div id="app-nav"></div>
 
   <main class="admin-container">
-    <h2>Membership ID Cards</h2>
-    <p style="color:var(--text-muted);margin-top:-0.5rem;margin-bottom:1.25rem;font-size:0.92rem;">
-      Generate a downloadable ID card (front + back) for any <strong>active</strong> member. A card number is
-      assigned automatically the first time a member is approved. The QR code on the back opens
-      <code>verify.html</code>, which shows the member's live bio when scanned.
+    <h2 style="margin:0 0 0.35rem;">Membership ID Cards</h2>
+    <p class="page-lead">
+      Generate a downloadable ID card (front + back) for any <strong>active</strong> member.
+      Card numbers are assigned automatically when a member is approved.
+      The QR on the back opens <code>verify.html</code>.
       <a href="./index.html">← Admin Dashboard</a>
     </p>
 
     <div class="card">
       <div class="search-row">
-        <input type="text" id="search" placeholder="Search by name, email, or student ID…" />
+        <input type="search" id="search" placeholder="Search by name, email, or student ID…" autocomplete="off" />
       </div>
-      <div class="admin-table-wrap" style="overflow-x:auto;">
+      <p id="list-status" class="status-line">Loading active members…</p>
+      <div id="member-cards" class="member-cards"></div>
+      <div class="table-scroll">
         <table class="admin-table">
-          <thead><tr><th></th><th>Name</th><th>Programme</th><th>Card No.</th><th>Student ID</th><th></th></tr></thead>
-          <tbody id="member-rows"><tr><td colspan="6">Loading active members…</td></tr></tbody>
+          <thead>
+            <tr>
+              <th></th>
+              <th>Name</th>
+              <th>Programme</th>
+              <th>Card No.</th>
+              <th>Student ID</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="member-rows">
+            <tr><td colspan="6">Loading…</td></tr>
+          </tbody>
         </table>
       </div>
     </div>
@@ -62,11 +148,11 @@
         <figure><canvas id="canvas-back"></canvas><figcaption>BACK</figcaption></figure>
       </div>
       <div class="download-row">
-        <button class="btn-gold-sm" id="dl-combined">Download ID Card (PNG)</button>
-        <button class="btn-outline-sm" id="dl-front">Front only</button>
-        <button class="btn-outline-sm" id="dl-back">Back only</button>
+        <button type="button" class="btn-gold-sm" id="dl-combined">Download ID Card (PNG)</button>
+        <button type="button" class="btn-outline-sm" id="dl-front">Front only</button>
+        <button type="button" class="btn-outline-sm" id="dl-back">Back only</button>
       </div>
-      <p id="status-msg"></p>
+      <p id="status-msg" class="status-line"></p>
     </div>
   </main>
 
@@ -78,24 +164,19 @@
     import { mountNav, mountFooter } from '../assets/js/nav.js';
     import { drawCardFront, drawCardBack, downloadCanvas, downloadCombined } from '../assets/js/membership-card.js';
 
-    const me = await requireAdmin();
-    if (!me) throw new Error('not authorized');
-    mountNav();
-    mountFooter();
-    let members = [];
+    const statusEl = document.getElementById('list-status');
+    const tbody = document.getElementById('member-rows');
+    const cardsEl = document.getElementById('member-cards');
 
-    async function loadMembers() {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, full_name, email, programme, year_of_study, avatar_url, registration_number, student_id, membership_card_number, card_issued_at, membership_status')
-        .eq('membership_status', 'active')
-        .order('full_name');
-      if (error) {
-        document.getElementById('member-rows').innerHTML = `<tr><td colspan="6">Could not load members: ${error.message}</td></tr>`;
-        return;
-      }
-      members = data || [];
-      renderRows(members);
+    function setStatus(msg, isError) {
+      statusEl.textContent = msg || '';
+      statusEl.classList.toggle('error', !!isError);
+    }
+
+    function escapeHtml(s) {
+      return String(s ?? '').replace(/[&<>"']/g, c => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[c]));
     }
 
     function initials(name) {
@@ -103,23 +184,107 @@
       return name.trim().split(/\s+/).slice(0, 2).map(w => w[0]?.toUpperCase()).join('');
     }
 
-    function renderRows(list) {
-      const tbody = document.getElementById('member-rows');
-      if (!list.length) { tbody.innerHTML = '<tr><td colspan="6">No active members found.</td></tr>'; return; }
-      tbody.innerHTML = list.map(m => `
-        <tr>
-          <td>${m.avatar_url ? `<img class="member-avatar-img" src="${m.avatar_url}" alt="" />` : `<div class="member-avatar-fallback">${initials(m.full_name)}</div>`}</td>
-          <td>${escapeHtml(m.full_name)}</td>
-          <td>${escapeHtml(m.programme || '—')}</td>
-          <td>${m.membership_card_number || '<span class="no-card-note">not yet assigned</span>'}</td>
-          <td>${m.student_id || '<span class="no-card-note">no registration no.</span>'}</td>
-          <td><button class="mini-btn" data-generate="${m.id}" ${m.membership_card_number ? '' : 'disabled title="Card number not yet assigned"'}>Generate</button></td>
-        </tr>
-      `).join('');
+    let me;
+    try {
+      me = await requireAdmin();
+    } catch (e) {
+      setStatus('Auth check failed: ' + (e.message || e), true);
+      throw e;
+    }
+    if (!me) {
+      setStatus('Not authorized — redirecting…', true);
+      throw new Error('not authorized');
     }
 
-    function escapeHtml(s) {
-      return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    mountNav();
+    mountFooter();
+
+    let members = [];
+
+    async function loadMembers() {
+      setStatus('Loading active members…');
+      // Prefer full card columns; fall back if migration not applied yet
+      let data, error;
+      ({ data, error } = await supabase
+        .from('profiles')
+        .select('id, full_name, email, programme, year_of_study, avatar_url, registration_number, student_id, membership_card_number, card_issued_at, membership_status')
+        .eq('membership_status', 'active')
+        .order('full_name'));
+
+      if (error) {
+        console.warn('full select failed, retrying minimal', error);
+        ({ data, error } = await supabase
+          .from('profiles')
+          .select('id, full_name, email, programme, year_of_study, avatar_url, registration_number, membership_status')
+          .eq('membership_status', 'active')
+          .order('full_name'));
+      }
+
+      if (error) {
+        setStatus('Could not load members: ' + error.message, true);
+        tbody.innerHTML = `<tr><td colspan="6">${escapeHtml(error.message)}</td></tr>`;
+        cardsEl.innerHTML = `<p class="status-line error">${escapeHtml(error.message)}</p>`;
+        return;
+      }
+
+      members = (data || []).map(m => ({
+        ...m,
+        student_id: m.student_id || null,
+        membership_card_number: m.membership_card_number || null,
+        card_issued_at: m.card_issued_at || null,
+      }));
+      setStatus(`${members.length} active member${members.length === 1 ? '' : 's'}`);
+      renderRows(members);
+    }
+
+    function renderRows(list) {
+      if (!list.length) {
+        tbody.innerHTML = '<tr><td colspan="6">No active members found.</td></tr>';
+        cardsEl.innerHTML = '<p class="status-line">No active members found.</p>';
+        return;
+      }
+
+      tbody.innerHTML = list.map(m => `
+        <tr>
+          <td>${m.avatar_url
+            ? `<img class="member-avatar-img" src="${escapeHtml(m.avatar_url)}" alt="" />`
+            : `<div class="member-avatar-fallback">${escapeHtml(initials(m.full_name))}</div>`}</td>
+          <td>${escapeHtml(m.full_name)}</td>
+          <td>${escapeHtml(m.programme || '—')}</td>
+          <td>${m.membership_card_number
+            ? escapeHtml(m.membership_card_number)
+            : '<span class="no-card-note">not assigned</span>'}</td>
+          <td>${m.student_id
+            ? escapeHtml(m.student_id)
+            : '<span class="no-card-note">—</span>'}</td>
+          <td>
+            <button type="button" class="mini-btn" data-generate="${m.id}"
+              ${m.membership_card_number ? '' : 'disabled title="Card number not yet assigned — run SQL backfill or re-approve member"'}>
+              Generate
+            </button>
+          </td>
+        </tr>
+      `).join('');
+
+      cardsEl.innerHTML = list.map(m => `
+        <article class="mcard">
+          ${m.avatar_url
+            ? `<img class="member-avatar-img" src="${escapeHtml(m.avatar_url)}" alt="" />`
+            : `<div class="member-avatar-fallback">${escapeHtml(initials(m.full_name))}</div>`}
+          <div class="mcard-body">
+            <strong>${escapeHtml(m.full_name)}</strong>
+            <div class="mcard-meta">
+              ${escapeHtml(m.programme || '—')}<br />
+              Card: ${m.membership_card_number ? escapeHtml(m.membership_card_number) : 'not assigned'}
+              · ID: ${m.student_id ? escapeHtml(m.student_id) : '—'}
+            </div>
+            <div class="mcard-actions">
+              <button type="button" class="mini-btn" data-generate="${m.id}"
+                ${m.membership_card_number ? '' : 'disabled'}>Generate</button>
+            </div>
+          </div>
+        </article>
+      `).join('');
     }
 
     document.getElementById('search').addEventListener('input', (e) => {
@@ -128,20 +293,28 @@
       renderRows(members.filter(m =>
         (m.full_name || '').toLowerCase().includes(q) ||
         (m.email || '').toLowerCase().includes(q) ||
-        (m.student_id || '').toLowerCase().includes(q)
+        (m.student_id || '').toLowerCase().includes(q) ||
+        (m.membership_card_number || '').toLowerCase().includes(q)
       ));
     });
 
-    document.getElementById('member-rows').addEventListener('click', async (e) => {
-      const btn = e.target.closest('button[data-generate]');
-      if (!btn) return;
-      const member = members.find(m => m.id === btn.dataset.generate);
+    async function generateFor(memberId, btn) {
+      const member = members.find(m => m.id === memberId);
       if (!member) return;
-      btn.disabled = true;
+      if (!member.membership_card_number) {
+        document.getElementById('status-msg').textContent =
+          'This member has no card number yet. Approve them again or run the membership card backfill SQL.';
+        document.getElementById('status-msg').classList.add('error');
+        return;
+      }
+
       const original = btn.textContent;
+      btn.disabled = true;
       btn.textContent = 'Generating…';
       const statusMsg = document.getElementById('status-msg');
       statusMsg.textContent = '';
+      statusMsg.classList.remove('error');
+
       try {
         document.getElementById('preview-wrap').style.display = 'block';
         document.getElementById('preview-name').textContent = `Preview — ${member.full_name}`;
@@ -151,20 +324,37 @@
         await drawCardBack(backCanvas, member);
         document.getElementById('preview-wrap').scrollIntoView({ behavior: 'smooth', block: 'start' });
 
-        const fileBase = `NSA-ID-${(member.membership_card_number || member.full_name).replace(/\s+/g, '_')}`;
-        document.getElementById('dl-combined').onclick = () => downloadCombined(frontCanvas, backCanvas, `${fileBase}.png`);
-        document.getElementById('dl-front').onclick = () => downloadCanvas(frontCanvas, `${fileBase}-front.png`);
-        document.getElementById('dl-back').onclick = () => downloadCanvas(backCanvas, `${fileBase}-back.png`);
+        const fileBase = `NSA-ID-${String(member.membership_card_number).replace(/\s+/g, '_')}`;
+        document.getElementById('dl-combined').onclick = () =>
+          downloadCombined(frontCanvas, backCanvas, `${fileBase}.png`);
+        document.getElementById('dl-front').onclick = () =>
+          downloadCanvas(frontCanvas, `${fileBase}-front.png`);
+        document.getElementById('dl-back').onclick = () =>
+          downloadCanvas(backCanvas, `${fileBase}-back.png`);
+        statusMsg.textContent = 'Card ready — download below.';
       } catch (err) {
-        statusMsg.textContent = `Could not generate card: ${err.message}`;
-        statusMsg.style.color = '#b91c1c';
+        statusMsg.textContent = `Could not generate card: ${err.message || err}`;
+        statusMsg.classList.add('error');
       } finally {
         btn.disabled = false;
         btn.textContent = original;
       }
+    }
+
+    document.getElementById('member-rows').addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-generate]');
+      if (btn) generateFor(btn.dataset.generate, btn);
+    });
+    cardsEl.addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-generate]');
+      if (btn) generateFor(btn.dataset.generate, btn);
     });
 
-    loadMembers();
+    try {
+      await loadMembers();
+    } catch (e) {
+      setStatus('Load failed: ' + (e.message || e), true);
+    }
   </script>
 </body>
 </html>
