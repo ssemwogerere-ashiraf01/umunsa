@@ -402,7 +402,7 @@ Preferred meeting day (multiple_choice: Monday, Wednesday, Friday)"></textarea>
 
   <script type="module">
     import { createNsSelect } from '../assets/js/ns-select.js';
-  import { supabase } from '../assets/js/supabase-client.js';
+    import { supabase } from '../assets/js/supabase-client.js';
     import { requireAdmin } from '../assets/js/admin-guard.js';
     import { mountNav, mountFooter } from '../assets/js/nav.js';
 
@@ -911,11 +911,6 @@ document.getElementById('news-form').addEventListener('submit', async (e) => {
         container.querySelectorAll('[data-suspend-candidate]').forEach(btn => btn.addEventListener('click', async () => {
           if (!confirm('Suspend this application? The candidate will not appear for voting.')) return;
           const { error } = await supabase.from('candidates').update({ approved: false, application_status: 'suspended' }).eq('id', btn.dataset.suspendCandidate);
-          if (error) alert(error.message); else await loadElections();
-        }));
-        container.querySelectorAll('[data-delete-candidate]').forEach(btn => btn.addEventListener('click', async () => {
-          if (!confirm('Delete this candidate application permanently?')) return;
-          const { error } = await supabase.from('candidates').delete().eq('id', btn.dataset.deleteCandidate);
           if (error) alert(error.message); else await loadElections();
         }));
         container.querySelectorAll('[data-delete-candidate]').forEach(btn => btn.addEventListener('click', async () => {
