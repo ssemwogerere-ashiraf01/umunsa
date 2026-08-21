@@ -55,16 +55,28 @@
   .card-download-row { display:flex; gap:0.6rem; flex-wrap:wrap; margin-top:1.25rem; }
 
   .academic-strip {
-    display: flex; flex-wrap: wrap; gap: 0.45rem; margin-top: 0.75rem; align-items: center;
+    display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.85rem; align-items: center;
   }
   .academic-chip {
     display: inline-flex; align-items: center; gap: 0.35rem;
-    padding: 0.3rem 0.7rem; border-radius: 8px; font-size: 0.78rem; font-weight: 600;
+    padding: 0.35rem 0.75rem; border-radius: 8px; font-size: 0.78rem; font-weight: 600;
     background: #f1f5f9; color: var(--ink-navy, #16233a); border: 1px solid var(--border);
   }
-  .academic-chip.gold { background: #fef3c7; color: #92400e; border-color: #f59e0b; }
-  .academic-chip.muted { background: transparent; color: var(--text-muted); font-weight: 500; }
-  .programme-title { margin: 0.35rem 0 0; font-size: 1.05rem; color: var(--ink-navy, #16233a); font-weight: 700; letter-spacing: 0.01em; }
+  .academic-chip.gold {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: #fff; border-color: transparent; font-weight: 700; letter-spacing: 0.02em;
+  }
+  .academic-chip.campus { background: #eef2ff; color: #3730a3; border-color: #c7d2fe; }
+  .academic-chip.phone { background: #f0fdf4; color: #166534; border-color: #bbf7d0; }
+  .academic-chip.reg { color: #b91c1c; background: #fef2f2; border-color: #fecaca; font-weight: 700; }
+  .academic-chip.muted { background: transparent; color: var(--text-muted); font-weight: 500; border-style: dashed; }
+  .programme-title {
+    margin: 0.45rem 0 0; font-size: 1.15rem; color: var(--ink-navy, #16233a);
+    font-weight: 800; letter-spacing: 0.02em; text-transform: uppercase;
+  }
+  .level-row { margin-top: 1rem; padding-top: 0.85rem; border-top: 1px solid var(--border); }
+  .level-row .label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); font-weight: 600; }
+  .level-row .value { font-size: 1.25rem; font-weight: 800; color: var(--ink-navy, #16233a); margin-top: 0.15rem; }
   </style>
 </head>
 <body>
@@ -207,7 +219,7 @@
   badge.textContent = statusLabel[profile.membership_status] || profile.membership_status;
   badge.classList.add(`badge-${profile.membership_status}`);
 
-  // Academic info strip (campus, programme, year, semester)
+  // Academic info strip (campus, programme, year, semester, phone)
   (function () {
     const title = document.getElementById('programme-title');
     const strip = document.getElementById('academic-strip');
@@ -222,11 +234,25 @@
       if (profile.semester) parts.push('SEMESTER ' + profile.semester);
       chips.push(`<span class="academic-chip gold">${parts.join(' | ')}</span>`);
     }
-    if (profile.campus) chips.push(`<span class="academic-chip">${escapeHtml(profile.campus)}</span>`);
-    if (profile.year_of_study) chips.push(`<span class="academic-chip">Yr ${profile.year_of_study}${profile.semester ? ' / S' + profile.semester : ''}</span>`);
-    if (profile.registration_number) chips.push(`<span class="academic-chip muted">${escapeHtml(profile.registration_number)}</span>`);
+    if (profile.campus) chips.push(`<span class="academic-chip campus">${escapeHtml(profile.campus)}</span>`);
+    if (profile.registration_number) chips.push(`<span class="academic-chip reg">${escapeHtml(profile.registration_number)}</span>`);
+    if (profile.phone) chips.push(`<span class="academic-chip phone">☎ ${escapeHtml(profile.phone)}</span>`);
     if (profile.faculty) chips.push(`<span class="academic-chip muted">${escapeHtml(profile.faculty)}</span>`);
     strip.innerHTML = chips.join('');
+
+    // Current level row
+    let levelEl = document.getElementById('current-level-row');
+    if (!levelEl && (profile.year_of_study || profile.semester)) {
+      levelEl = document.createElement('div');
+      levelEl.id = 'current-level-row';
+      levelEl.className = 'level-row';
+      strip.parentNode.appendChild(levelEl);
+    }
+    if (levelEl && (profile.year_of_study || profile.semester)) {
+      const y = profile.year_of_study ? `Yr ${profile.year_of_study}` : '';
+      const s = profile.semester ? `S${profile.semester}` : '';
+      levelEl.innerHTML = `<div class="label">Current level</div><div class="value">${[y, s].filter(Boolean).join(' / ')}</div>`;
+    }
   })();
 
 

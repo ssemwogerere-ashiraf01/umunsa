@@ -49,6 +49,7 @@
 <body>
 <div id="app-nav"></div>
 
+<div id="site-header"></div>
 <div class="profile-wrap">
   <div id="admin-banner" class="admin-banner" hidden>
     <div>
@@ -164,28 +165,28 @@
 <div id="app-footer"></div>
 
 <script type="module">
+  import { supabase } from './assets/js/supabase-client.js';
+  import { requireApprovedMember, requireLoggedIn } from './assets/js/session-guard.js';
+  import { mountNav, mountFooter } from './assets/js/nav.js';
   import { mountAcademicFields, readAcademicFields } from './assets/js/academic.js';
+  import { enhancePhoneFields } from './assets/js/phone-input.js';
+  import { enhanceAllSelects, refreshSelects } from './assets/js/ns-select.js';
 
-  document.addEventListener('DOMContentLoaded', () => {
-    document.querySelectorAll('[data-titlecase]').forEach(el => {
-      el.addEventListener('blur', () => { el.value = titleCase(el.value); });
-    });
-  });
-  // data-titlecase listeners
+  mountNav('profile');
+  mountFooter();
+
   function titleCase(str) {
     if (str == null) return str;
     const s = String(str).trim().replace(/\s+/g, ' ');
     if (!s) return s;
-    return s.replace(/(^|[\s'’\-])(\S)/g, (m, sep, ch) => sep + ch.toUpperCase())
-            .replace(/(^|[\s'’\-])(\S+)/g, (m, sep, word) => sep + word.charAt(0).toUpperCase() + word.slice(1).toLowerCase());
+    return s.replace(/(^|[\s'’\-])(\S+)/g, (_, sep, word) =>
+      sep + word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+    );
   }
 
-  import { supabase } from './assets/js/supabase-client.js';
-  import { requireApprovedMember, requireLoggedIn } from './assets/js/session-guard.js';
-  import { mountNav, mountFooter } from './assets/js/nav.js';
-
-  mountNav('profile');
-  mountFooter();
+  document.querySelectorAll('[data-titlecase]').forEach((el) => {
+    el.addEventListener('blur', () => { el.value = titleCase(el.value); });
+  });
 
   const params = new URLSearchParams(window.location.search);
   const adminViewId = params.get('admin_view');
@@ -201,7 +202,7 @@
   }
 
   function statusPill(status) {
-    const s = status || ': ';
+    const s = status || '—';
     const cls = s === 'active' ? 'pill-active'
       : s === 'pending' ? 'pill-pending'
       : (s === 'suspended' || s === 'rejected') ? 'pill-rejected'
@@ -212,6 +213,7 @@
   function renderAvatar(url, name) {
     const img = document.getElementById('avatar-preview');
     const fallback = document.getElementById('avatar-fallback');
+    if (!img || !fallback) return;
     if (url) {
       img.src = url;
       img.style.display = 'block';
@@ -223,127 +225,131 @@
     }
   }
 
-  function fillForm(p) {
-    document.getElementById('ro-email').textContent = p.email || ': ';
+  async function fillForm(p) {
+    document.getElementById('ro-email').textContent = p.email || '—';
     document.getElementById('ro-status').innerHTML = statusPill(p.membership_status);
-    document.getElementById('ro-role').textContent = p.role === 'super_admin' ? 'Super Admin' : (p.role === 'admin' ? 'Admin' : 'Member');
+    document.getElementById('ro-role').textContent =
+      p.role === 'super_admin' ? 'Super Admin' : (p.role === 'admin' ? 'Admin' : 'Member');
     document.getElementById('ro-joined').textContent = p.created_at
       ? new Date(p.created_at).toLocaleDateString()
-      : ': ';
+      : '—';
 
     document.getElementById('full_name').value = p.full_name || '';
     document.getElementById('phone').value = p.phone || '';
-    
-    
     document.getElementById('bio').value = p.bio || '';
-    document.getElementById('security_question').value = p.security_question || '';
-    document.getElementById('security_answer').value = '';
 
-    if (isAdminMode) {
-      document.getElementById('membership_status').value = p.membership_status || 'pending';
-      document.getElementById('role').value = p.role || 'member';
-      if (!viewerIsSuperAdmin) {
-        document.getElementById('role-group').innerHTML =
-          '<label>Role</label><p style="margin:0.35rem 0 0;font-weight:600;">Only the Super Admin can change roles.</p>';
+    const secQ = document.getElementById('security_question');
+    if (secQ) {
+      secQ.value = p.security_question || '';
+      if (p.security_question && ![...secQ.options].some(o => o.value === p.security_question)) {
+        const opt = document.createElement('option');
+        opt.value = p.security_question;
+        opt.textContent = p.security_question;
+        secQ.appendChild(opt);
+        secQ.value = p.security_question;
       }
     }
 
+    if (isAdminMode) {
+      const adminFields = document.getElementById('admin-fields');
+      if (adminFields) adminFields.hidden = false;
+      const st = document.getElementById('membership_status');
+      if (st) st.value = p.membership_status || 'pending';
+      const roleEl = document.getElementById('role');
+      if (roleEl) roleEl.value = p.role || 'member';
+    }
+
     renderAvatar(p.avatar_url, p.full_name);
-    await mountAcademicFields(document, {
-      campus: p.campus || '',
-      faculty: p.faculty || '',
-      programme: p.programme || '',
-      academic_year: p.academic_year || '',
-      semester: p.semester,
-      year_of_study: p.year_of_study,
-    });
-  }
 
-  // ---- Resolve who we're editing ----
-  if (adminViewId) {
-    // Must be logged in as admin / super admin
-    const session = await requireLoggedIn();
-    if (!session) throw new Error('redirecting');
-
-    const { data: viewer, error: viewerErr } = await supabase
-      .from('profiles')
-      .select('id, role, full_name')
-      .eq('id', session.user.id)
-      .single();
-
-    if (viewerErr || !viewer || (viewer.role !== 'admin' && viewer.role !== 'super_admin')) {
-      window.location.href = './dashboard.html';
-      throw new Error('redirecting');
+    try {
+      await mountAcademicFields(document, {
+        campus: p.campus || '',
+        faculty: p.faculty || '',
+        programme: p.programme || '',
+        academic_year: p.academic_year || '',
+        semester: p.semester,
+        year_of_study: p.year_of_study,
+      });
+    } catch (e) {
+      console.warn('academic fields', e);
     }
 
-    viewerIsSuperAdmin = viewer.role === 'super_admin';
-    isAdminMode = true;
-    targetId = adminViewId;
-
-    const { data: target, error: targetErr } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', adminViewId)
-      .single();
-
-    if (targetErr || !target) {
-      document.querySelector('.profile-wrap').innerHTML = `
-        <div class="profile-card">
-          <h2 style="margin-top:0;">Member not found</h2>
-          <p style="color:var(--text-muted);">Could not load that profile.${targetErr ? ' ' + escapeHtml(targetErr.message) : ''}</p>
-          <p><a href="admin/super-admin.html">← Back to Super Admin</a> · <a href="admin/index.html">Admin Dashboard</a></p>
-        </div>`;
-      throw new Error('not found');
-    }
-
-    profile = target;
-    document.title = `${target.full_name || 'Member'}: Admin Profile`;
-    document.getElementById('admin-banner').hidden = false;
-    document.getElementById('admin-banner-sub').textContent =
-      `Editing ${target.full_name || target.email || 'member'}`;
-    document.getElementById('page-title').textContent = target.full_name || 'Member profile';
-    document.getElementById('page-subtitle').textContent =
-      'Update contact details, membership status, and (Super Admin only) role for this member.';
-    document.getElementById('edit-heading').textContent = 'Edit member details';
-    document.getElementById('admin-fields').hidden = false;
-    // Password change only works for the signed-in user
-    document.getElementById('password-card').hidden = true;
-  } else {
-    profile = await requireApprovedMember();
-    if (!profile) throw new Error('redirecting');
-    targetId = profile.id;
+    try { enhancePhoneFields(document); } catch (_) {}
+    try { enhanceAllSelects(document); } catch (_) {}
+    try { refreshSelects(document); } catch (_) {}
   }
 
-  fillForm(profile);
+  async function init() {
+    if (adminViewId) {
+      const session = await requireLoggedIn();
+      isAdminMode = true;
+      targetId = adminViewId;
 
-  document.getElementById('avatar_file').addEventListener('change', async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+      const { data: viewer, error: viewerErr } = await supabase
+        .from('profiles')
+        .select('id, role, full_name')
+        .eq('id', session.user.id)
+        .maybeSingle();
+      if (viewerErr || !viewer || (viewer.role !== 'admin' && viewer.role !== 'super_admin')) {
+        window.location.replace('dashboard.html');
+        return;
+      }
+      viewerIsSuperAdmin = viewer.role === 'super_admin';
+
+      const { data: target, error: targetErr } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', adminViewId)
+        .maybeSingle();
+      if (targetErr || !target) {
+        window.location.replace('admin/index.html');
+        return;
+      }
+      profile = target;
+      document.title = `${target.full_name || 'Member'}: Admin Profile`;
+      const banner = document.getElementById('admin-banner');
+      if (banner) banner.hidden = false;
+      const sub = document.getElementById('page-subtitle');
+      if (sub) sub.textContent = `Editing ${target.full_name || target.email || 'member'}`;
+      const title = document.getElementById('page-title');
+      if (title) title.textContent = target.full_name || 'Member profile';
+      const editH = document.getElementById('edit-heading');
+      if (editH) editH.textContent = 'Edit member details';
+      document.getElementById('password-card')?.setAttribute('hidden', '');
+    } else {
+      profile = await requireApprovedMember();
+      targetId = profile.id;
+    }
+
+    await fillForm(profile);
+  }
+
+  init().catch((e) => {
+    console.error(e);
+    document.getElementById('alert-box').innerHTML =
+      `<div class="alert alert-error">Could not load profile. Please refresh.</div>`;
+  });
+
+  document.getElementById('avatar_file')?.addEventListener('change', async (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !targetId) return;
     const alertBox = document.getElementById('alert-box');
-
     if (file.size > 10 * 1024 * 1024) {
       alertBox.innerHTML = `<div class="alert alert-error">That image is larger than 10MB: please choose a smaller file.</div>`;
-      e.target.value = '';
       return;
     }
-
-    alertBox.innerHTML = `<div class="alert alert-success">Uploading photo...</div>`;
-    const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
-    const path = `${targetId}/avatar.${ext}`;
-
+    const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+    const path = `${targetId}/avatar.${ext === 'jpeg' ? 'jpg' : ext}`;
     const { error: uploadErr } = await supabase.storage.from('avatars').upload(path, file, {
       upsert: true,
-      cacheControl: '3600',
-      contentType: file.type,
+      contentType: file.type || 'image/jpeg',
     });
     if (uploadErr) {
       alertBox.innerHTML = `<div class="alert alert-error">Upload failed: ${escapeHtml(uploadErr.message)}</div>`;
       return;
     }
-
     const { data: pub } = supabase.storage.from('avatars').getPublicUrl(path);
     const freshUrl = `${pub.publicUrl}?t=${Date.now()}`;
-
     const { error: dbErr } = await supabase
       .from('profiles')
       .update({ avatar_url: freshUrl })
@@ -352,18 +358,17 @@
       alertBox.innerHTML = `<div class="alert alert-error">${escapeHtml(dbErr.message)}</div>`;
       return;
     }
-
     profile.avatar_url = freshUrl;
     renderAvatar(freshUrl, profile.full_name);
-    alertBox.innerHTML = `<div class="alert alert-success">Profile photo updated.</div>`;
+    alertBox.innerHTML = `<div class="alert alert-success">Photo updated.</div>`;
   });
 
-  document.getElementById('profile-form').addEventListener('submit', async (e) => {
+  document.getElementById('profile-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = document.getElementById('save-btn');
+    const alertBox = document.getElementById('alert-box');
     btn.disabled = true;
     btn.textContent = 'Saving...';
-    const alertBox = document.getElementById('alert-box');
 
     const academic = readAcademicFields(document);
     const payload = {
@@ -378,36 +383,35 @@
       bio: document.getElementById('bio').value.trim() || null,
     };
 
-    // Security question handling: if user provided a question, require an answer
-    const secQ = document.getElementById('security_question').value.trim();
-    const secA = document.getElementById('security_answer').value;
+    const secQ = document.getElementById('security_question')?.value?.trim() || '';
+    const secA = document.getElementById('security_answer')?.value || '';
     if (secQ) {
-      if (!secA) {
+      if (secA.trim()) {
+        const enc = new TextEncoder();
+        const buf = await crypto.subtle.digest('SHA-256', enc.encode(secA.trim().toLowerCase()));
+        const hashHex = [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+        payload.security_question = secQ;
+        payload.security_answer_hash = hashHex;
+      } else if (!profile.security_answer_hash) {
         alertBox.innerHTML = `<div class="alert alert-error">Please provide an answer for your security question.</div>`;
         btn.disabled = false;
         btn.textContent = 'Save Changes';
         return;
+      } else {
+        payload.security_question = secQ;
       }
-      // Normalize answer and compute SHA-256 hex on the client before saving
-      const normalized = secA.trim().toLowerCase();
-      const enc = new TextEncoder();
-      const digest = await crypto.subtle.digest('SHA-256', enc.encode(normalized));
-      const hashHex = Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, '0')).join('');
-      payload.security_question = secQ || null;
-      payload.security_answer_hash = hashHex || null;
     }
 
     if (isAdminMode) {
-      const newStatus = document.getElementById('membership_status').value;
-      payload.membership_status = newStatus;
-      if (newStatus === 'active' && profile.membership_status !== 'active') {
-        const { data: { session } } = await supabase.auth.getSession();
-        payload.approved_at = new Date().toISOString();
-        payload.approved_by = session?.user?.id || null;
+      const newStatus = document.getElementById('membership_status')?.value;
+      if (newStatus) {
+        payload.membership_status = newStatus;
+        if (newStatus === 'active' && profile.membership_status !== 'active') {
+          const { data: { session } } = await supabase.auth.getSession();
+          payload.approved_at = new Date().toISOString();
+          payload.approved_by = session?.user?.id || null;
+        }
       }
-      // Role changes only take effect server-side if the viewer is the
-      // super admin: the protect_sensitive_profile_fields trigger blocks
-      // this update from anyone else, regardless of what the form sends.
       if (viewerIsSuperAdmin) {
         const roleEl = document.getElementById('role');
         if (roleEl) {
@@ -422,13 +426,12 @@
     }
 
     const { error } = await supabase.from('profiles').update(payload).eq('id', targetId);
-
     if (error) {
       alertBox.innerHTML = `<div class="alert alert-error">${escapeHtml(error.message)}</div>`;
     } else {
       alertBox.innerHTML = `<div class="alert alert-success">Profile updated.</div>`;
       Object.assign(profile, payload);
-      fillForm(profile);
+      await fillForm(profile);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
     btn.disabled = false;
@@ -442,7 +445,6 @@
     const alertBox = document.getElementById('pw-alert-box');
     const pw = document.getElementById('new_password').value;
     const confirm = document.getElementById('confirm_password').value;
-
     if (pw !== confirm) {
       alertBox.innerHTML = `<div class="alert alert-error">Passwords do not match.</div>`;
       return;
