@@ -305,15 +305,35 @@
 
   const grid = document.getElementById('leaders-grid');
   try {
-    const { data: leaders } = await supabase
+    const today = new Date(); today.setHours(0,0,0,0);
+    let { data: leaders } = await supabase
       .from('leaders')
-      .select('position, bio, is_current')
+      .select('full_name, position, bio, photo_url, is_current, term_end, term_label, display_order')
       .eq('is_current', true)
       .order('display_order');
-    if (leaders && leaders.length) {
-      grid.innerHTML = leaders.map(l => `
-        <div class="card"><h3>${escapeHtml(l.position)}</h3><p>${escapeHtml(l.bio || '')}</p></div>
-      `).join('');
+    // Drop expired current rows client-side
+    leaders = (leaders || []).filter(l => {
+      if (!l.term_end) return true;
+      return new Date(l.term_end + 'T23:59:59') >= today;
+    });
+    if (leaders.length) {
+      grid.innerHTML = leaders.map(l => {
+        const name = l.full_name || 'Leader';
+        const photo = l.photo_url
+          ? `<img src="${escapeHtml(l.photo_url)}" alt="" style="width:56px;height:56px;border-radius:50%;object-fit:cover;margin-bottom:0.75rem;" />`
+          : '';
+        return `<div class="card" style="text-align:center;">
+          ${photo}
+          <h3 style="margin:0 0 0.25rem;">${escapeHtml(name)}</h3>
+          <p style="margin:0;color:var(--forest);font-weight:600;font-size:0.9rem;">${escapeHtml(l.position || '')}</p>
+          ${l.bio ? `<p style="margin:0.5rem 0 0;font-size:0.85rem;color:var(--text-muted);">${escapeHtml(l.bio)}</p>` : ''}
+        </div>`;
+      }).join('');
+    } else {
+      grid.innerHTML = `<div class="card" style="grid-column:1/-1;text-align:center;">
+        <p style="margin:0;color:#92400e;font-weight:600;">No current leadership updated yet.</p>
+        <p style="margin:0.4rem 0 0;color:var(--text-muted);font-size:0.9rem;">Waiting for elections. See the full leadership page for previous terms.</p>
+      </div>`;
     }
   } catch (err) {
     console.warn('Leaders load failed', err);

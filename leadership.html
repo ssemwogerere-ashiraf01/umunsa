@@ -153,22 +153,77 @@
   const currentGrid = document.getElementById('current-leaders-grid');
   const pastContainer = document.getElementById('past-leaders-container');
 
-  const { data: currentLeaders, error: currentErr } = await supabase
+  const TERM_START_MD = { month: 7, day: 24 }; // 24 Aug (0-based month)
+  const TERM_END_MD = { month: 7, day: 23 };   // 23 Aug next year
+
+  function leadershipTermLabel(refDate = new Date()) {
+    const y = refDate.getFullYear();
+    const m = refDate.getMonth();
+    const d = refDate.getDate();
+    // Before 24 Aug → term that started previous Aug (e.g. in Jan 2026 → 2025/26)
+    const startYear = (m > 7 || (m === 7 && d >= 24)) ? y : y - 1;
+    return `${startYear}/${String(startYear + 1).slice(-2)}`;
+  }
+
+  function termWindowForLabel(label) {
+    // label "2025/26" → start 2025-08-24, end 2026-08-23
+    const startY = parseInt(String(label).split('/')[0], 10);
+    if (!startY) return null;
+    const start = `${startY}-08-24`;
+    const end = `${startY + 1}-08-23`;
+    return { start, end };
+  }
+
+  // Soft rollover: if marked current but past term_end, treat as past
+  async function applyTermRollover(rows) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const toArchive = (rows || []).filter(l => {
+      if (!l.is_current || !l.term_end) return false;
+      const end = new Date(l.term_end + 'T23:59:59');
+      return end < today;
+    });
+    if (!toArchive.length) return rows || [];
+    const ids = toArchive.map(l => l.id);
+    try {
+      await supabase.from('leaders').update({ is_current: false }).in('id', ids);
+    } catch (_) {}
+    return (rows || []).map(l => ids.includes(l.id) ? { ...l, is_current: false } : l);
+  }
+
+  const expectedTerm = leadershipTermLabel();
+  const win = termWindowForLabel(expectedTerm);
+
+  // Update header label
+  const termHdr = document.querySelector('#current-leaders-section .term-header h3');
+  if (termHdr) termHdr.textContent = `Current Term · ${expectedTerm}`;
+
+  let { data: allLeaders, error: currentErr } = await supabase
     .from('leaders')
-    .is('group_id', null)
-    .select('id, user_id, position, bio, term_start, term_end, display_order, full_name, term_label, photo_url')
-    .eq('is_current', true)
+    .select('id, user_id, position, bio, term_start, term_end, display_order, full_name, term_label, photo_url, is_current')
     .order('display_order');
 
-  if (!currentErr && currentLeaders) {
-    const enrichedLeaders = await Promise.all(currentLeaders.map(attachPublicProfile));
-    currentLeaders.splice(0, currentLeaders.length, ...enrichedLeaders);
+  if (!currentErr && allLeaders) {
+    allLeaders = await applyTermRollover(allLeaders);
+  }
+
+  let currentLeaders = (allLeaders || []).filter(l => l.is_current);
+  // Prefer leaders whose term_label matches expected academic year
+  const matched = currentLeaders.filter(l => (l.term_label || '').startsWith(expectedTerm.split('/')[0]) || l.term_label === expectedTerm);
+  if (matched.length) currentLeaders = matched;
+
+  if (!currentErr && currentLeaders.length) {
+    const enriched = await Promise.all(currentLeaders.map(attachPublicProfile));
+    currentLeaders = enriched;
   }
 
   if (currentErr) {
     currentGrid.innerHTML = `<div class="empty-state"><p>Could not load current leaders. ${escapeHtml(currentErr.message)}</p></div>`;
   } else if (!currentLeaders || currentLeaders.length === 0) {
-    currentGrid.innerHTML = `<div class="empty-state"><p>No current-term leaders have been published yet. Once elections conclude and an admin closes them, the winning committee will appear here.</p></div>`;
+    currentGrid.innerHTML = `<div class="empty-state" style="border-color:#f59e0b;background:#fffbeb;">
+      <p style="color:#92400e;font-weight:600;">No current leadership published for ${escapeHtml(expectedTerm)}.</p>
+      <p style="color:var(--text-muted);margin-top:0.5rem;">Waiting for elections (or an admin to add the new executive committee). Previous terms are listed below when available.</p>
+    </div>`;
   } else {
     currentGrid.innerHTML = currentLeaders.map(l => leaderCardHtml(l, true)).join('');
   }
@@ -178,7 +233,6 @@
   // -----------------------------------------------------------------------
   const { data: pastLeaders, error: pastErr } = await supabase
     .from('leaders')
-    .is('group_id', null)
     .select('id, user_id, position, bio, term_start, term_end, display_order, full_name, term_label, photo_url')
     .eq('is_current', false)
     .order('term_start', { ascending: false })
