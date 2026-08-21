@@ -1,17 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="robots" content="noindex, nofollow" />
-  <title>Admin Dashboard: Nkobazambogo Students' Association</title>
-<meta name="description" content="The official home of the Nkobazambogo Students' Association at Uganda Martyrs University, Nkozi: news, activities, projects, and membership." />
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Uganda Martyrs University Nkobazambogo Students' Association</title>
 <!-- Social / Open Graph (link previews) -->
 <meta property="og:site_name" content="Nkobazambogo Students' Association" />
 <meta property="og:type" content="website" />
-<meta property="og:title" content="Admin Dashboard: Nkobazambogo Students' Association" />
-<meta property="og:description" content="The official home of the Nkobazambogo Students' Association at Uganda Martyrs University, Nkozi: news, activities, projects, and membership." />
-<meta property="og:url" content="https://umunsa.vercel.app/admin/index.html" />
+<meta property="og:title" content="Uganda Martyrs University Nkobazambogo Students' Association" />
+<meta property="og:description" content="The official home of the Nkobazambogo Students" />
+<meta property="og:url" content="https://umunsa.vercel.app/index.html" />
 <meta property="og:image" content="https://umunsa.vercel.app/assets/img/og-default.jpg" />
 <meta property="og:image:secure_url" content="https://umunsa.vercel.app/assets/img/og-default.jpg" />
 <meta property="og:image:type" content="image/jpeg" />
@@ -19,1344 +17,337 @@
 <meta property="og:image:height" content="630" />
 <meta property="og:image:alt" content="Nkobazambogo Students' Association" />
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="Admin Dashboard: Nkobazambogo Students' Association" />
-<meta name="twitter:description" content="The official home of the Nkobazambogo Students' Association at Uganda Martyrs University, Nkozi: news, activities, projects, and membership." />
+<meta name="twitter:title" content="Uganda Martyrs University Nkobazambogo Students' Association" />
+<meta name="twitter:description" content="The official home of the Nkobazambogo Students" />
 <meta name="twitter:image" content="https://umunsa.vercel.app/assets/img/og-default.jpg" />
 
-  <link rel="stylesheet" href="../assets/css/style.css" />
-  <style>
-    :root { --forest: #1b4332; --gold: #d4af37; --border: #e2e8f0; --radius: 8px; --text-muted: #64748b; }
-    .admin-container { padding: 2rem; max-width: 1200px; margin: 0 auto; }
-    .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
-    .stat-box { background: #f8fafc; border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; text-align: center; }
-    .stat-box strong { display: block; font-size: 1.8rem; color: var(--forest); }
-    .stat-box span { font-size: 0.85rem; color: var(--text-muted); }
-    .tab-nav { display: flex; gap: 0.5rem; border-bottom: 2px solid var(--border); margin-bottom: 1.5rem; flex-wrap: wrap; }
-    .tab-btn { padding: 0.6rem 1.2rem; border: none; background: none; font-weight: 600; cursor: pointer; color: var(--text-muted); border-bottom: 3px solid transparent; }
-    .tab-btn.active { color: var(--forest); border-bottom-color: var(--gold); }
-    .tab-panel { display: none; }
-    .tab-panel.active { display: block; }
-    .card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-    .admin-table { width: 100%; border-collapse: collapse; margin-top: 1rem; font-size: 0.9rem; min-width: 720px; }
-    .table-scroll, .data-table-wrap {
-      display: block; width: 100%; max-width: 100%;
-      overflow-x: auto !important; -webkit-overflow-scrolling: touch;
-      border: 1px solid var(--border); border-radius: var(--radius); background: var(--paper);
-      touch-action: pan-x pan-y;
-    }
-    .table-scroll table, .data-table-wrap table { width: max-content; min-width: 100%; }
-    .admin-table th, .admin-table td { padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
-    .admin-table th { background: var(--paper); color: var(--text); font-weight: 600; white-space: nowrap; }
-    .admin-table td { color: var(--text); }
-    .table-scroll, .data-table-wrap {
-      width: 100%;
-      max-width: 100%;
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      background: var(--paper);
-    }
-    .table-scroll .admin-table, .data-table-wrap .admin-table {
-      margin-top: 0;
-      border: none;
-    }
-    .table-scroll .admin-table th, .data-table-wrap .admin-table th {
-      position: sticky;
-      top: 0;
-      z-index: 1;
-      background: var(--paper);
-    }
-    [data-theme="dark"] .admin-table th { background: #121a26; color: var(--text); }
-    [data-theme="dark"] .table-scroll, [data-theme="dark"] .data-table-wrap {
-      background: var(--paper);
-      border-color: var(--border);
-    }
-    .admin-container { overflow-x: visible; max-width: 100%; }
-    .tab-nav { flex-wrap: wrap; gap: 0.35rem; }
-    .card { overflow: visible; }
-    .pill { padding: 0.2rem 0.6rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600; text-transform: capitalize; }
-    .pill-active, .pill-approved { background: #dcfce7; color: #15803d; }
-    .pill-pending { background: #fef9c3; color: #a16207; }
-    .pill-rejected, .pill-suspended { background: #fee2e2; color: #b91c1c; }
-    .form-group { margin-bottom: 1rem; }
-    .form-group label { display: block; font-weight: 600; margin-bottom: 0.35rem; font-size: 0.88rem; }
-    .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 0.55rem 0.75rem; border: 1px solid var(--border); border-radius: 4px; font-family: inherit; }
-    .mini-btn { padding: 0.35rem 0.7rem; font-size: 0.8rem; border-radius: 4px; border: none; cursor: pointer; font-weight: 600; }
-    .mini-btn.good { background: var(--forest); color: #fff; }
-    .mini-btn.bad { background: #b91c1c; color: #fff; }
-    .action-select { padding: 0.35rem; border-radius: 4px; border: 1px solid var(--border); font-size: 0.85rem; }
-    .member-avatar-img { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; display: block; }
-    .member-avatar-fallback { width: 36px; height: 36px; border-radius: 50%; background: var(--forest); color: #fff; font-weight: 700; font-size: 0.8rem; display: flex; align-items: center; justify-content: center; }
-    .contact-msg { border: 1px solid var(--border); border-radius: 8px; padding: 1rem; margin-bottom: 0.75rem; background: #fff; }
-    .contact-msg.new { border-left: 4px solid #d4af37; }
-    .contact-msg.read { border-left: 4px solid #94a3b8; }
-    .contact-msg.replied { border-left: 4px solid #16a34a; }
-    .contact-msg.archived { opacity: 0.7; }
-    .contact-msg-head { display: flex; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap; align-items: baseline; }
-    .contact-msg-meta { font-size: 0.8rem; color: var(--text-muted); }
-    .contact-msg-body { margin: 0.65rem 0; white-space: pre-wrap; line-height: 1.45; }
-
-    .member-filters {
-      display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.5rem;
-    }
-    .member-filter-input, .member-filter-select {
-      padding: 0.45rem 0.65rem; border: 1px solid var(--border); border-radius: 6px;
-      background: var(--paper); color: var(--text); font-family: inherit; font-size: 0.88rem;
-      min-width: 0; flex: 1 1 140px;
-    }
-    .members-list { display: none; }
-    .member-card {
-      border: 1px solid var(--border); border-radius: 10px; padding: 0.9rem 1rem;
-      margin-bottom: 0.65rem; background: var(--paper);
-    }
-    .member-card-top { display: flex; gap: 0.75rem; align-items: center; margin-bottom: 0.55rem; }
-    .member-card-top strong { display: block; color: var(--text); }
-    .member-card-top span.email { font-size: 0.82rem; color: var(--text-muted); word-break: break-all; }
-    .member-card-meta {
-      display: grid; grid-template-columns: 1fr 1fr; gap: 0.35rem 0.75rem;
-      font-size: 0.82rem; margin-bottom: 0.65rem;
-    }
-    .member-card-meta dt { color: var(--text-muted); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; }
-    .member-card-meta dd { margin: 0; color: var(--text); font-weight: 600; word-break: break-word; }
-    .member-card-actions { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; }
-    @media (max-width: 720px) {
-      .members-table-desktop { display: none !important; }
-      .members-list { display: block; }
-    }
-    @media (min-width: 721px) {
-      .members-list { display: none !important; }
-      .members-table-desktop { display: block; }
-    }
-  
-    .member-card-actions .ns-select { flex: 1 1 140px; min-width: 140px; }
-    .member-card-actions .ns-select-btn { width: 100%; }
-    td .ns-select { min-width: 140px; }
-  </style>
+<link rel="icon" href="favicon.ico" sizes="any" />
+<link rel="icon" type="image/png" href="assets/img/favicon-32.png" sizes="32x32" />
+<link rel="apple-touch-icon" href="assets/img/nsa-seal.png" />
+<meta name="description" content="The official home of the Nkobazambogo Students' Association at Uganda Martyrs University, Nkozi: news, activities, projects, elections, and discussions for our members." />
+<link rel="stylesheet" href="assets/css/style.css" />
+<style>
+  a.card-link {
+    display: block; text-decoration: none; color: inherit;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  a.card-link:hover {
+    transform: translateY(-3px); box-shadow: 0 8px 24px rgba(22,35,58,0.12);
+    text-decoration: none;
+  }
+  a.card-link .card-cta {
+    display: inline-block; margin-top: 0.85rem; font-size: 0.85rem;
+    font-weight: 600; color: var(--forest);
+  }
+  a.card-link:hover .card-cta { text-decoration: underline; }
+  .hero {
+    position: relative;
+    min-height: 72vh;
+    overflow: hidden;
+  }
+  .hero-carousel {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+  }
+  .hero-carousel::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(11,20,33,0.82), rgba(27,67,50,0.74));
+  }
+  .hero-slide {
+    position: absolute;
+    inset: 0;
+    background-position: center;
+    background-size: cover;
+    opacity: 0;
+    transform: scale(1.04);
+    transition: opacity 900ms ease, transform 4000ms ease;
+  }
+  .hero-slide.is-active {
+    opacity: 1;
+    transform: scale(1);
+  }
+  .hero-carousel-ui {
+    position: absolute;
+    left: 50%;
+    bottom: 1.25rem;
+    transform: translateX(-50%);
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.55rem;
+    width: calc(100% - 2rem);
+    max-width: 560px;
+  }
+  .hero-carousel-label {
+    font-size: 0.75rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #f3e6b3;
+    background: rgba(8, 18, 26, 0.44);
+    border: 1px solid rgba(255,255,255,0.12);
+    padding: 0.4rem 0.75rem;
+    border-radius: 999px;
+    backdrop-filter: blur(6px);
+  }
+  .hero-carousel-dots {
+    display: flex;
+    gap: 0.45rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .hero-carousel-dots button {
+    width: 12px;
+    height: 12px;
+    border-radius: 999px;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+    background: rgba(255,255,255,0.45);
+    box-shadow: 0 0 0 2px rgba(0,0,0,0.08);
+  }
+  .hero-carousel-dots button.is-active {
+    background: var(--gold);
+    width: 30px;
+  }
+  .hero .hero-inner {
+    position: relative;
+    z-index: 1;
+    color: #fff;
+  }
+  .hero .eyebrow { color: var(--gold); }
+  .culture-strip {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.25rem;
+    max-width: 1000px; margin: 2rem auto 0; padding: 0 1rem;
+  }
+  .culture-strip figure { margin: 0; border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+  .culture-strip img { width: 100%; height: 180px; object-fit: cover; display: block; }
+  .culture-strip figcaption { font-size: 0.78rem; color: var(--text-muted); padding: 0.5rem 0.75rem; background: var(--paper); }
+</style>
 </head>
 <body>
-  <div id="boot-error-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:99999;background:#b91c1c;color:#fff;padding:0.85rem 1rem;font:600 13px/1.4 monospace;white-space:pre-wrap;"></div>
-  <script>
-    (function () {
-      var banner = document.getElementById('boot-error-banner');
-      function show(msg) {
-        banner.style.display = 'block';
-        banner.textContent += (banner.textContent ? '\n\n' : '') + msg;
-      }
-      window.addEventListener('error', function (e) {
-        show('Page error: ' + (e.message || e.error) + (e.filename ? ' (' + e.filename + ':' + e.lineno + ')' : ''));
-      });
-      window.addEventListener('unhandledrejection', function (e) {
-        show('Unhandled promise rejection: ' + (e.reason && e.reason.message ? e.reason.message : e.reason));
-      });
-      setTimeout(function () {
-        var navEl = document.getElementById('app-nav');
-        if (navEl && !navEl.innerHTML.trim()) {
-          show('Header never rendered after 8s (likely a hang in mountNav/auth check, not a thrown error).');
-        }
-      }, 8000);
-    })();
-  </script>
-  <div id="app-nav"></div>
 
-  <main class="admin-container">
-    <h2>Admin Dashboard</h2>
-    <p style="color:var(--text-muted);margin-top:-0.5rem;margin-bottom:1.25rem;font-size:0.92rem;">Manage members, content, activities, projects, elections, and feedback. Role changes, club settings, and closing elections require the Super Admin.</p>
+<div id="app-nav"></div>
 
-    <div class="stat-grid" id="stat-grid">
-      <div class="stat-box"><strong>…</strong><span>Loading stats…</span></div>
+<header class="hero hero-with-photo">
+  <div class="hero-carousel" id="hero-carousel" aria-hidden="true"></div>
+  <div class="hero-inner">
+    <span class="eyebrow">Uganda Martyrs University, Nkozi</span>
+    <h1>Obumu Geemaanyi - Togetherness is Power.</h1>
+    <p>The Nkobazambogo Students' Association brings together UMU students around shared activities, projects, discussions, and fair leadership elections: built for our members.</p>
+    <div class="hero-actions">
+      <a href="register.html" class="btn btn-gold">Become a Member</a>
+      <a href="login.html" class="btn btn-outline-light">Member Sign In</a>
     </div>
+  </div>
+  <div class="hero-carousel-ui" aria-hidden="true">
+    <div class="hero-carousel-label" id="hero-carousel-label">Loading campus stories</div>
+    <div class="hero-carousel-dots" id="hero-carousel-dots"></div>
+  </div>
+</header>
 
-    <div class="tab-nav">
-      <button class="tab-btn active" data-tab="members">Members</button>
-      <button class="tab-btn" data-tab="content">Content</button>
-      <button class="tab-btn" data-tab="activities">Activities</button>
-      <button class="tab-btn" data-tab="projects">Projects</button>
-      <button class="tab-btn" data-tab="forum">Discussions</button>
-      <button class="tab-btn" data-tab="elections">Elections</button>
-      <button class="tab-btn" data-tab="feedback">Feedback</button>
-      <button class="tab-btn" data-tab="contact">Contact Messages</button>
-      <button class="tab-btn" data-tab="leadership">Leadership</button>
-      <button class="tab-btn" data-tab="settings">Settings</button>
-      <a href="./membership-id.html" class="tab-btn" style="text-decoration:none; display:inline-flex; align-items:center;" title="Generate a downloadable ID card for any active member">Membership Cards ↗</a>
-      <a href="./super-admin.html" class="tab-btn" style="text-decoration:none; display:inline-flex; align-items:center;" id="super-admin-link" title="Assigning admins, club settings, and adding members outside umu.ac.ug are Super Admin tasks">Super Admin ↗</a>
+<div class="roll-call">
+  <div class="stat"><strong>@umu.ac.ug</strong><span>Membership by university email</span></div>
+  <div class="stat"><strong>29</strong><span>Executive &amp; representative positions</span></div>
+  <div class="stat"><strong>Every Term</strong><span>Leadership elections</span></div>
+</div>
+
+<section class="section" id="about">
+  <div class="section-head">
+    <span class="eyebrow">Who we are</span>
+    <h2>A home away from home at UMU Nkozi</h2>
+  </div>
+  <p style="max-width:680px;margin:0 auto;color:var(--text-muted);text-align:center;">
+    The Nkobazambogo Students' Association exists to keep UMU students connected:
+    through club activities, shared projects, mentorship, and a say
+    in who leads the association each term. Membership is by approval: every application
+    from a <strong>umu.ac.ug</strong> email is reviewed by an admin before an account becomes active.
+  </p>
+  <div class="culture-strip">
+    <figure>
+      <img src="assets/img/kasubi.jpg" alt="Kasubi Tombs, seat of the Buganda Kingdom" loading="lazy" />
+      <figcaption>Kasubi Tombs - Buganda Kingdom heritage site, Kampala</figcaption>
+    </figure>
+    <figure>
+      <img src="assets/img/dancers.jpg" alt="Traditional Buganda cultural dancers" loading="lazy" />
+      <figcaption>Traditional Buganda cultural dance</figcaption>
+    </figure>
+  </div>
+  <div style="max-width:900px;margin:2rem auto 0;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1rem;">
+    <div class="card" style="margin:0;">
+      <h3 style="margin-top:0;font-size:1.05rem;">Vision</h3>
+      <p style="margin:0;">A lasting community of UMU students who show up for one another, on and off campus.</p>
     </div>
-
-    <!-- MEMBERS -->
-    <div class="tab-panel active" id="tab-members">
-      <div class="card">
-        <h3 style="margin-top:0;">Members</h3>
-        <div class="member-filters" id="member-filters">
-          <input type="search" id="member-search" placeholder="Search name or email…" class="member-filter-input" />
-          <select id="filter-hostel" class="member-filter-select"><option value="">All hostels</option></select>
-          <select id="filter-faculty" class="member-filter-select"><option value="">All faculties</option></select>
-          <select id="filter-status" class="member-filter-select">
-            <option value="">All statuses</option>
-            <option value="active">Active</option>
-            <option value="pending">Pending</option>
-            <option value="suspended">Suspended</option>
-            <option value="rejected">Rejected</option>
-          </select>
-        </div>
-        <p id="members-count" style="font-size:0.85rem;color:var(--text-muted);margin:0.5rem 0 0.75rem;"></p>
-        <div id="members-list" class="members-list"><p style="color:var(--text-muted);font-size:0.9rem;">Loading members…</p></div>
-        <div class="data-table-wrap table-scroll members-table-desktop">
-          <table class="admin-table">
-            <thead><tr><th></th><th>Name</th><th>Email</th><th>Hostel</th><th>Faculty</th><th>Programme</th><th>Status</th><th>Role</th><th>Actions</th></tr></thead>
-            <tbody id="members-tbody"><tr><td colspan="9" style="color:var(--text-muted);">Loading members…</td></tr></tbody>
-          </table>
-        </div>
-      </div>
+    <div class="card" style="margin:0;">
+      <h3 style="margin-top:0;font-size:1.05rem;">Mission</h3>
+      <p style="margin:0;">Connect and empower members through club activities, projects, mentorship, and fair elections.</p>
     </div>
-
-    <!-- CONTENT: News -->
-    <div class="tab-panel" id="tab-content">
-      <div class="card">
-        <h3 style="margin-top:0;">Post News</h3>
-        <form id="news-form">
-          <div class="form-group"><label>Title</label><input type="text" id="news-title" required /></div>
-          <div class="form-group"><label>Content</label><textarea id="news-content" rows="4" required></textarea></div>
-          <div class="form-group"><label>Image URL (optional)</label><input type="text" id="news-image" placeholder="https://..." /></div>
-          <div class="form-group"><label>Or upload image / media (optional)</label><input type="file" id="news-image-file" accept="image/*,video/*" /></div>
-          <div class="form-group"><label>Document URL (optional)</label><input type="text" id="news-document" placeholder="https://... PDF or file link" /></div>
-          <div class="form-group"><label>Or upload document (optional)</label><input type="file" id="news-document-file" accept=".pdf,.doc,.docx,image/*" /></div>
-          <div class="form-group"><label>External link (optional)</label><input type="text" id="news-external" placeholder="https://..." /></div>
-          <div class="form-group"><label><input type="checkbox" id="news-featured" style="width:auto;display:inline;" /> Featured</label></div>
-          <button type="submit" class="mini-btn good">Publish News</button>
-        </form>
-      </div>
-      <div class="card">
-        <h3 style="margin-top:0;">Recent News</h3>
-        <div id="news-list"></div>
-      </div>
+    <div class="card" style="margin:0;">
+      <h3 style="margin-top:0;font-size:1.05rem;">Principles</h3>
+      <p style="margin:0;">Integrity, solidarity, and respect - set out in our Members' Code for everyone to read.</p>
     </div>
+  </div>
+  <p style="text-align:center;margin-top:1.75rem;">
+    <a href="about.html" class="btn btn-gold">Read the full About Us</a>
+    <a href="rules.html" style="margin-left:0.75rem;font-weight:600;">Members' Code →</a>
+  </p>
+</section>
 
-    <!-- ACTIVITIES -->
-    <div class="tab-panel" id="tab-activities">
-      <div class="card">
-        <h3 style="margin-top:0;">Create Activity</h3>
-        <form id="activity-form">
-          <div class="form-group"><label>Title</label><input type="text" id="activity-title" required /></div>
-          <div class="form-group"><label>Description</label><textarea id="activity-description" rows="3"></textarea></div>
-          <div class="form-group"><label>Date &amp; time</label><input type="datetime-local" id="activity-date" required /></div>
-          <div class="form-group"><label>Location</label><input type="text" id="activity-location" /></div>
-          <div class="form-group"><label>Max participants (optional)</label><input type="number" id="activity-max" /></div>
-          <div class="form-group"><label>Image URL (optional)</label><input type="text" id="activity-image" placeholder="https://..." /></div>
-          <div class="form-group"><label>Or upload image / media (optional)</label><input type="file" id="activity-image-file" accept="image/*,video/*" /></div>
-          <div class="form-group"><label>Document URL (optional)</label><input type="text" id="activity-document" placeholder="https://..." /></div>
-          <div class="form-group"><label>Or upload document (optional)</label><input type="file" id="activity-document-file" accept=".pdf,.doc,.docx,image/*" /></div>
-          <div class="form-group"><label>External link (optional)</label><input type="text" id="activity-external" placeholder="https://..." /></div>
-          <button type="submit" class="mini-btn good">Create Activity</button>
-        </form>
-      </div>
-      <div class="card">
-        <h3 style="margin-top:0;">Activities &amp; RSVPs</h3>
-        <div id="activities-list"></div>
-      </div>
-    </div>
+<section class="section" id="activities" style="background:var(--paper);border-top:1px solid var(--border);border-bottom:1px solid var(--border);">
+  <div class="section-head">
+    <span class="eyebrow">What members get</span>
+    <h2>Activities &amp; member benefits</h2>
+  </div>
+  <div class="card-grid">
+    <a class="card card-link" href="activities.html">
+      <h3>Club Activities</h3>
+      <p>Browse and RSVP to activities run by the association: meetups, socials, and campus events.</p>
+      <span class="card-cta">See activities →</span>
+    </a>
+    <a class="card card-link" href="projects.html">
+      <h3>Projects</h3>
+      <p>See the club projects underway and the ones you've been assigned to.</p>
+      <span class="card-cta">View projects →</span>
+    </a>
+    <a class="card card-link" href="forum/index.html">
+      <h3>Discussions</h3>
+      <p>Start conversations, ask for advice, and stay in the loop between official announcements.</p>
+      <span class="card-cta">Join discussions →</span>
+    </a>
+    <a class="card card-link" href="elections/index.html">
+      <h3>Leadership Elections</h3>
+      <p>Apply for one of 29 executive and representative positions, or vote for your executive committee.</p>
+      <span class="card-cta">View elections →</span>
+    </a>
+    <a class="card card-link" href="news.html">
+      <h3>News &amp; Announcements</h3>
+      <p>Stay current with what's happening across the association.</p>
+      <span class="card-cta">Read news →</span>
+    </a>
+    <a class="card card-link" href="feedback.html">
+      <h3>Feedback</h3>
+      <p>Tell us what's working and what isn't through member surveys.</p>
+      <span class="card-cta">Give feedback →</span>
+    </a>
+  </div>
+</section>
 
-    <!-- PROJECTS -->
-    <div class="tab-panel" id="tab-projects">
-      <div class="card">
-        <h3 style="margin-top:0;">Create Project</h3>
-        <form id="project-form">
-          <div class="form-group"><label>Title</label><input type="text" id="project-title" required /></div>
-          <div class="form-group"><label>Description</label><textarea id="project-description" rows="3"></textarea></div>
-          <div class="form-group"><label>Status</label>
-            <select id="project-status"><option value="planned">Planned</option><option value="ongoing">Ongoing</option><option value="completed">Completed</option></select>
-          </div>
-          <div class="form-group"><label>Image URL (optional)</label><input type="text" id="project-image" placeholder="https://..." /></div>
-          <div class="form-group"><label>Or upload image / media (optional)</label><input type="file" id="project-image-file" accept="image/*,video/*" /></div>
-          <div class="form-group"><label>Document URL (optional)</label><input type="text" id="project-document" placeholder="https://..." /></div>
-          <div class="form-group"><label>Or upload document (optional)</label><input type="file" id="project-document-file" accept=".pdf,.doc,.docx,image/*" /></div>
-          <div class="form-group"><label>External link (optional)</label><input type="text" id="project-external" placeholder="https://..." /></div>
-          <button type="submit" class="mini-btn good">Create Project</button>
-        </form>
-      </div>
-      <div class="card">
-        <h3 style="margin-top:0;">Projects &amp; Assignments</h3>
-        <div id="projects-list"></div>
-      </div>
-    </div>
+<section class="section" id="leaders">
+  <div class="section-head">
+    <span class="eyebrow">Leadership</span>
+    <h2>Executive committee</h2>
+  </div>
+  <div class="card-grid" id="leaders-grid">
+    <p style="text-align:center;color:var(--text-muted);grid-column:1/-1;">Leadership profiles load here once published by an admin.</p>
+  </div>
+  <p style="text-align:center;margin-top:1.5rem;"><a href="leadership.html">View full leadership history &rarr;</a></p>
+</section>
 
-    <!-- FORUM MODERATION -->
-    <div class="tab-panel" id="tab-forum">
-      <div class="card">
-        <h3 style="margin-top:0;">Discussion Topics</h3>
-        <div id="forum-list"></div>
-      </div>
-    </div>
+<div id="app-footer"></div>
 
-    <!-- ELECTIONS -->
-    <div class="tab-panel" id="tab-elections">
-      <div class="card">
-        <h3 style="margin-top:0;">Create Election</h3>
-        <form id="election-form">
-          <div class="form-group"><label>Title</label><input type="text" id="election-title" required placeholder="e.g. BANKOSA Elections 2026" /></div>
-          <div class="form-group"><label>Description</label><textarea id="election-description" rows="2"></textarea></div>
-          <div class="form-group"><label>Voting opens</label><input type="datetime-local" id="election-start" required /></div>
-          <div class="form-group"><label>Voting closes</label><input type="datetime-local" id="election-end" required /></div>
-          <button type="submit" class="mini-btn good">Create Election (draft)</button>
-        </form>
-      </div>
-      <div class="card">
-        <h3 style="margin-top:0;">Elections &amp; Candidate Approval</h3>
-        <p style="font-size:0.85rem;color:var(--text-muted);">Approve applicants below. Use <strong>Terminate applications</strong> to stop new candidacies. Setting status to "active" opens voting. Closing an election and promoting winners is a Super Admin action.</p>
-        <div id="elections-list"></div>
-      </div>
-    </div>
+<script type="module">
+  import { supabase } from './assets/js/supabase-client.js';
+  import { mountNav, mountFooter } from './assets/js/nav.js';
+  mountNav();
+  mountFooter();
 
-    <!-- FEEDBACK -->
-    <div class="tab-panel" id="tab-feedback">
-      <div class="card">
-        <h3 style="margin-top:0;">Create Feedback Form</h3>
-        <form id="feedback-form-form">
-          <div class="form-group"><label>Title</label><input type="text" id="fb-title" required /></div>
-          <div class="form-group"><label>Description</label><textarea id="fb-description" rows="2"></textarea></div>
-          <div class="form-group"><label>Questions (one per line)</label><textarea id="fb-questions" rows="4" placeholder="How was the last activity?
-Rate our communication (rating)
-Preferred meeting day (multiple_choice: Monday, Wednesday, Friday)"></textarea>
-            <small style="color:var(--text-muted);">Add "(rating)" or "(multiple_choice: A, B, C)" after a question to change its type. Plain lines become free-text questions.</small>
-          </div>
-          <button type="submit" class="mini-btn good">Create Feedback Form</button>
-        </form>
-      </div>
-      <div class="card">
-        <h3 style="margin-top:0;">Feedback Forms</h3>
-        <p style="font-size:0.85rem;color:var(--text-muted);">Editing or deleting an existing form is a Super Admin action (it protects survey data already in use).</p>
-        <div id="feedback-list"></div>
-      </div>
-    </div>
+  const heroSlides = [
+    { src: 'assets/img/team.jpg', label: 'Association members at a cultural gathering' },
+    { src: 'assets/img/campus-bg.jpg', label: 'Uganda Martyrs University campus life' },
+    { src: 'assets/img/culture-bg.jpg', label: 'Campus culture and student events' },
+    { src: 'assets/img/kasubi.jpg', label: 'Buganda heritage and identity' },
+    { src: 'assets/img/dancers.jpg', label: 'Traditional cultural performance' },
+  ];
 
-    <!-- CONTACT MESSAGES -->
-    <div class="tab-panel" id="tab-contact">
-      <div class="card">
-        <h3 style="margin-top:0;">Contact Messages</h3>
-        <div id="contact-list"></div>
-      </div>
-    </div>
+  const carousel = document.getElementById('hero-carousel');
+  const dots = document.getElementById('hero-carousel-dots');
+  const label = document.getElementById('hero-carousel-label');
+  let activeSlide = 0;
+  let heroTimer = null;
 
-    <!-- LEADERSHIP -->
-    <div class="tab-panel" id="tab-leadership">
-      <div class="card">
-        <h3 style="margin-top:0;">Leadership · Current term 2025/26</h3>
-        <p style="font-size:0.85rem;color:var(--text-muted);">Add or edit current and previous executive members shown on the public Leadership page. Mark <strong>Current</strong> for the 2025/26 committee; uncheck it for past terms.</p>
-        <div id="leadership-alert"></div>
-        <form id="leader-form" class="form-row-2" style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:1rem;">
-          <input type="hidden" id="leader-id" value="" />
-          <div class="form-group" style="grid-column:1/-1;"><label>Full name</label><input type="text" id="leader-name" required placeholder="Leader's full name" /></div>
-          <div class="form-group"><label>Position</label>
-            <div id="leader-position-mount"></div>
-            <input type="hidden" id="leader-position" value="" required />
-            <p style="font-size:0.75rem;color:var(--text-muted);margin:0.25rem 0 0;">Display order follows rank (President first). Search or scroll the list.</p>
-          </div>
-          <div class="form-group"><label>Term label</label><input type="text" id="leader-term-label" placeholder="e.g. 2025/26" value="2025/26" /></div>
-          <div class="form-group"><label>Term start</label><input type="date" id="leader-term-start" /></div>
-          <div class="form-group"><label>Term end</label><input type="date" id="leader-term-end" /></div>
-          <div class="form-group" style="grid-column:1/-1;">
-            <label>Profile photo</label>
-            <input type="file" id="leader-photo-file" accept="image/*" />
-            <input type="hidden" id="leader-photo" value="" />
-            <div id="leader-photo-preview" style="margin-top:0.5rem;"></div>
-            <p style="font-size:0.75rem;color:var(--text-muted);margin:0.25rem 0 0;">Upload a photo (optional). Order is set by position rank.</p>
-          </div>
-          <input type="hidden" id="leader-order" value="1" />
-          <div class="form-group" style="grid-column:1/-1;"><label>Bio (optional)</label><textarea id="leader-bio" rows="2"></textarea></div>
-          <div class="form-group" style="grid-column:1/-1;">
-            <label><input type="checkbox" id="leader-is-current" checked /> Current term (2025/26)</label>
-          </div>
-          <div style="grid-column:1/-1;display:flex;gap:0.5rem;flex-wrap:wrap;">
-            <button type="submit" class="mini-btn good" id="leader-save-btn">Save leader</button>
-            <button type="button" class="mini-btn" id="leader-reset-btn" style="background:#eef1f5;">Clear form</button>
-          </div>
-        </form>
-        <h4>Current · 2025/26</h4>
-        <div style="display:flex;justify-content:flex-end;margin-bottom:0.5rem;">
-          <button type="button" class="mini-btn bad" id="purge-incomplete-leaders">Delete incomplete current leaders</button>
-        </div>
-        <div id="leaders-current-list"></div>
-        <h4 style="margin-top:1.25rem;">Previous terms</h4>
-        <div id="leaders-past-list"></div>
-      </div>
-    </div>
-
-    <!-- SETTINGS -->
-    <div class="tab-panel" id="tab-settings">
-      <div class="card">
-        <h3 style="margin-top:0;">Admin settings</h3>
-        <p style="font-size:0.85rem;color:var(--text-muted);">Control membership approval and related operational options. Changes apply to new registrations immediately.</p>
-        <div id="settings-alert"></div>
-        <div class="form-group" style="margin:1rem 0;">
-          <label style="display:flex;align-items:flex-start;gap:0.65rem;cursor:pointer;">
-            <input type="checkbox" id="setting-auto-approve" style="margin-top:0.2rem;" />
-            <span>
-              <strong>Allow registration without manual approval</strong><br />
-              <span style="font-size:0.85rem;color:var(--text-muted);font-weight:400;">When on, new members who register with a valid @umu.ac.ug email become <em>active</em> immediately. When off (default), they stay <em>pending</em> until an admin approves them.</span>
-            </span>
-          </label>
-        </div>
-        <div class="form-group">
-          <label for="setting-term-label">Current leadership term label</label>
-          <input type="text" id="setting-term-label" value="2025/26" placeholder="2025/26" />
-        </div>
-        <button type="button" class="mini-btn good" id="settings-save-btn">Save settings</button>
-      </div>
-    </div>
-
-  </main>
-
-  <div id="app-footer"></div>
-
-  <script type="module">
-    import { createNsSelect, refreshSelects } from '../assets/js/ns-select.js';
-    import { supabase } from '../assets/js/supabase-client.js';
-    import { requireAdmin } from '../assets/js/admin-guard.js';
-    import { mountNav, mountFooter } from '../assets/js/nav.js';
-
-    mountNav();
-    mountFooter();
-
-    const me = await requireAdmin();
-    if (!me) throw new Error('redirecting');
-
-    function escapeHtml(str) {
-      const div = document.createElement('div');
-      div.textContent = str ?? '';
-      return div.innerHTML;
-    }
-    function pill(status) {
-      return `<span class="pill pill-${status}">${escapeHtml(status)}</span>`;
-    }
-
-    // ---------- Tabs ----------
-    document.querySelectorAll('.tab-btn[data-tab]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('.tab-btn[data-tab]').forEach(b => b.classList.remove('active'));
-        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-        btn.classList.add('active');
-        const panel = document.getElementById(`tab-${btn.dataset.tab}`);
-        if (panel) panel.classList.add('active');
-        try { refreshSelects(panel || document); } catch (e) {}
+  function renderHeroCarousel() {
+    if (!carousel || !dots || !label) return;
+    carousel.innerHTML = heroSlides.map((slide, index) => `
+      <div class="hero-slide ${index === activeSlide ? 'is-active' : ''}" style="background-image:url('${slide.src}')"></div>
+    `).join('');
+    dots.innerHTML = heroSlides.map((_, index) => `
+      <button type="button" class="${index === activeSlide ? 'is-active' : ''}" aria-label="Show slide ${index + 1}"></button>
+    `).join('');
+    label.textContent = heroSlides[activeSlide].label;
+    dots.querySelectorAll('button').forEach((button, index) => {
+      button.addEventListener('click', () => {
+        activeSlide = index;
+        renderHeroCarousel();
+        restartHeroTimer();
       });
     });
+  }
 
-    // ---------- Stats ----------
-    async function loadStats() {
-      const grid = document.getElementById('stat-grid');
-      try {
-        const results = await Promise.all([
-          supabase.from('profiles').select('*', { count: 'exact', head: true }),
-          supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('membership_status', 'pending'),
-          supabase.from('activities').select('*', { count: 'exact', head: true }).gte('activity_date', new Date().toISOString()),
-          supabase.from('projects').select('*', { count: 'exact', head: true }).neq('status', 'completed'),
-        ]);
-        const totalMembers = results[0].count;
-        const pendingMembers = results[1].count;
-        const activeActivities = results[2].count;
-        const openProjects = results[3].count;
-        const err = results.find(r => r.error)?.error;
-        if (err) console.warn('loadStats partial error', err);
-        grid.innerHTML = `
-          <div class="stat-box"><strong>${totalMembers ?? 0}</strong><span>Total Members</span></div>
-          <div class="stat-box"><strong>${pendingMembers ?? 0}</strong><span>Pending Approval</span></div>
-          <div class="stat-box"><strong>${activeActivities ?? 0}</strong><span>Upcoming Activities</span></div>
-          <div class="stat-box"><strong>${openProjects ?? 0}</strong><span>Open Projects</span></div>
-        `;
-      } catch (e) {
-        console.error(e);
-        grid.innerHTML = `<div class="stat-box"><strong>—</strong><span>Could not load stats: ${escapeHtml(e.message || e)}</span></div>`;
-      }
-    }
+  function restartHeroTimer() {
+    clearInterval(heroTimer);
+    heroTimer = setInterval(() => {
+      activeSlide = (activeSlide + 1) % heroSlides.length;
+      renderHeroCarousel();
+    }, 5500);
+  }
 
-    // ---------- Members ----------
-    let allMembers = [];
+  renderHeroCarousel();
+  restartHeroTimer();
 
-    function uniqueSorted(values) {
-      return [...new Set(values.map(v => (v || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b));
-    }
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str ?? '';
+    return div.innerHTML;
+  }
 
-    function fillFilterOptions(selectId, values, allLabel) {
-      const sel = document.getElementById(selectId);
-      if (!sel) return;
-      const current = sel.value;
-      sel.innerHTML = `<option value="">${allLabel}</option>` +
-        values.map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('');
-      if ([...sel.options].some(o => o.value === current)) sel.value = current;
-    }
-
-    function memberMatchesFilters(m) {
-      const q = (document.getElementById('member-search')?.value || '').trim().toLowerCase();
-      const hostel = document.getElementById('filter-hostel')?.value || '';
-      const faculty = document.getElementById('filter-faculty')?.value || '';
-      const status = document.getElementById('filter-status')?.value || '';
-      if (q) {
-        const hay = `${m.full_name || ''} ${m.email || ''}`.toLowerCase();
-        if (!hay.includes(q)) return false;
-      }
-      if (hostel && (m.hostel || '') !== hostel) return false;
-      if (faculty && (m.faculty || '') !== faculty) return false;
-      if (status && m.membership_status !== status) return false;
-      return true;
-    }
-
-    function renderMembers() {
-      const list = (allMembers || []).filter(memberMatchesFilters);
-      const countEl = document.getElementById('members-count');
-      if (countEl) countEl.textContent = `${list.length} member${list.length === 1 ? '' : 's'} shown (from Supabase profiles)`;
-
-      // Mobile cards
-      const cards = document.getElementById('members-list');
-      if (cards) {
-        cards.innerHTML = list.map(m => `
-          <article class="member-card">
-            <div class="member-card-top">
-              ${m.avatar_url
-                ? `<img class="member-avatar-img" src="${m.avatar_url}" alt="" />`
-                : `<span class="member-avatar-fallback">${escapeHtml((m.full_name || '?').split(' ').map(w => w[0]).slice(0, 2).join(''))}</span>`}
-              <div>
-                <strong>${escapeHtml(m.full_name || '—')}</strong>
-                <span class="email">${escapeHtml(m.email || '')}</span>
-              </div>
-            </div>
-            <dl class="member-card-meta">
-              <div><dt>Hostel</dt><dd>${escapeHtml(m.hostel || '—')}</dd></div>
-              <div><dt>Faculty</dt><dd>${escapeHtml(m.faculty || '—')}</dd></div>
-              <div><dt>Programme</dt><dd>${escapeHtml(m.programme || '—')}</dd></div>
-              <div><dt>Status / Role</dt><dd>${pill(m.membership_status)} · ${escapeHtml(m.role || '—')}</dd></div>
-            </dl>
-            <div class="member-card-actions">
-              <select class="action-select" data-member="${m.id}">
-                <option value="">Set status...</option>
-                <option value="active">Active</option>
-                <option value="pending">Pending</option>
-                <option value="suspended">Suspended</option>
-                <option value="rejected">Rejected</option>
-              </select>
-              <button class="mini-btn good" data-apply-status="${m.id}">Apply</button>
-              <a class="mini-btn" style="background:#eef1f5;color:#1b4332;text-decoration:none;display:inline-flex;align-items:center;" href="../profile.html?admin_view=${m.id}">View</a>
-            </div>
-          </article>`).join('') || '<p style="color:var(--text-muted);text-align:center;">No members match these filters.</p>';
-      }
-
-      // Desktop table
-      const tbody = document.getElementById('members-tbody');
-      if (tbody) {
-        tbody.innerHTML = list.map(m => `
-          <tr>
-            <td>${m.avatar_url ? `<img class="member-avatar-img" src="${m.avatar_url}" />` : `<span class="member-avatar-fallback">${escapeHtml((m.full_name || '?').split(' ').map(w=>w[0]).slice(0,2).join(''))}</span>`}</td>
-            <td>${escapeHtml(m.full_name)}</td>
-            <td>${escapeHtml(m.email)}</td>
-            <td>${escapeHtml(m.hostel || '—')}</td>
-            <td>${escapeHtml(m.faculty || '—')}</td>
-            <td>${escapeHtml(m.programme || '—')}</td>
-            <td>${pill(m.membership_status)}</td>
-            <td>${escapeHtml(m.role)}</td>
-            <td style="display:flex;gap:0.4rem;flex-wrap:wrap;">
-              <select class="action-select" data-member="${m.id}">
-                <option value="">Set status...</option>
-                <option value="active">Active</option>
-                <option value="pending">Pending</option>
-                <option value="suspended">Suspended</option>
-                <option value="rejected">Rejected</option>
-              </select>
-              <button class="mini-btn good" data-apply-status="${m.id}">Apply</button>
-              <a class="mini-btn" style="background:#eef1f5;color:#1b4332;text-decoration:none;display:inline-flex;align-items:center;" href="../profile.html?admin_view=${m.id}">View</a>
-            </td>
-          </tr>`).join('') || '<tr><td colspan="9" style="text-align:center;">No members match these filters.</td></tr>';
-      }
-
-      document.querySelectorAll('[data-apply-status]').forEach(btn => {
-        btn.addEventListener('click', async () => {
-          const id = btn.dataset.applyStatus;
-          // Prefer the select next to this button (mobile card or desktop row)
-          const scope = btn.closest('.member-card-actions, td, tr, .member-card') || document;
-          const sel = scope.querySelector(`select.action-select[data-member="${id}"]`)
-            || document.querySelector(`select.action-select[data-member="${id}"]`);
-          const newStatus = sel?.value;
-          if (!newStatus) {
-            alert('Choose a status first.');
-            return;
-          }
-          const payload = { membership_status: newStatus };
-          if (newStatus === 'active') { payload.approved_by = me.id; payload.approved_at = new Date().toISOString(); }
-          const { error } = await supabase.from('profiles').update(payload).eq('id', id);
-          if (error) alert(error.message); else await loadMembers();
-        });
-      });
-
-      // Style Set status / filters like the faculty dropdown (custom ns-select)
-      try { refreshSelects(document.getElementById('tab-members') || document); } catch (e) { console.warn(e); }
-    }
-
-    async function loadMembers() {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, full_name, email, phone, programme, hostel, faculty, membership_status, role, avatar_url, created_at')
-        .order('created_at', { ascending: false });
-      if (error) {
-        console.error(error);
-        document.getElementById('members-list').innerHTML = `<p class="alert alert-error">${escapeHtml(error.message)}</p>`;
-        document.getElementById('members-tbody').innerHTML = `<tr><td colspan="9" class="alert alert-error">${escapeHtml(error.message)}</td></tr>`;
-        return;
-      }
-      allMembers = data || [];
-      fillFilterOptions('filter-hostel', uniqueSorted(allMembers.map(m => m.hostel)), 'All hostels');
-      fillFilterOptions('filter-faculty', uniqueSorted(allMembers.map(m => m.faculty)), 'All faculties');
-      renderMembers();
-      try { refreshSelects(document.getElementById('member-filters') || document); } catch (e) {}
-    }
-
-    ['member-search', 'filter-hostel', 'filter-faculty', 'filter-status'].forEach(id => {
-      document.getElementById(id)?.addEventListener('input', renderMembers);
-      document.getElementById(id)?.addEventListener('change', renderMembers);
+  const grid = document.getElementById('leaders-grid');
+  try {
+    const today = new Date(); today.setHours(0,0,0,0);
+    let { data: leaders } = await supabase
+      .from('leaders')
+      .select('full_name, position, bio, photo_url, is_current, term_end, term_label, display_order')
+      .eq('is_current', true)
+      .order('display_order');
+    // Drop expired current rows client-side
+    leaders = (leaders || []).filter(l => {
+      if (!l.term_end) return true;
+      return new Date(l.term_end + 'T23:59:59') >= today;
     });
-
-    // ---------- Content: News ----------
-    
-    async function uploadContentFile(file, folder) {
-      if (!file) return null;
-      const maxBytes = 12 * 1024 * 1024;
-      if (file.size > maxBytes) throw new Error('File must be under 12 MB');
-      const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-      const path = `${folder}/${me.id}/${Date.now()}-${safe}`;
-      const { error } = await supabase.storage.from('content-media').upload(path, file, { upsert: false });
-      if (error) throw new Error(error.message);
-      const { data: pub } = supabase.storage.from('content-media').getPublicUrl(path);
-      return pub?.publicUrl || null;
-    }
-
-    async function resolveMediaFields(urlId, fileId, folder) {
-      const typed = (document.getElementById(urlId)?.value || '').trim();
-      const file = document.getElementById(fileId)?.files?.[0] || null;
-      if (file) return await uploadContentFile(file, folder);
-      return typed || null;
-    }
-
-document.getElementById('news-form').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      try {
-        const image_url = await resolveMediaFields('news-image', 'news-image-file', 'news');
-        const document_url = await resolveMediaFields('news-document', 'news-document-file', 'news-docs');
-        const { error } = await supabase.from('news').insert({
-          title: document.getElementById('news-title').value.trim(),
-          content: document.getElementById('news-content').value.trim(),
-          image_url,
-          document_url,
-          external_url: document.getElementById('news-external').value.trim() || null,
-          is_featured: document.getElementById('news-featured').checked,
-          author_id: me.id,
-        });
-        if (error) return alert(error.message);
-        e.target.reset();
-        await loadNews();
-      } catch (err) {
-        alert(err.message || String(err));
+    // Require a name; one card per position
+    {
+      const byPos = new Map();
+      for (const l of leaders) {
+        if (!(l.full_name || '').trim()) continue;
+        const key = (l.position || '').trim().toLowerCase() || l.full_name;
+        if (!byPos.has(key) || (l.photo_url && !byPos.get(key).photo_url)) byPos.set(key, l);
       }
-    });
-
-    async function loadNews() {
-      const { data } = await supabase.from('news').select('*').order('published_at', { ascending: false }).limit(15);
-      document.getElementById('news-list').innerHTML = (data || []).map(n => `
-        <div style="padding:0.75rem 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;gap:1rem;align-items:center;">
-          <div><strong>${escapeHtml(n.title)}</strong><div style="font-size:0.8rem;color:var(--text-muted);">${new Date(n.published_at).toLocaleDateString()}</div></div>
-          <button class="mini-btn bad" data-del-news="${n.id}">Delete</button>
-        </div>`).join('') || '<p style="color:var(--text-muted);">No news yet.</p>';
-      document.querySelectorAll('[data-del-news]').forEach(btn => btn.addEventListener('click', async () => {
-        if (!confirm('Delete this news post?')) return;
-        await supabase.from('news').delete().eq('id', btn.dataset.delNews);
-        await loadNews();
-      }));
+      leaders = [...byPos.values()].sort((a, b) => (a.display_order || 99) - (b.display_order || 99));
     }
-
-    // ---------- Activities ----------
-    document.getElementById('activity-form').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      try {
-        const image_url = await resolveMediaFields('activity-image', 'activity-image-file', 'activities');
-        const document_url = await resolveMediaFields('activity-document', 'activity-document-file', 'activity-docs');
-        const { error } = await supabase.from('activities').insert({
-          title: document.getElementById('activity-title').value.trim(),
-          description: document.getElementById('activity-description').value.trim() || null,
-          activity_date: new Date(document.getElementById('activity-date').value).toISOString(),
-          location: document.getElementById('activity-location').value.trim() || null,
-          max_participants: document.getElementById('activity-max').value ? Number(document.getElementById('activity-max').value) : null,
-          image_url,
-          document_url,
-          external_url: document.getElementById('activity-external').value.trim() || null,
-          created_by: me.id,
-        });
-        if (error) return alert(error.message);
-        e.target.reset();
-        await loadActivities();
-      } catch (err) {
-        alert(err.message || String(err));
-      }
-    });
-
-    async function loadActivities() {
-      const { data } = await supabase.from('activities').select('id, title, activity_date, location').order('activity_date', { ascending: false }).limit(15);
-      const withCounts = await Promise.all((data || []).map(async a => {
-        const { count } = await supabase.from('activity_participants').select('*', { count: 'exact', head: true }).eq('activity_id', a.id);
-        return { ...a, count };
-      }));
-      document.getElementById('activities-list').innerHTML = withCounts.map(a => `
-        <div style="padding:0.75rem 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;gap:1rem;align-items:center;">
-          <div><strong>${escapeHtml(a.title)}</strong><div style="font-size:0.8rem;color:var(--text-muted);">${new Date(a.activity_date).toLocaleString()} · ${a.count || 0} RSVPs</div></div>
-          <button class="mini-btn bad" data-del-activity="${a.id}">Delete</button>
-        </div>`).join('') || '<p style="color:var(--text-muted);">No activities yet.</p>';
-      document.querySelectorAll('[data-del-activity]').forEach(btn => btn.addEventListener('click', async () => {
-        if (!confirm('Delete this activity?')) return;
-        await supabase.from('activities').delete().eq('id', btn.dataset.delActivity);
-        await loadActivities();
-      }));
-    }
-
-    // ---------- Projects ----------
-    document.getElementById('project-form').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      try {
-        const image_url = await resolveMediaFields('project-image', 'project-image-file', 'projects');
-        const document_url = await resolveMediaFields('project-document', 'project-document-file', 'project-docs');
-        const payload = {
-          title: document.getElementById('project-title').value.trim(),
-          description: document.getElementById('project-description').value.trim() || null,
-          status: document.getElementById('project-status').value,
-          image_url,
-          document_url,
-          external_url: document.getElementById('project-external').value.trim() || null,
-          created_by: me.id,
-        };
-        const startEl = document.getElementById('project-start');
-        const endEl = document.getElementById('project-end');
-        if (startEl?.value) payload.start_date = startEl.value;
-        if (endEl?.value) payload.end_date = endEl.value;
-        const { error } = await supabase.from('projects').insert(payload);
-        if (error) return alert(error.message);
-        e.target.reset();
-        await loadProjects();
-      } catch (err) {
-        alert(err.message || String(err));
-      }
-    });
-
-    async function loadProjects() {
-      const { data: projects } = await supabase.from('projects').select('*').order('created_at', { ascending: false });
-      const { data: members } = await supabase.from('profiles').select('id, full_name').eq('membership_status', 'active').order('full_name');
-
-      document.getElementById('projects-list').innerHTML = (projects || []).map(p => `
-        <div style="padding:0.9rem 0;border-bottom:1px solid var(--border);">
-          <div style="display:flex;justify-content:space-between;gap:1rem;align-items:center;">
-            <strong>${escapeHtml(p.title)}</strong>
-            <span class="pill pill-${p.status === 'completed' ? 'active' : 'pending'}">${escapeHtml(p.status)}</span>
-          </div>
-          <div style="margin-top:0.5rem;display:flex;gap:0.5rem;flex-wrap:wrap;">
-            <select class="action-select" id="assign-select-${p.id}">
-              ${(members || []).map(m => `<option value="${m.id}">${escapeHtml(m.full_name)}</option>`).join('')}
-            </select>
-            <select class="action-select" id="assign-role-${p.id}"><option value="member">Member</option><option value="lead">Lead</option></select>
-            <button class="mini-btn good" data-assign="${p.id}">Assign</button>
-            <button class="mini-btn bad" data-del-project="${p.id}">Delete project</button>
-          </div>
-          <div id="project-members-${p.id}" style="margin-top:0.5rem;font-size:0.85rem;color:var(--text-muted);">Loading assignments...</div>
-        </div>`).join('') || '<p style="color:var(--text-muted);">No projects yet.</p>';
-
-      for (const p of (projects || [])) {
-        const { data: pm } = await supabase.from('project_members').select('user_id, role_in_project, profiles(full_name)').eq('project_id', p.id);
-        const el = document.getElementById(`project-members-${p.id}`);
-        if (el) el.innerHTML = (pm && pm.length)
-          ? pm.map(row => `${escapeHtml(row.profiles?.full_name || '')} (${row.role_in_project})`).join(', ')
-          : 'No one assigned yet.';
-      }
-
-      document.querySelectorAll('[data-assign]').forEach(btn => btn.addEventListener('click', async () => {
-        const pid = btn.dataset.assign;
-        const userId = document.getElementById(`assign-select-${pid}`).value;
-        const role = document.getElementById(`assign-role-${pid}`).value;
-        if (!userId) return;
-        const { error } = await supabase.from('project_members').upsert({ project_id: pid, user_id: userId, role_in_project: role, assigned_by: me.id }, { onConflict: 'project_id,user_id' });
-        if (error) alert(error.message); else await loadProjects();
-      }));
-      document.querySelectorAll('[data-del-project]').forEach(btn => btn.addEventListener('click', async () => {
-        if (!confirm('Delete this project and all its assignments?')) return;
-        await supabase.from('projects').delete().eq('id', btn.dataset.delProject);
-        await loadProjects();
-      }));
-    }
-
-    // ---------- Forum moderation ----------
-    async function loadForumModeration() {
-      const { data } = await supabase.from('forum_topics').select('id, title, category, created_at, is_locked, profiles(full_name)').order('created_at', { ascending: false }).limit(30);
-      document.getElementById('forum-list').innerHTML = (data || []).map(t => `
-        <div style="padding:0.75rem 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;gap:1rem;align-items:center;">
-          <div><strong>${escapeHtml(t.title)}</strong><div style="font-size:0.8rem;color:var(--text-muted);">${escapeHtml(t.category || 'General')} · by ${escapeHtml(t.profiles?.full_name || 'Member')} · ${new Date(t.created_at).toLocaleDateString()}</div></div>
-          <div style="display:flex;gap:0.4rem;">
-            <button class="mini-btn" style="background:#eef1f5;" data-lock="${t.id}" data-locked="${t.is_locked}">${t.is_locked ? 'Unlock' : 'Lock'}</button>
-            <button class="mini-btn bad" data-del-topic="${t.id}">Delete</button>
-          </div>
-        </div>`).join('') || '<p style="color:var(--text-muted);">No discussion topics yet.</p>';
-
-      document.querySelectorAll('[data-lock]').forEach(btn => btn.addEventListener('click', async () => {
-        const locked = btn.dataset.locked === 'true';
-        await supabase.from('forum_topics').update({ is_locked: !locked }).eq('id', btn.dataset.lock);
-        await loadForumModeration();
-      }));
-      document.querySelectorAll('[data-del-topic]').forEach(btn => btn.addEventListener('click', async () => {
-        if (!confirm('Delete this topic and all its replies?')) return;
-        await supabase.from('forum_topics').delete().eq('id', btn.dataset.delTopic);
-        await loadForumModeration();
-      }));
-    }
-
-    // ---------- Elections ----------
-    document.getElementById('election-form').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const { error } = await supabase.from('elections').insert({
-        title: document.getElementById('election-title').value.trim(),
-        description: document.getElementById('election-description').value.trim() || null,
-        start_date: new Date(document.getElementById('election-start').value).toISOString(),
-        end_date: new Date(document.getElementById('election-end').value).toISOString(),
-        created_by: me.id,
-      });
-      if (error) return alert(error.message);
-      e.target.reset();
-      await loadElections();
-    });
-
-    async function loadElections() {
-      const { data: elections } = await supabase.from('elections').select('*').order('start_date', { ascending: false });
-      document.getElementById('elections-list').innerHTML = (elections || []).map(el => {
-        const appsOpen = el.accepting_applications !== false;
-        return `
-        <div class="card" style="background:var(--paper);border:1px solid var(--border);">
-          <div style="display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;">
-            <div>
-              <strong>${escapeHtml(el.title)}</strong>
-              <div style="font-size:0.8rem;color:var(--text-muted);margin-top:0.2rem;">
-                Applications: ${appsOpen ? '<span class="pill pill-active">Open</span>' : '<span class="pill pill-rejected">Closed</span>'}
-              </div>
-            </div>
-            <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">
-              ${pill(el.status)}
-              <select class="action-select" id="election-status-${el.id}">
-                <option value="draft">Draft</option>
-                <option value="upcoming">Upcoming</option>
-                <option value="active">Active (voting)</option>
-              </select>
-              <button class="mini-btn good" data-set-status="${el.id}">Update status</button>
-              ${appsOpen
-                ? `<button class="mini-btn bad" data-close-apps="${el.id}">Terminate applications</button>`
-                : `<button class="mini-btn good" data-open-apps="${el.id}">Re-open applications</button>`}
-            </div>
-          </div>
-          <div id="candidates-${el.id}" style="margin-top:0.75rem;">Loading candidates...</div>
+    if (leaders.length) {
+      grid.innerHTML = leaders.map(l => {
+        const name = l.full_name || 'Leader';
+        const photo = l.photo_url
+          ? `<img src="${escapeHtml(l.photo_url)}" alt="" style="width:56px;height:56px;border-radius:50%;object-fit:cover;margin-bottom:0.75rem;" />`
+          : '';
+        return `<div class="card" style="text-align:center;">
+          ${photo}
+          <h3 style="margin:0 0 0.25rem;">${escapeHtml(name)}</h3>
+          <p style="margin:0;color:var(--forest);font-weight:600;font-size:0.9rem;">${escapeHtml(l.position || '')}</p>
+          ${l.bio ? `<p style="margin:0.5rem 0 0;font-size:0.85rem;color:var(--text-muted);">${escapeHtml(l.bio)}</p>` : ''}
         </div>`;
-      }).join('') || '<p style="color:var(--text-muted);">No elections yet.</p>';
-
-      document.querySelectorAll('[id^="election-status-"]').forEach(sel => {
-        const id = sel.id.replace('election-status-', '');
-        const election = elections.find(e => e.id === id);
-        if (election) sel.value = election.status === 'closed' ? 'active' : election.status;
-      });
-
-      document.querySelectorAll('[data-set-status]').forEach(btn => btn.addEventListener('click', async () => {
-        const id = btn.dataset.setStatus;
-        const status = document.getElementById(`election-status-${id}`).value;
-        const { error } = await supabase.from('elections').update({ status }).eq('id', id);
-        if (error) alert(error.message); else await loadElections();
-      }));
-
-      document.querySelectorAll('[data-close-apps]').forEach(btn => btn.addEventListener('click', async () => {
-        if (!confirm('Terminate candidacy applications for this election? Members will no longer be able to apply for positions.')) return;
-        const { error } = await supabase.from('elections').update({ accepting_applications: false }).eq('id', btn.dataset.closeApps);
-        if (error) alert(error.message); else await loadElections();
-      }));
-      document.querySelectorAll('[data-open-apps]').forEach(btn => btn.addEventListener('click', async () => {
-        const { error } = await supabase.from('elections').update({ accepting_applications: true }).eq('id', btn.dataset.openApps);
-        if (error) alert(error.message); else await loadElections();
-      }));
-
-      for (const el of (elections || [])) {
-        const { data: cands } = await supabase.from('candidates').select('id, manifesto, approved, application_status, cv_url, leadership_certificate_url, application_letter_url, positions(name), profiles(full_name, email)').eq('election_id', el.id);
-        const container = document.getElementById(`candidates-${el.id}`);
-        if (!container) continue;
-        if (!cands || !cands.length) {
-          container.innerHTML = '<p style="font-size:0.85rem;color:var(--text-muted);">No applicants yet.</p>';
-        } else {
-          container.innerHTML = `
-            <div class="data-table-wrap table-scroll" style="margin-top:0.5rem;">
-              <table class="admin-table" style="min-width:640px;">
-                <thead>
-                  <tr>
-                    <th>Applicant</th>
-                    <th>Position</th>
-                    <th>Status</th>
-                    <th>Documents</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${cands.map(c => {
-                    const st = c.application_status || (c.approved ? 'approved' : 'pending');
-                    const docs = [
-                      c.cv_url ? `<a href="${escapeHtml(c.cv_url)}" target="_blank" rel="noopener">CV</a>` : null,
-                      c.leadership_certificate_url ? `<a href="${escapeHtml(c.leadership_certificate_url)}" target="_blank" rel="noopener">Cert</a>` : null,
-                      c.application_letter_url ? `<a href="${escapeHtml(c.application_letter_url)}" target="_blank" rel="noopener">Letter</a>` : null,
-                    ].filter(Boolean).join(' · ') || '—';
-                    return `<tr>
-                      <td>
-                        <strong>${escapeHtml(c.profiles?.full_name || 'Candidate')}</strong>
-                        <div style="font-size:0.78rem;color:var(--text-muted);word-break:break-all;">${escapeHtml(c.profiles?.email || '')}</div>
-                        ${c.manifesto ? `<div style="font-size:0.8rem;margin-top:0.25rem;max-width:220px;">${escapeHtml(c.manifesto)}</div>` : ''}
-                      </td>
-                      <td>${escapeHtml(c.positions?.name || '—')}</td>
-                      <td><span class="pill pill-${st === 'approved' ? 'active' : (st === 'suspended' ? 'rejected' : 'pending')}">${escapeHtml(st)}</span></td>
-                      <td style="font-size:0.82rem;">${docs}</td>
-                      <td style="white-space:nowrap;">
-                        ${st !== 'approved' ? `<button class="mini-btn good" data-approve-candidate="${c.id}">Approve</button>` : ''}
-                        ${st !== 'suspended' ? `<button class="mini-btn" style="background:#fdf3e0;color:#8a6100;" data-suspend-candidate="${c.id}">Suspend</button>` : ''}
-                        <button class="mini-btn bad" data-delete-candidate="${c.id}">Delete</button>
-                      </td>
-                    </tr>`;
-                  }).join('')}
-                </tbody>
-              </table>
-            </div>`;
-        }
-
-        container.querySelectorAll('[data-approve-candidate]').forEach(btn => btn.addEventListener('click', async () => {
-          const { error } = await supabase.from('candidates').update({ approved: true, application_status: 'approved' }).eq('id', btn.dataset.approveCandidate);
-          if (error) alert(error.message); else await loadElections();
-        }));
-        container.querySelectorAll('[data-suspend-candidate]').forEach(btn => btn.addEventListener('click', async () => {
-          if (!confirm('Suspend this application? The candidate will not appear for voting.')) return;
-          const { error } = await supabase.from('candidates').update({ approved: false, application_status: 'suspended' }).eq('id', btn.dataset.suspendCandidate);
-          if (error) alert(error.message); else await loadElections();
-        }));
-        container.querySelectorAll('[data-delete-candidate]').forEach(btn => btn.addEventListener('click', async () => {
-          if (!confirm('Delete this candidate application permanently? Their uploaded documents will remain in storage unless removed separately.')) return;
-          const { error } = await supabase.from('candidates').delete().eq('id', btn.dataset.deleteCandidate);
-          if (error) alert(error.message); else await loadElections();
-        }));
-      }
+      }).join('');
+    } else {
+      grid.innerHTML = `<div class="card" style="grid-column:1/-1;text-align:center;">
+        <p style="margin:0;color:#92400e;font-weight:600;">No current leadership updated yet.</p>
+        <p style="margin:0.4rem 0 0;color:var(--text-muted);font-size:0.9rem;">Waiting for elections. See the full leadership page for previous terms.</p>
+      </div>`;
     }
-
-    // ---------- Feedback ----------
-    document.getElementById('feedback-form-form').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const { data: form, error } = await supabase.from('feedback_forms').insert({
-        title: document.getElementById('fb-title').value.trim(),
-        description: document.getElementById('fb-description').value.trim() || null,
-        created_by: me.id,
-      }).select('id').single();
-      if (error) return alert(error.message);
-
-      const lines = document.getElementById('fb-questions').value.split('\n').map(l => l.trim()).filter(Boolean);
-      const questions = lines.map((line, i) => {
-        let type = 'text', options = null, text = line;
-        const mc = line.match(/^(.*)\(multiple_choice:\s*(.+)\)$/i);
-        const rating = line.match(/^(.*)\(rating\)$/i);
-        if (mc) { text = mc[1].trim(); type = 'multiple_choice'; options = mc[2].split(',').map(s => s.trim()); }
-        else if (rating) { text = rating[1].trim(); type = 'rating'; }
-        return { form_id: form.id, question_text: text, question_type: type, options, display_order: i };
-      });
-      if (questions.length) await supabase.from('feedback_questions').insert(questions);
-
-      e.target.reset();
-      await loadFeedback();
-    });
-
-    async function loadFeedback() {
-      const { data } = await supabase.from('feedback_forms').select('id, title, is_active, feedback_responses(id)').order('created_at', { ascending: false });
-      document.getElementById('feedback-list').innerHTML = (data || []).map(f => `
-        <div style="padding:0.75rem 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;gap:1rem;align-items:center;">
-          <div><strong>${escapeHtml(f.title)}</strong><div style="font-size:0.8rem;color:var(--text-muted);">${f.feedback_responses?.length || 0} responses ${f.is_active ? '· open' : '· closed'}</div></div>
-        </div>`).join('') || '<p style="color:var(--text-muted);">No feedback forms yet.</p>';
-    }
-
-    // ---------- Contact messages ----------
-    async function loadContactMessages() {
-      const { data } = await supabase.from('contact_messages').select('*').order('created_at', { ascending: false }).limit(30);
-      document.getElementById('contact-list').innerHTML = (data || []).map(m => `
-        <div class="contact-msg ${m.status}">
-          <div class="contact-msg-head">
-            <strong>${escapeHtml(m.name)} &lt;${escapeHtml(m.email)}&gt;</strong>
-            <span class="contact-msg-meta">${escapeHtml(m.topic || 'General')} · ${new Date(m.created_at).toLocaleString()}</span>
-          </div>
-          <div class="contact-msg-body">${escapeHtml(m.message)}</div>
-          ${m.admin_reply ? `<div style="background:#f0fdf4;padding:0.6rem;border-radius:6px;font-size:0.88rem;"><strong>Reply sent:</strong> ${escapeHtml(m.admin_reply)}</div>` : `
-            <textarea id="reply-${m.id}" rows="2" placeholder="Write a reply..." style="width:100%;padding:0.5rem;border:1px solid var(--border);border-radius:6px;"></textarea>
-            <button class="mini-btn good" style="margin-top:0.4rem;" data-reply="${m.id}">Send Reply</button>`}
-        </div>`).join('') || '<p style="color:var(--text-muted);">No contact messages yet.</p>';
-
-      document.querySelectorAll('[data-reply]').forEach(btn => btn.addEventListener('click', async () => {
-        const id = btn.dataset.reply;
-        const reply = document.getElementById(`reply-${id}`).value.trim();
-        if (!reply) return;
-        const { error } = await supabase.from('contact_messages').update({ admin_reply: reply, status: 'replied', replied_by: me.id, replied_at: new Date().toISOString() }).eq('id', id);
-        if (error) alert(error.message); else await loadContactMessages();
-      }));
-    }
-
-
-
-    let leadershipPositions = [];
-    let leaderPositionSelect = null;
-    
-    function defaultLeadershipTermDates() {
-      const now = new Date();
-      const y = now.getFullYear();
-      const m = now.getMonth();
-      const d = now.getDate();
-      const startYear = (m > 7 || (m === 7 && d >= 24)) ? y : y - 1;
-      return {
-        label: `${startYear}/${String(startYear + 1).slice(-2)}`,
-        start: `${startYear}-08-24`,
-        end: `${startYear + 1}-08-23`,
-      };
-    }
-
-    async function loadLeadershipPositions() {
-      const mount = document.getElementById('leader-position-mount');
-      const hidden = document.getElementById('leader-position');
-      if (!mount) return;
-      const { data, error } = await supabase
-        .from('positions')
-        .select('id, name, name_luganda, category, display_order, application_fee')
-        .order('display_order');
-      if (error) {
-        mount.innerHTML = '<p style="color:var(--danger);font-size:0.85rem;">Could not load positions</p>';
-        console.error(error);
-        return;
-      }
-      leadershipPositions = data || [];
-      // Prefer "Secretary for …" / General Secretary over old Minister titles
-      const names = new Set(leadershipPositions.map(p => p.name));
-      const oldMinisterAliases = {
-        'Information Minister': 'Secretary for Information',
-        'Deputy Information Minister': 'Deputy Secretary for Information',
-        'Ethics Minister': 'Secretary for Ethics',
-        'Deputy Ethics Minister': 'Deputy Secretary for Ethics',
-        'Games & Sports Minister': 'Secretary for Games and Sports',
-        'Projects Minister': 'Secretary for Projects',
-        'Minister of Public Relations': 'Secretary for Public Relations',
-        'Deputy Minister of Public Relations': 'Deputy Secretary for Public Relations',
-        'Minister of Culture': 'Secretary for Culture',
-        'Deputy Minister of Culture': 'Deputy Secretary for Culture',
-        'Community Services Minister': 'Secretary for Community Services',
-        'Secretary': 'General Secretary',
-        'Deputy Secretary': 'Deputy General Secretary',
-      };
-      const opts = [];
-      const seenNames = new Set();
-      for (const p of leadershipPositions) {
-        // Skip legacy name if its replacement already exists in the table
-        const replacement = oldMinisterAliases[p.name];
-        if (replacement && names.has(replacement)) continue;
-        if (seenNames.has(p.name)) continue; // hard de-dupe
-        seenNames.add(p.name);
-        opts.push({
-          value: p.name,
-          label: p.name,
-          sub: p.name_luganda || '',
-          order: p.display_order,
-        });
-      }
-      if (!opts.length) {
-        for (const p of leadershipPositions) {
-          if (seenNames.has(p.name)) continue;
-          seenNames.add(p.name);
-          opts.push({
-            value: p.name,
-            label: p.name,
-            sub: p.name_luganda || '',
-            order: p.display_order,
-          });
-        }
-      }
-      leaderPositionSelect = createNsSelect({
-        mount,
-        options: opts,
-        value: hidden?.value || '',
-        placeholder: 'Select position',
-        searchable: true,
-        onChange: (val, item) => {
-          if (hidden) hidden.value = val || '';
-          document.getElementById('leader-order').value = item?.order ?? 99;
-        },
-      });
-    }
-    loadLeadershipPositions().catch(e => console.warn("positions", e));
-    (function prefillTermDates() {
-      const td = defaultLeadershipTermDates();
-      const lab = document.getElementById('leader-term-label');
-      const st = document.getElementById('leader-term-start');
-      const en = document.getElementById('leader-term-end');
-      if (lab && !lab.value) lab.value = td.label;
-      if (st && !st.value) st.value = td.start;
-      if (en && !en.value) en.value = td.end;
-    })();
-    document.getElementById('leader-photo-file')?.addEventListener('change', async (e) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
-      if (file.size > 5 * 1024 * 1024) { alert('Photo must be under 5MB'); e.target.value = ''; return; }
-      const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
-      const path = `leaders/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-      const { error: upErr } = await supabase.storage.from('avatars').upload(path, file, { upsert: true, cacheControl: '3600' });
-      if (upErr) {
-        // try content-media bucket as fallback
-        const { error: up2 } = await supabase.storage.from('content-media').upload(path, file, { upsert: true });
-        if (up2) { alert('Photo upload failed: ' + (upErr.message || up2.message)); return; }
-        const { data: pub } = supabase.storage.from('content-media').getPublicUrl(path);
-        document.getElementById('leader-photo').value = pub.publicUrl;
-        document.getElementById('leader-photo-preview').innerHTML = `<img src="${pub.publicUrl}" alt="" style="width:72px;height:72px;object-fit:cover;border-radius:50%;" />`;
-        return;
-      }
-      const { data: pub } = supabase.storage.from('avatars').getPublicUrl(path);
-      document.getElementById('leader-photo').value = pub.publicUrl;
-      document.getElementById('leader-photo-preview').innerHTML = `<img src="${pub.publicUrl}" alt="" style="width:72px;height:72px;object-fit:cover;border-radius:50%;" />`;
-    });
-
-    // ---------- Leadership CRUD ----------
-    function resetLeaderForm() {
-      document.getElementById('leader-id').value = '';
-      document.getElementById('leader-name').value = '';
-      document.getElementById('leader-position').value = ''; if (leaderPositionSelect) leaderPositionSelect.value = '';
-      const _td = defaultLeadershipTermDates(); document.getElementById('leader-term-label').value = _td.label;
-      document.getElementById('leader-term-start').value = '';
-      document.getElementById('leader-term-end').value = '';
-      document.getElementById('leader-photo').value = '';
-      document.getElementById('leader-order').value = '0';
-      document.getElementById('leader-bio').value = '';
-      document.getElementById('leader-is-current').checked = true;
-      document.getElementById('leader-save-btn').textContent = 'Save leader';
-    }
-    document.getElementById('leader-reset-btn')?.addEventListener('click', resetLeaderForm);
-
-    async function loadLeadership() {
-      const { data, error } = await supabase
-        .from('leaders')
-        .select('id, full_name, position, bio, photo_url, term_start, term_end, term_label, is_current, display_order, user_id')
-        .order('display_order');
-      if (error) {
-        document.getElementById('leaders-current-list').innerHTML = `<p class="alert alert-error">${escapeHtml(error.message)}</p>`;
-        return;
-      }
-      const current = (data || []).filter(l => l.is_current);
-      const past = (data || []).filter(l => !l.is_current);
-      const row = (l) => {
-        const incomplete = !(l.full_name || '').trim();
-        return `
-        <div style="display:flex;justify-content:space-between;gap:0.75rem;flex-wrap:wrap;padding:0.65rem 0;border-bottom:1px solid var(--border);align-items:center;${incomplete ? 'background:#fff7ed;' : ''}">
-          <div>
-            <strong>${escapeHtml(l.full_name || '⚠ No name')}</strong>
-            <span style="color:var(--text-muted);"> · ${escapeHtml(l.position || '')}</span>
-            <div style="font-size:0.8rem;color:var(--text-muted);">${escapeHtml(l.term_label || (l.is_current ? '2025/26' : '—'))}${incomplete ? ' · incomplete — delete or edit' : ''}</div>
-          </div>
-          <div style="display:flex;gap:0.4rem;">
-            <button type="button" class="mini-btn" data-edit-leader="${l.id}" style="background:#eef1f5;">Edit</button>
-            <button type="button" class="mini-btn bad" data-del-leader="${l.id}">Delete permanently</button>
-          </div>
-        </div>`;
-      };
-      document.getElementById('leaders-current-list').innerHTML = current.map(row).join('') || '<p style="color:var(--text-muted);">No current leaders yet.</p>';
-      document.getElementById('leaders-past-list').innerHTML = past.map(row).join('') || '<p style="color:var(--text-muted);">No previous-term leaders yet.</p>';
-
-      document.querySelectorAll('[data-edit-leader]').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const l = (data || []).find(x => x.id === btn.dataset.editLeader);
-          if (!l) return;
-          document.getElementById('leader-id').value = l.id;
-          document.getElementById('leader-name').value = l.full_name || '';
-          const hiddenPos = document.getElementById('leader-position');
-          if (hiddenPos) hiddenPos.value = l.position || '';
-          if (leaderPositionSelect) leaderPositionSelect.value = l.position || '';
-          document.getElementById('leader-term-label').value = l.term_label || (l.is_current ? '2025/26' : '');
-          document.getElementById('leader-term-start').value = l.term_start || '';
-          document.getElementById('leader-term-end').value = l.term_end || '';
-          document.getElementById('leader-photo').value = l.photo_url || '';
-          document.getElementById('leader-order').value = l.display_order ?? 0;
-          const prev = document.getElementById('leader-photo-preview');
-          if (prev) prev.innerHTML = l.photo_url ? `<img src="${escapeHtml(l.photo_url)}" alt="" style="width:72px;height:72px;object-fit:cover;border-radius:50%;" />` : '';
-          document.getElementById('leader-bio').value = l.bio || '';
-          document.getElementById('leader-is-current').checked = !!l.is_current;
-          document.getElementById('leader-save-btn').textContent = 'Update leader';
-        });
-      });
-      document.querySelectorAll('[data-del-leader]').forEach(btn => {
-        btn.addEventListener('click', async () => {
-          if (!confirm('Permanently delete this leadership record? This cannot be undone.')) return;
-          const { error: delErr } = await supabase.from('leaders').delete().eq('id', btn.dataset.delLeader);
-          if (delErr) alert(delErr.message); else await loadLeadership();
-        });
-      });
-    }
-
-    document.getElementById('purge-incomplete-leaders')?.addEventListener('click', async () => {
-      if (!confirm('Permanently delete all CURRENT leaders that have no full name?')) return;
-      const { data: rows } = await supabase.from('leaders').select('id, full_name').eq('is_current', true);
-      const ids = (rows || []).filter(r => !(r.full_name || '').trim()).map(r => r.id);
-      if (!ids.length) { alert('No incomplete current leaders.'); return; }
-      const { error: delErr } = await supabase.from('leaders').delete().in('id', ids);
-      if (delErr) alert(delErr.message); else { alert(`Deleted ${ids.length} incomplete record(s).`); await loadLeadership(); }
-    });
-
-    document.getElementById('leader-form')?.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const alertBox = document.getElementById('leadership-alert');
-      const id = document.getElementById('leader-id').value.trim();
-      const payload = {
-        full_name: document.getElementById('leader-name').value.trim(),
-        position: document.getElementById('leader-position').value.trim(),
-        term_label: document.getElementById('leader-term-label').value.trim() || null,
-        term_start: document.getElementById('leader-term-start').value || null,
-        term_end: document.getElementById('leader-term-end').value || null,
-        photo_url: document.getElementById('leader-photo').value.trim() || null,
-        display_order: (function(){
-          const name = document.getElementById('leader-position')?.value?.trim();
-          const found = (leadershipPositions || []).find(p => p.name === name);
-          if (found?.display_order != null) return found.display_order;
-          return Number(document.getElementById('leader-order')?.value) || 99;
-        })(),
-        bio: document.getElementById('leader-bio').value.trim() || null,
-        is_current: document.getElementById('leader-is-current').checked,
-      };
-      if (!payload.full_name) {
-        alertBox.innerHTML = `<div class="alert alert-error">Full name is required.</div>`;
-        return;
-      }
-      if (!payload.position) {
-        alertBox.innerHTML = `<div class="alert alert-error">Position is required.</div>`;
-        return;
-      }
-      let error;
-      if (id) {
-        ({ error } = await supabase.from('leaders').update(payload).eq('id', id));
-      } else {
-        ({ error } = await supabase.from('leaders').insert(payload));
-      }
-      if (error) {
-        alertBox.innerHTML = `<div class="alert alert-error">${escapeHtml(error.message)}</div>`;
-        return;
-      }
-      alertBox.innerHTML = `<div class="alert alert-success">Leader saved.</div>`;
-      resetLeaderForm();
-      await loadLeadership();
-    });
-
-    // ---------- Admin settings (auto-approve) ----------
-    function parseSettingBool(val) {
-      if (typeof val === 'boolean') return val;
-      if (val === 1 || val === '1') return true;
-      if (val === 0 || val === '0') return false;
-      if (typeof val === 'string') {
-        const s = val.trim().toLowerCase().replace(/^"|"$/g, '');
-        return s === 'true' || s === 't' || s === 'yes';
-      }
-      if (val && typeof val === 'object') {
-        // jsonb sometimes returned nested
-        if ('value' in val) return parseSettingBool(val.value);
-        try { return parseSettingBool(JSON.parse(JSON.stringify(val))); } catch (_) {}
-      }
-      return false;
-    }
-    function parseSettingString(val, fallback) {
-      if (val == null) return fallback;
-      if (typeof val === 'string') return val.replace(/^"|"$/g, '') || fallback;
-      if (typeof val === 'object') return String(val).replace(/^"|"$/g, '') || fallback;
-      return String(val);
-    }
-
-    async function loadAdminSettings() {
-      const { data, error } = await supabase
-        .from('club_settings')
-        .select('key, value')
-        .in('key', ['auto_approve_members', 'current_leadership_term']);
-      if (error) {
-        console.error('loadAdminSettings', error);
-        const alertBox = document.getElementById('settings-alert');
-        if (alertBox) alertBox.innerHTML = `<div class="alert alert-error">Could not load settings: ${escapeHtml(error.message)}</div>`;
-        return;
-      }
-      const map = {};
-      (data || []).forEach(r => { map[r.key] = r.value; });
-      const cb = document.getElementById('setting-auto-approve');
-      if (cb) cb.checked = parseSettingBool(map.auto_approve_members);
-      const term = document.getElementById('setting-term-label');
-      if (term) term.value = parseSettingString(map.current_leadership_term, '2025/26');
-    }
-
-    async function saveClubSetting(key, value) {
-      // Store pure JSON values (boolean / string) — not stringified twice
-      const { data: existing, error: findErr } = await supabase
-        .from('club_settings')
-        .select('key')
-        .eq('key', key)
-        .maybeSingle();
-      if (findErr) return findErr;
-      if (existing) {
-        const { error } = await supabase
-          .from('club_settings')
-          .update({ value, updated_by: me.id, updated_at: new Date().toISOString() })
-          .eq('key', key);
-        return error;
-      }
-      const { error } = await supabase
-        .from('club_settings')
-        .insert({ key, value, updated_by: me.id });
-      return error;
-    }
-
-    document.getElementById('setting-auto-approve')?.addEventListener('change', async (e) => {
-      const on = !!e.target.checked;
-      const alertBox = document.getElementById('settings-alert');
-      const error = await saveClubSetting('auto_approve_members', on);
-      if (error) {
-        e.target.checked = !on;
-        if (alertBox) alertBox.innerHTML = `<div class="alert alert-error">Could not update: ${escapeHtml(error.message)}</div>`;
-        return;
-      }
-      // Verify what the database actually has
-      let verified = on;
-      try {
-        const { data: enabled } = await supabase.rpc('is_auto_approve_enabled');
-        verified = !!enabled;
-        e.target.checked = verified;
-      } catch (_) {}
-      if (alertBox) {
-        alertBox.innerHTML = `<div class="alert alert-success">${verified
-          ? 'Auto-approve is ON in the database. New registrations become active immediately.'
-          : 'Auto-approve is OFF in the database. New registrations stay pending until an admin approves them.'}</div>`;
-      }
-    });
-
-    document.getElementById('settings-save-btn')?.addEventListener('click', async () => {
-      const alertBox = document.getElementById('settings-alert');
-      const auto = !!document.getElementById('setting-auto-approve')?.checked;
-      const termLabel = (document.getElementById('setting-term-label')?.value || '2025/26').trim();
-      const err1 = await saveClubSetting('auto_approve_members', auto);
-      const err2 = await saveClubSetting('current_leadership_term', termLabel);
-      if (err1 || err2) {
-        alertBox.innerHTML = `<div class="alert alert-error">${escapeHtml((err1 || err2).message)}</div>`;
-        return;
-      }
-      alertBox.innerHTML = `<div class="alert alert-success">Settings saved to Supabase. ${auto ? 'New registrations will be auto-approved.' : 'New registrations require manual approval.'}</div>`;
-      await loadAdminSettings();
-    });
-
-    await Promise.allSettled([
-      loadStats().catch(e => console.error('stats', e)),
-      loadMembers().catch(e => console.error('members', e)),
-      loadNews().catch(e => console.error('news', e)),
-      loadActivities().catch(e => console.error('activities', e)),
-      loadProjects().catch(e => console.error('projects', e)),
-      loadForumModeration().catch(e => console.error('forum', e)),
-      loadElections().catch(e => console.error('elections', e)),
-      loadFeedback().catch(e => console.error('feedback', e)),
-      loadContactMessages().catch(e => console.error('contact', e)),
-      loadLeadership().catch(e => console.error('leadership', e)),
-      loadAdminSettings().catch(e => console.error('settings', e)),
-    ]);
-
-  </script>
+  } catch (err) {
+    console.warn('Leaders load failed', err);
+  }
+</script>
 </body>
 </html>
