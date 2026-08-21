@@ -59,21 +59,30 @@
         <p id="signed-in-as" style="font-size:0.85rem;color:rgba(255,255,255,0.85);margin:0 0 1rem;"></p>
         <form id="apply-form" class="apply-form">
           <div class="form-group">
-            <label for="full_name">Full name</label>
+            <label for="full_name">Full name *</label>
             <input id="full_name" type="text" required autocomplete="name" />
           </div>
           <div class="form-group">
-            <label for="phone">Phone number</label>
-            <input type="tel" inputmode="tel" autocomplete="tel" placeholder="+256 700 000000 / +1 …" id="phone" data-phone-intl required placeholder="e.g. 07XXXXXXXX or +2567XXXXXXXX" autocomplete="tel" />
+            <label for="avatar-file">Profile photo *</label>
+            <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;">
+              <img id="avatar-preview" src="" alt="" style="width:56px;height:56px;border-radius:50%;object-fit:cover;border:2px solid var(--border);display:none;" />
+              <input type="file" id="avatar-file" accept="image/png,image/jpeg,image/webp" required />
+            </div>
+            <small style="opacity:0.75;">JPG, PNG or WEBP (max 10MB).</small>
+          </div>
+
+          <div class="form-group">
+            <label for="phone">Phone number *</label>
+            <input type="tel" id="phone" data-phone-intl required autocomplete="tel" placeholder="Phone number" />
           </div>
           <div class="form-group">
-            <label for="registration_number">Registration number</label>
-            <input id="registration_number" type="text" placeholder="e.g. 2026-B101-10000" />
+            <label for="registration_number">Registration number *</label>
+            <input id="registration_number" type="text" required placeholder="e.g. 2026-B101-10000" />
           </div>
           <div class="form-group">
-            <label for="hostel">Hall / Hostel</label>
-            <select id="hostel">
-            <option value="">Select (optional)</option>
+            <label for="hostel">Hall / Hostel *</label>
+            <select id="hostel" required>
+            <option value="">Select hostel</option>
             <option value="Katonga hostel">Katonga hostel</option>
             <option value="Bbosa hostel">Bbosa hostel</option>
             <option value="Kavuma hostel">Kavuma hostel</option>
@@ -101,8 +110,8 @@
             <input type="text" id="hostel_other" placeholder="Enter your hostel name" autocomplete="address-level2" />
           </div>
           <div class="form-group">
-            <label for="faculty">Faculty / School</label>
-            <input id="faculty" type="text" placeholder="e.g. Faculty of Science" />
+            <label for="faculty">Faculty / School *</label>
+            <input id="faculty" type="text" required placeholder="e.g. Faculty of Science" />
           </div>
           <button type="submit" class="btn btn-gold btn-block" id="apply-submit" style="width:100%;margin-top:0.5rem;">Submit Application</button>
         </form>
@@ -137,6 +146,16 @@
 <div id="app-footer"></div>
 
 <script type="module">
+
+  function titleCase(str) {
+    if (str == null) return str;
+    const s = String(str).trim().replace(/\s+/g, ' ');
+    if (!s) return s;
+    return s.replace(/(^|[\s'’\-])(\S+)/g, (_, sep, word) =>
+      sep + word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+    );
+  }
+
   import { supabase } from './assets/js/supabase-client.js';
   import {
     loginWithGoogle,
@@ -235,26 +254,70 @@
     window.location.reload();
   });
 
+  let applyAvatarUrl = null;
+  document.getElementById('avatar-file')?.addEventListener('change', async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      showAlert('Photo must be under 10MB.', 'error');
+      e.target.value = '';
+      return;
+    }
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) {
+      showAlert('Please sign in with Google first.', 'error');
+      return;
+    }
+    const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace('jpeg', 'jpg');
+    const path = `${session.user.id}/avatar.${ext}`;
+    const { error: upErr } = await supabase.storage.from('avatars').upload(path, file, {
+      upsert: true,
+      contentType: file.type || 'image/jpeg',
+    });
+    if (upErr) {
+      showAlert('Photo upload failed: ' + upErr.message, 'error');
+      return;
+    }
+    const { data: pub } = supabase.storage.from('avatars').getPublicUrl(path);
+    applyAvatarUrl = `${pub.publicUrl}?t=${Date.now()}`;
+    const prev = document.getElementById('avatar-preview');
+    if (prev) { prev.src = applyAvatarUrl; prev.style.display = 'block'; }
+  });
+
   document.getElementById('apply-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
+    const fullName = titleCase(document.getElementById('full_name').value);
+    const phone = document.getElementById('phone').value.trim();
+    const registrationNumber = document.getElementById('registration_number').value.trim();
+    const faculty = titleCase(document.getElementById('faculty').value);
     const hostelVal = document.getElementById('hostel').value.trim();
     let hostel = hostelVal || null;
     if (hostelVal === 'Other') {
-      hostel = (document.getElementById('hostel_other')?.value || '').trim() || null;
+      hostel = titleCase(document.getElementById('hostel_other')?.value || '') || null;
       if (!hostel) {
         showAlert('Please enter your hostel name.', 'error');
         return;
       }
     }
+    if (!fullName || !phone || !registrationNumber || !hostel || !faculty) {
+      showAlert('Please fill all required fields (name, phone, registration number, hostel, faculty).', 'error');
+      return;
+    }
+    if (!applyAvatarUrl) {
+      showAlert('Please upload a profile photo.', 'error');
+      document.getElementById('avatar-file')?.focus();
+      return;
+    }
     const btn = document.getElementById('apply-submit');
     btn.disabled = true;
     btn.textContent = 'Submitting...';
     const result = await submitMembershipApplication({
-      fullName: document.getElementById('full_name').value,
-      phone: document.getElementById('phone').value,
-      registrationNumber: document.getElementById('registration_number').value,
+      fullName,
+      phone,
+      registrationNumber,
       hostel,
-      faculty: document.getElementById('faculty').value,
+      faculty,
+      avatarUrl: applyAvatarUrl,
     });
     if (result.error) {
       showAlert(result.error, 'error');

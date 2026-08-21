@@ -20,12 +20,13 @@
 
     <form id="onboarding-form">
       <div class="form-group">
-        <label>Profile photo (optional)</label>
-        <div style="display:flex;align-items:center;gap:1rem;">
+        <label for="avatar-file">Profile photo *</label>
+        <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
           <img id="avatar-preview" src="" alt="" style="width:64px;height:64px;border-radius:50%;object-fit:cover;border:2px solid var(--border);display:none;" />
           <div id="avatar-fallback" style="width:64px;height:64px;border-radius:50%;background:var(--forest);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;"></div>
-          <input type="file" id="avatar-file" accept="image/*" />
+          <input type="file" id="avatar-file" accept="image/png,image/jpeg,image/webp" required />
         </div>
+        <small style="color:var(--text-muted);">JPG, PNG or WEBP required (max 10MB).</small>
       </div>
 
       <div class="form-group">
@@ -37,8 +38,8 @@
         <input type="tel" inputmode="tel" autocomplete="tel" placeholder="+256 700 000000 / +1 …" id="phone" data-phone-intl required placeholder="e.g. 07XXXXXXXX or +2567XXXXXXXX" autocomplete="tel" />
       </div>
       <div class="form-group">
-        <label for="registration_number">Registration number</label>
-        <input type="text" id="registration_number" placeholder="e.g. 2026-B101-10000" />
+        <label for="registration_number">Registration number *</label>
+        <input type="text" id="registration_number" required placeholder="e.g. 2026-B101-10000" />
       </div>
       <div class="form-group">
         <label for="campus">Campus *</label>
@@ -186,6 +187,10 @@
   }
 
   let uploadedPhotoUrl = profile?.avatar_url || null;
+  if (uploadedPhotoUrl) {
+    const af = document.getElementById('avatar-file');
+    if (af) af.required = false;
+  }
   renderAvatar(uploadedPhotoUrl, profile?.full_name || metaName);
 
   document.getElementById('hostel').addEventListener('change', () => {
@@ -247,9 +252,17 @@
     } else {
       hostel = titleCase(hostel);
     }
-    if (!full_name || !phone || !academic.campus || !academic.faculty || !academic.programme || !hostel) {
-      alertBox.innerHTML = `<div class="alert alert-error">Please fill all required fields (name, phone, campus, faculty, programme, hostel).</div>`;
+    const registration_number = document.getElementById('registration_number').value.trim();
+    if (!full_name || !phone || !registration_number || !academic.campus || !academic.faculty || !academic.programme
+        || !academic.academic_year || !academic.year_of_study || !academic.semester || !hostel) {
+      alertBox.innerHTML = `<div class="alert alert-error">Please fill all required fields (name, phone, registration number, campus, faculty, programme, academic year, year of study, semester, hostel).</div>`;
       btn.disabled = false; btn.textContent = 'Save and continue';
+      return;
+    }
+    if (!uploadedPhotoUrl) {
+      alertBox.innerHTML = `<div class="alert alert-error">Please upload a profile photo before continuing.</div>`;
+      btn.disabled = false; btn.textContent = 'Save and continue';
+      document.getElementById('avatar-file')?.focus();
       return;
     }
 
@@ -263,7 +276,7 @@
       semester: academic.semester,
       year_of_study: academic.year_of_study,
       hostel,
-      registration_number: document.getElementById('registration_number').value.trim() || null,
+      registration_number,
       bio: document.getElementById('bio').value.trim() || null,
       avatar_url: uploadedPhotoUrl,
       onboarding_completed: true,
