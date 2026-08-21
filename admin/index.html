@@ -998,6 +998,20 @@ document.getElementById('news-form').addEventListener('submit', async (e) => {
 
     let leadershipPositions = [];
     let leaderPositionSelect = null;
+    
+    function defaultLeadershipTermDates() {
+      const now = new Date();
+      const y = now.getFullYear();
+      const m = now.getMonth();
+      const d = now.getDate();
+      const startYear = (m > 7 || (m === 7 && d >= 24)) ? y : y - 1;
+      return {
+        label: `${startYear}/${String(startYear + 1).slice(-2)}`,
+        start: `${startYear}-08-24`,
+        end: `${startYear + 1}-08-23`,
+      };
+    }
+
     async function loadLeadershipPositions() {
       const mount = document.getElementById('leader-position-mount');
       const hidden = document.getElementById('leader-position');
@@ -1012,40 +1026,42 @@ document.getElementById('news-form').addEventListener('submit', async (e) => {
         return;
       }
       leadershipPositions = data || [];
-      // Hide legacy titles when the new Secretary / General names exist
+      // Prefer "Secretary for …" / General Secretary over old Minister titles
       const names = new Set(leadershipPositions.map(p => p.name));
-      const legacy = new Set([
-        'Secretary', 'Deputy Secretary',
-        'Information Minister', 'Deputy Information Minister',
-        'Ethics Minister', 'Deputy Ethics Minister',
-        'Games & Sports Minister', 'Projects Minister',
-        'Minister of Public Relations', 'Deputy Minister of Public Relations',
-        'Minister of Culture', 'Deputy Minister of Culture',
-        'Community Services Minister',
-        'Information Secretary', 'Deputy Information Secretary',
-        'Ethics Secretary', 'Deputy Ethics Secretary',
-        'Games & Sports Secretary', 'Projects Secretary',
-        'Public Relations Secretary', 'Deputy Public Relations Secretary',
-        'Culture Secretary', 'Deputy Culture Secretary',
-        'Community Services Secretary',
-      ]);
+      const oldMinisterAliases = {
+        'Information Minister': 'Secretary for Information',
+        'Deputy Information Minister': 'Deputy Secretary for Information',
+        'Ethics Minister': 'Secretary for Ethics',
+        'Deputy Ethics Minister': 'Deputy Secretary for Ethics',
+        'Games & Sports Minister': 'Secretary for Games and Sports',
+        'Projects Minister': 'Secretary for Projects',
+        'Minister of Public Relations': 'Secretary for Public Relations',
+        'Deputy Minister of Public Relations': 'Deputy Secretary for Public Relations',
+        'Minister of Culture': 'Secretary for Culture',
+        'Deputy Minister of Culture': 'Deputy Secretary for Culture',
+        'Community Services Minister': 'Secretary for Community Services',
+        'Secretary': 'General Secretary',
+        'Deputy Secretary': 'Deputy General Secretary',
+      };
       const opts = [];
-      const seenOrder = new Set();
+      const seenNames = new Set();
       for (const p of leadershipPositions) {
-        if (legacy.has(p.name)) continue; // only show final "Secretary for …" / General Secretary names
-        // if somehow both old+new, prefer new (already filtered by legacy set)
-        const orderKey = p.display_order;
+        // Skip legacy name if its replacement already exists in the table
+        const replacement = oldMinisterAliases[p.name];
+        if (replacement && names.has(replacement)) continue;
+        if (seenNames.has(p.name)) continue; // hard de-dupe
+        seenNames.add(p.name);
         opts.push({
           value: p.name,
           label: p.name,
           sub: p.name_luganda || '',
           order: p.display_order,
         });
-        seenOrder.add(orderKey);
       }
-      // If filtering removed everything (rename not applied yet), fall back to all
       if (!opts.length) {
         for (const p of leadershipPositions) {
+          if (seenNames.has(p.name)) continue;
+          seenNames.add(p.name);
           opts.push({
             value: p.name,
             label: p.name,
@@ -1067,6 +1083,15 @@ document.getElementById('news-form').addEventListener('submit', async (e) => {
       });
     }
     loadLeadershipPositions().catch(e => console.warn("positions", e));
+    (function prefillTermDates() {
+      const td = defaultLeadershipTermDates();
+      const lab = document.getElementById('leader-term-label');
+      const st = document.getElementById('leader-term-start');
+      const en = document.getElementById('leader-term-end');
+      if (lab && !lab.value) lab.value = td.label;
+      if (st && !st.value) st.value = td.start;
+      if (en && !en.value) en.value = td.end;
+    })();
     document.getElementById('leader-photo-file')?.addEventListener('change', async (e) => {
       const file = e.target.files?.[0];
       if (!file) return;
@@ -1093,7 +1118,7 @@ document.getElementById('news-form').addEventListener('submit', async (e) => {
       document.getElementById('leader-id').value = '';
       document.getElementById('leader-name').value = '';
       document.getElementById('leader-position').value = ''; if (leaderPositionSelect) leaderPositionSelect.value = '';
-      document.getElementById('leader-term-label').value = '2025/26';
+      const _td = defaultLeadershipTermDates(); document.getElementById('leader-term-label').value = _td.label;
       document.getElementById('leader-term-start').value = '';
       document.getElementById('leader-term-end').value = '';
       document.getElementById('leader-photo').value = '';
