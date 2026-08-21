@@ -120,6 +120,11 @@
 <div id="app-footer"></div>
 
 <script type="module">
+  import { supabase } from './assets/js/supabase-client.js';
+  import { routeAfterLogin, isProfileComplete } from './assets/js/auth.js';
+  import { mountAcademicFields, readAcademicFields } from './assets/js/academic.js';
+  import { mountNav, mountFooter } from './assets/js/nav.js';
+  import { BASE_URL, isUmuEmail } from './assets/js/site-config.js';
 
   function titleCase(str) {
     if (str == null) return str;
@@ -130,11 +135,6 @@
     );
   }
 
-  import { supabase } from './assets/js/supabase-client.js';
-  import { routeAfterLogin } from './assets/js/auth.js';
-  import { mountAcademicFields, readAcademicFields } from './assets/js/academic.js';
-  import { mountNav, mountFooter } from './assets/js/nav.js';
-  import { BASE_URL, isUmuEmail } from './assets/js/site-config.js';
 
   mountNav();
   mountFooter();
@@ -157,6 +157,16 @@
     .maybeSingle();
 
   document.getElementById('signed-in-as').textContent = `Signed in as ${session.user.email}`;
+
+  // Already complete: go to the correct destination (dashboard / pending)
+  if (profile && isProfileComplete(profile) && profile.membership_status === 'active') {
+    window.location.href = `${BASE_URL}/dashboard.html`;
+    throw new Error('redirect');
+  }
+  if (profile && isProfileComplete(profile) && profile.membership_status === 'pending') {
+    window.location.href = `${BASE_URL}/pending-approval.html`;
+    throw new Error('redirect');
+  }
 
   // Prefill
   const metaName = session.user.user_metadata?.full_name || session.user.user_metadata?.name || '';
