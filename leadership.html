@@ -214,7 +214,18 @@
 
   if (!currentErr && currentLeaders.length) {
     const enriched = await Promise.all(currentLeaders.map(attachPublicProfile));
-    currentLeaders = enriched;
+    // Hide incomplete rows (no name) and de-dupe by position
+    const byPos = new Map();
+    for (const l of enriched) {
+      const name = (l.full_name || '').trim();
+      if (!name) continue;
+      const key = (l.position || '').trim().toLowerCase() || l.id;
+      const prev = byPos.get(key);
+      if (!prev || ((l.photo_url || l.avatar_url) && !(prev.photo_url || prev.avatar_url))) {
+        byPos.set(key, l);
+      }
+    }
+    currentLeaders = [...byPos.values()].sort((a, b) => (a.display_order || 99) - (b.display_order || 99));
   }
 
   if (currentErr) {

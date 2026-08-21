@@ -316,6 +316,16 @@
       if (!l.term_end) return true;
       return new Date(l.term_end + 'T23:59:59') >= today;
     });
+    // Require a name; one card per position
+    {
+      const byPos = new Map();
+      for (const l of leaders) {
+        if (!(l.full_name || '').trim()) continue;
+        const key = (l.position || '').trim().toLowerCase() || l.full_name;
+        if (!byPos.has(key) || (l.photo_url && !byPos.get(key).photo_url)) byPos.set(key, l);
+      }
+      leaders = [...byPos.values()].sort((a, b) => (a.display_order || 99) - (b.display_order || 99));
+    }
     if (leaders.length) {
       grid.innerHTML = leaders.map(l => {
         const name = l.full_name || 'Leader';
