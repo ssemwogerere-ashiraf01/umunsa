@@ -83,6 +83,25 @@ export async function mountNav(activeKey = '') {
   const mount = document.getElementById('app-nav');
   if (!mount) return;
 
+  try {
+    await renderNav(mount, activeKey);
+  } catch (err) {
+    // A network hiccup or slow Supabase response should never leave the
+    // header permanently blank — fall back to a minimal guest nav so
+    // there's always something usable, and log for diagnosis.
+    console.error('mountNav failed, showing fallback nav:', err);
+    mount.innerHTML = `
+      <nav class="site-nav">
+        <a href="${BASE_URL}/index.html" class="brand"><span class="seal">${SITE_SHORT_SEAL}</span> ${SITE_NAME}</a>
+        <div class="nav-actions">
+          <a href="${BASE_URL}/index.html" class="btn btn-outline-light">Home</a>
+          <a href="${BASE_URL}/dashboard.html" class="btn btn-outline">Dashboard</a>
+        </div>
+      </nav>`;
+  }
+}
+
+async function renderNav(mount, activeKey = '') {
   const { data: { session } } = await supabase.auth.getSession();
 
   const chromeBar = `
@@ -264,6 +283,7 @@ function socialRowHtml() {
 export function mountFooter() {
   const mount = document.getElementById('app-footer');
   if (!mount) return;
+  try {
   mount.innerHTML = `
     <footer class="site-footer">
       <div class="footer-grid">
@@ -302,6 +322,9 @@ export function mountFooter() {
       </div>
       <p style="text-align:center;color:#7d8798;font-size:0.8rem;margin-top:2rem;">&copy; ${new Date().getFullYear()} ${SITE_NAME}, Uganda Martyrs University. Membership is by approval.</p>
     </footer>`;
+  } catch (err) {
+    console.error('mountFooter failed:', err);
+  }
 }
 
 function escapeHtml(str) {
