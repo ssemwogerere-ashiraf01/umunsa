@@ -268,23 +268,16 @@
   }
 
   // My project count
-  try {
-    const { data: myProjects, error: projErr } = await supabase
-      .from('project_members')
-      .select('project_id, role_in_project, projects(title, status)')
-      .eq('user_id', profile.id);
-    if (projErr) throw projErr;
-    document.getElementById('projects-count-tag').textContent = myProjects?.length
-      ? `On ${myProjects.length} project${myProjects.length === 1 ? '' : 's'}`
-      : 'Not on a project yet';
-    document.getElementById('projects-list').innerHTML = (myProjects && myProjects.length)
-      ? myProjects.map(pm => `<div class="list-item"><strong>${escapeHtml(pm.projects?.title || 'Project')}</strong><div class="meta">${escapeHtml(pm.role_in_project)} · ${escapeHtml(pm.projects?.status || '')}</div></div>`).join('') + `<p style="margin:0.75rem 0 0;"><a href="projects.html" style="font-weight:700;">View all my projects &rarr;</a></p>`
-      : `<p style="color:var(--text-muted);font-size:0.9rem;">You haven't been assigned to a project yet.</p>`;
-  } catch (e) {
-    console.warn(e);
-    document.getElementById('projects-count-tag').textContent = 'Could not load';
-    document.getElementById('projects-list').innerHTML = `<p style="color:var(--text-muted);font-size:0.9rem;">Could not load projects.</p>`;
-  }
+  const { data: myProjects } = await supabase
+    .from('project_members')
+    .select('project_id, role_in_project, projects(title, status)')
+    .eq('user_id', profile.id);
+  document.getElementById('projects-count-tag').textContent = myProjects?.length
+    ? `On ${myProjects.length} project${myProjects.length === 1 ? '' : 's'}`
+    : 'Not on a project yet';
+  document.getElementById('projects-list').innerHTML = (myProjects && myProjects.length)
+    ? myProjects.map(pm => `<div class="list-item"><strong>${escapeHtml(pm.projects?.title || 'Project')}</strong><div class="meta">${escapeHtml(pm.role_in_project)} · ${escapeHtml(pm.projects?.status || '')}</div></div>`).join('') + `<p style="margin:0.75rem 0 0;"><a href="projects.html" style="font-weight:700;">View all my projects &rarr;</a></p>`
+    : `<p style="color:var(--text-muted);font-size:0.9rem;">You haven't been assigned to a project yet.</p>`;
 
   // Surface a live election on the dashboard when voting is open.
   const { data: elections } = await supabase
