@@ -433,23 +433,29 @@ Preferred meeting day (multiple_choice: Monday, Wednesday, Friday)"></textarea>
 
     // ---------- Stats ----------
     async function loadStats() {
+      const grid = document.getElementById('stat-grid');
       try {
-        const [{ count: totalMembers, error: e1 }, { count: pendingMembers, error: e2 }, { count: activeActivities, error: e3 }, { count: openProjects, error: e4 }] = await Promise.all([
+        const results = await Promise.all([
           supabase.from('profiles').select('*', { count: 'exact', head: true }),
           supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('membership_status', 'pending'),
           supabase.from('activities').select('*', { count: 'exact', head: true }).gte('activity_date', new Date().toISOString()),
           supabase.from('projects').select('*', { count: 'exact', head: true }).neq('status', 'completed'),
         ]);
-        const firstError = e1 || e2 || e3 || e4;
-        if (firstError) throw firstError;
-        document.getElementById('stat-grid').innerHTML = `
-          <div class="stat-box"><strong>${totalMembers ?? 0}</strong><span>Total members</span></div>
-          <div class="stat-box"><strong>${pendingMembers ?? 0}</strong><span>Pending approval</span></div>
-          <div class="stat-box"><strong>${activeActivities ?? 0}</strong><span>Upcoming activities</span></div>
-          <div class="stat-box"><strong>${openProjects ?? 0}</strong><span>Active projects</span></div>`;
-      } catch (err) {
-        console.error(err);
-        document.getElementById('stat-grid').innerHTML = `<p class="alert alert-error" style="grid-column:1/-1;">Could not load stats: ${escapeHtml(err.message || String(err))}</p>`;
+        const totalMembers = results[0].count;
+        const pendingMembers = results[1].count;
+        const activeActivities = results[2].count;
+        const openProjects = results[3].count;
+        const err = results.find(r => r.error)?.error;
+        if (err) console.warn('loadStats partial error', err);
+        grid.innerHTML = `
+          <div class="stat-box"><strong>${totalMembers ?? 0}</strong><span>Total Members</span></div>
+          <div class="stat-box"><strong>${pendingMembers ?? 0}</strong><span>Pending Approval</span></div>
+          <div class="stat-box"><strong>${activeActivities ?? 0}</strong><span>Upcoming Activities</span></div>
+          <div class="stat-box"><strong>${openProjects ?? 0}</strong><span>Open Projects</span></div>
+        `;
+      } catch (e) {
+        console.error(e);
+        grid.innerHTML = `<div class="stat-box"><strong>—</strong><span>Could not load stats: ${escapeHtml(e.message || e)}</span></div>`;
       }
     }
 
@@ -1049,7 +1055,7 @@ document.getElementById('news-form').addEventListener('submit', async (e) => {
         },
       });
     }
-    loadLeadershipPositions();
+    loadLeadershipPositions().catch(e => console.warn("positions", e));
     document.getElementById('leader-photo-file')?.addEventListener('change', async (e) => {
       const file = e.target.files?.[0];
       if (!file) return;
@@ -1278,7 +1284,19 @@ document.getElementById('news-form').addEventListener('submit', async (e) => {
       await loadAdminSettings();
     });
 
-    await Promise.all([loadStats(), loadMembers(), loadNews(), loadActivities(), loadProjects(), loadForumModeration(), loadElections(), loadFeedback(), loadContactMessages(), loadLeadership(), loadAdminSettings()]);
+    await Promise.allSettled([
+      loadStats().catch(e => console.error('stats', e)),
+      loadMembers().catch(e => console.error('members', e)),
+      loadNews().catch(e => console.error('news', e)),
+      loadActivities().catch(e => console.error('activities', e)),
+      loadProjects().catch(e => console.error('projects', e)),
+      loadForumModeration().catch(e => console.error('forum', e)),
+      loadElections().catch(e => console.error('elections', e)),
+      loadFeedback().catch(e => console.error('feedback', e)),
+      loadContactMessages().catch(e => console.error('contact', e)),
+      loadLeadership().catch(e => console.error('leadership', e)),
+      loadAdminSettings().catch(e => console.error('settings', e)),
+    ]);
 
   </script>
 </body>
