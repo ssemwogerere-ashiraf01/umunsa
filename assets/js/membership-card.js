@@ -36,7 +36,7 @@ const QR_LIB_SOURCES = [
   'https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.4.4/qrcode.min.js',
   'https://unpkg.com/qrcode@1.5.3/build/qrcode.min.js',
 ];
-const QR_LIB_TIMEOUT_MS = 6000;
+const QR_LIB_TIMEOUT_MS = 3500;
 
 function loadScript(src, timeoutMs) {
   return new Promise((resolve, reject) => {
