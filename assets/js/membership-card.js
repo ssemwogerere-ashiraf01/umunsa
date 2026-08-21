@@ -109,12 +109,13 @@ function clipCardShape(ctx) {
 }
 
 async function loadImage(src) {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     if (!src) { resolve(null); return; }
     const img = new Image();
+    const timer = setTimeout(() => resolve(null), 8000);
     img.crossOrigin = 'anonymous';
-    img.onload = () => resolve(img);
-    img.onerror = () => resolve(null); // fall back to placeholder rather than failing the whole card
+    img.onload = () => { clearTimeout(timer); resolve(img); };
+    img.onerror = () => { clearTimeout(timer); resolve(null); };
     img.src = src;
   });
 }
