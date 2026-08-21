@@ -358,9 +358,22 @@ export async function logout() {
 /** Required fields before dashboard access */
 export function isProfileComplete(profile) {
   if (!profile) return false;
+  const str = (v) => typeof v === 'string' && v.trim().length > 0;
+  // Hard requirements — force return to onboarding if any are missing
+  if (!str(profile.full_name)) return false;
+  if (!str(profile.phone)) return false;
+  if (!str(profile.registration_number)) return false;
+  if (!str(profile.campus)) return false;
+  if (!str(profile.faculty)) return false;
+  if (!str(profile.programme)) return false;
+  if (!str(profile.hostel)) return false;
+  if (!str(profile.academic_year)) return false;
+  if (profile.year_of_study == null || Number(profile.year_of_study) < 1) return false;
+  if (profile.semester == null || ![1, 2].includes(Number(profile.semester))) return false;
+  if (!str(profile.avatar_url)) return false;
+  // Flag must also be true once they finished the form
   if (!profile.onboarding_completed) return false;
-  const need = [profile.full_name, profile.phone, profile.programme, profile.hostel, profile.faculty];
-  return need.every((v) => typeof v === 'string' && v.trim().length > 0);
+  return true;
 }
 
 // After any successful login, send the person to the right place based on
@@ -376,7 +389,7 @@ export async function routeAfterLogin() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('membership_status, onboarding_completed, full_name, phone, programme, hostel, faculty')
+    .select('membership_status, onboarding_completed, full_name, phone, registration_number, campus, faculty, programme, hostel, academic_year, year_of_study, semester, avatar_url')
     .eq('id', user.id)
     .maybeSingle();
 
