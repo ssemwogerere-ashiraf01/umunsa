@@ -4,9 +4,12 @@
 // membership card onto <canvas> elements, matching the brand palette in
 // assets/css/style.css. Used by admin/membership-id.html.
 //
-// Loads the QR code library from a CDN at runtime (no npm install needed):
-//   https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js
-// which exposes a global `QRCode` with `QRCode.toCanvas(canvas, text, opts)`.
+// Loads the QR code library from a CDN at runtime (no npm install needed).
+// Tries a few independent mirrors in turn — some campus/mobile networks
+// block one CDN but not another — so one being unreachable doesn't fail
+// the whole card. All three serve the same `qrcode` package (soldair/
+// node-qrcode) and expose a global `QRCode` with
+// `QRCode.toCanvas(canvas, text, opts)`.
 // =========================================================================
 import { BASE_URL, SITE_SHORT_SEAL } from './site-config.js';
 
@@ -28,17 +31,51 @@ export const CARD_W = 1013;
 export const CARD_H = 638;
 const RADIUS = 34;
 
-let qrLibPromise = null;
-function loadQrLib() {
-  if (window.QRCode) return Promise.resolve(window.QRCode);
-  if (qrLibPromise) return qrLibPromise;
-  qrLibPromise = new Promise((resolve, reject) => {
+const QR_LIB_SOURCES = [
+  'https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js',
+  'https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.4.4/qrcode.min.js',
+  'https://unpkg.com/qrcode@1.5.3/build/qrcode.min.js',
+];
+const QR_LIB_TIMEOUT_MS = 6000;
+
+function loadScript(src, timeoutMs) {
+  return new Promise((resolve, reject) => {
     const script = document.createElement('script');
-    script.src = 'https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js';
-    script.onload = () => resolve(window.QRCode);
-    script.onerror = () => reject(new Error('Could not load QR code library. Check your internet connection.'));
+    const timer = setTimeout(() => {
+      script.remove();
+      reject(new Error(`Timed out loading ${src}`));
+    }, timeoutMs);
+    script.src = src;
+    script.onload = () => { clearTimeout(timer); resolve(); };
+    script.onerror = () => { clearTimeout(timer); script.remove(); reject(new Error(`Failed to load ${src}`)); };
     document.head.appendChild(script);
   });
+}
+
+let qrLibPromise = null;
+async function loadQrLib() {
+  if (window.QRCode) return window.QRCode;
+  if (qrLibPromise) return qrLibPromise;
+
+  qrLibPromise = (async () => {
+    let lastError = null;
+    for (const src of QR_LIB_SOURCES) {
+      try {
+        await loadScript(src, QR_LIB_TIMEOUT_MS);
+        if (window.QRCode) return window.QRCode;
+      } catch (err) {
+        lastError = err;
+      }
+    }
+    // All mirrors failed — let the next attempt try again from scratch
+    // rather than caching a permanent failure.
+    qrLibPromise = null;
+    throw new Error(
+      `Could not load the QR code library from any source (jsDelivr, cdnjs, unpkg). ` +
+      `Check your internet connection or try a different network. (${lastError?.message || 'unknown error'})`
+    );
+  })();
+
   return qrLibPromise;
 }
 
