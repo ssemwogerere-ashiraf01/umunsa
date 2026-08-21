@@ -12,8 +12,6 @@ Disallow: /onboarding.html
 Disallow: /reset-password.html
 Disallow: /reset-password-confirm.html
 Disallow: /verify.html
-
-# Public marketing pages ARE allowed to be indexed:
 Allow: /index.html
 Allow: /about.html
 Allow: /contact.html
