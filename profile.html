@@ -112,6 +112,22 @@
       </div>
       <div class="form-group"><label for="security_answer">Security answer</label><input type="password" id="security_answer" placeholder="Answer (stored securely)" /></div>
 
+      
+      <div class="form-group"><label for="tribe">Tribe</label>
+        <select id="tribe" data-placeholder="Select tribe"><option value="">Select tribe</option></select>
+      </div>
+      <div class="form-group" id="tribe-other-wrap" style="display:none;">
+        <label for="tribe_other">Specify tribe</label>
+        <input type="text" id="tribe_other" placeholder="Enter your tribe" />
+      </div>
+      <div class="form-group"><label for="clan">Clan</label>
+        <select id="clan" data-placeholder="Select clan"><option value="">Select tribe first</option></select>
+      </div>
+      <div class="form-group" id="clan-other-wrap" style="display:none;">
+        <label for="clan_other">Specify clan</label>
+        <input type="text" id="clan_other" placeholder="Enter your clan" />
+      </div>
+
       <!-- Admin-only sensitive fields (shown when admin_view is active) -->
       <div id="admin-fields" hidden>
         <hr style="border:none;border-top:1px solid var(--border);margin:1.25rem 0;" />
@@ -141,7 +157,7 @@
       <div class="form-group">
         <label for="avatar_file">Profile photo</label>
         <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
-          <img id="avatar-preview" src="" alt="" style="width:64px;height:64px;border-radius:50%;object-fit:cover;background:var(--border);display:none;" />
+          <img id="avatar-preview" src="" alt="" style="width:64px;height:64px;border-radius:50%;object-fit:cover;object-position:center 20%;background:var(--border);display:none;" />
           <span id="avatar-fallback" style="width:64px;height:64px;border-radius:50%;background:var(--gold);color:var(--ink-navy);display:flex;align-items:center;justify-content:center;font-weight:700;font-family:'Fraunces',serif;"></span>
           <input type="file" id="avatar_file" accept="image/png,image/jpeg,image/webp" style="flex:1;min-width:160px;" />
         </div>
@@ -166,10 +182,11 @@
 
 <script type="module">
   import { supabase } from './assets/js/supabase-client.js';
-  import { requireApprovedMember, requireLoggedIn } from './assets/js/session-guard.js';
+  import { requireApprovedMember, requireSessionOnly } from './assets/js/session-guard.js';
   import { mountNav, mountFooter } from './assets/js/nav.js';
   import { mountAcademicFields, readAcademicFields } from './assets/js/academic.js';
   import { enhancePhoneFields } from './assets/js/phone-input.js';
+  import { wireTribeClanSelects, readTribeClan } from './assets/js/uganda-tribes.js';
   import { enhanceAllSelects, refreshSelects } from './assets/js/ns-select.js';
 
   mountNav('profile');
@@ -274,6 +291,12 @@
       console.warn('academic fields', e);
     }
 
+    try {
+      await wireTribeClanSelects(document, { tribe: p.tribe || '', clan: p.clan || '' });
+    } catch (e) {
+      console.warn('tribe/clan fields', e);
+    }
+
     try { enhancePhoneFields(document); } catch (_) {}
     try { enhanceAllSelects(document); } catch (_) {}
     try { refreshSelects(document); } catch (_) {}
@@ -281,7 +304,8 @@
 
   async function init() {
     if (adminViewId) {
-      const session = await requireLoggedIn();
+      const session = await requireSessionOnly();
+      if (!session) throw new Error('redirecting');
       isAdminMode = true;
       targetId = adminViewId;
 
@@ -370,16 +394,26 @@
     btn.disabled = true;
     btn.textContent = 'Saving...';
 
-    const academic = readAcademicFields(document);
+        const academic = readAcademicFields(document);
+    const tribeClan = typeof readTribeClan === 'function' ? readTribeClan(document) : { tribe: null, clan: null };
+    // Never wipe existing values with empty form fields (admin partial edits / unloaded selects)
+    const keep = (formVal, existing) => {
+      const v = (formVal ?? '').toString().trim();
+      if (v) return v;
+      if (existing !== undefined && existing !== null && String(existing).trim() !== '') return existing;
+      return null;
+    };
     const payload = {
-      full_name: titleCase(document.getElementById('full_name').value),
-      phone: document.getElementById('phone').value.trim() || null,
-      campus: academic.campus,
-      faculty: academic.faculty,
-      programme: academic.programme,
-      academic_year: academic.academic_year,
+      full_name: titleCase(document.getElementById('full_name').value) || profile.full_name,
+      phone: keep(document.getElementById('phone').value, profile.phone),
+      campus: keep(academic.campus, profile.campus),
+      faculty: keep(academic.faculty, profile.faculty),
+      programme: keep(academic.programme, profile.programme),
+      academic_year: keep(academic.academic_year, profile.academic_year),
       semester: academic.semester,
       year_of_study: academic.year_of_study,
+      tribe: keep(tribeClan.tribe, profile.tribe),
+      clan: keep(tribeClan.clan, profile.clan),
       bio: document.getElementById('bio').value.trim() || null,
     };
 

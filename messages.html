@@ -135,6 +135,264 @@
   }
   .member-pick label { display: flex; gap: 0.4rem; align-items: center; font-weight: 400; margin: 0.2rem 0; }
   .modal-actions { display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1rem; }
+
+  .msg-shell {
+    max-width: 1200px; margin: 0.75rem auto 1.5rem; padding: 0 0.75rem;
+    display: grid; grid-template-columns: 340px 1fr; gap: 0.75rem;
+    height: calc(100vh - 140px); min-height: 480px;
+  }
+  @media (max-width: 800px) {
+    .msg-shell { grid-template-columns: 1fr; height: auto; min-height: 0; }
+    .msg-sidebar { max-height: 40vh; }
+    .msg-thread-panel { min-height: 55vh; height: 60vh; }
+  }
+  .msg-panel {
+    background: var(--paper); border: 1px solid var(--border);
+    border-radius: 12px; box-shadow: var(--shadow);
+    display: flex; flex-direction: column; overflow: hidden; min-height: 0;
+  }
+  .msg-sidebar { height: 100%; max-height: none; }
+  .msg-list { overflow-y: auto; flex: 1; min-height: 0; -webkit-overflow-scrolling: touch; }
+  .msg-thread-panel { height: 100%; min-height: 0; }
+  .msg-thread {
+    flex: 1; overflow-y: auto; min-height: 0; padding: 0.85rem 1rem;
+    display: flex; flex-direction: column; gap: 0.35rem;
+    background: #e5ddd5;
+    background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0h60v60H0z' fill='%23e5ddd5'/%3E%3Cpath d='M10 10h2v2h-2zm20 0h2v2h-2zm20 0h2v2h-2zM0 30h2v2H0zm20 0h2v2h-2zm20 0h2v2h-2zm20 0h2v2h-2zM10 50h2v2h-2zm20 0h2v2h-2zm20 0h2v2h-2z' fill='%23d4ccc4' fill-opacity='.4'/%3E%3C/svg%3E");
+    -webkit-overflow-scrolling: touch;
+  }
+  [data-theme="dark"] .msg-thread { background: #0b141a; background-image: none; }
+  .msg-bubble {
+    max-width: min(78%, 420px); padding: 0.4rem 0.55rem 0.3rem;
+    border-radius: 8px; font-size: 0.92rem; line-height: 1.4;
+    word-break: break-word; box-shadow: 0 1px 0.5px rgba(0,0,0,.13);
+  }
+  .msg-bubble.mine {
+    align-self: flex-end; background: #d9fdd3; color: #111;
+    border-top-right-radius: 2px;
+  }
+  .msg-bubble.theirs {
+    align-self: flex-start; background: #fff; color: #111;
+    border-top-left-radius: 2px;
+  }
+  [data-theme="dark"] .msg-bubble.mine { background: #005c4b; color: #e9edef; }
+  [data-theme="dark"] .msg-bubble.theirs { background: #202c33; color: #e9edef; }
+  .msg-bubble .msg-sender { display: none; }
+  .msg-bubble.theirs .msg-sender { display: block; font-size: 0.75rem; font-weight: 700; color: var(--forest); margin-bottom: 0.15rem; }
+  .msg-bubble .msg-time {
+    font-size: 0.65rem; opacity: 0.7; text-align: right; margin-top: 0.15rem;
+  }
+  .msg-composer {
+    border-top: 1px solid var(--border); padding: 0.45rem 0.55rem;
+    display: flex; flex-direction: column; gap: 0.3rem;
+    background: #f0f2f5; position: relative; flex-shrink: 0;
+  }
+  [data-theme="dark"] .msg-composer { background: #1f2c34; }
+  .msg-composer textarea {
+    flex: 1; min-height: 42px; max-height: 120px; resize: none;
+    border: none; border-radius: 24px; padding: 0.55rem 1rem;
+    font-family: inherit; background: #fff; color: var(--text);
+  }
+  [data-theme="dark"] .msg-composer textarea { background: #2a3942; color: #e9edef; }
+  .msg-send {
+    background: #00a884; color: #fff; border: none; border-radius: 50%;
+    width: 42px; height: 42px; font-weight: 700; cursor: pointer; padding: 0;
+    flex-shrink: 0;
+  }
+  .msg-person.active, .msg-person:hover { background: #f0f2f5; }
+  [data-theme="dark"] .msg-person.active, [data-theme="dark"] .msg-person:hover { background: #2a3942; }
+  .emoji-pop {
+    display: none; position: absolute; bottom: 100%; left: 0.4rem; right: 0.4rem;
+    max-height: 320px; overflow: hidden; background: #fff; border: 1px solid var(--border);
+    border-radius: 12px; box-shadow: var(--shadow); z-index: 8; flex-direction: column;
+  }
+  .emoji-grid button { font-size: 1.45rem; width: 2.2rem; height: 2.2rem; line-height: 1; }
+
+
+  /* === Fixed dual-pane scroll (members list + thread independent) === */
+  .msg-shell {
+    max-width: 1200px;
+    margin: 0.75rem auto 1.5rem;
+    padding: 0 0.75rem;
+    display: grid;
+    grid-template-columns: 340px 1fr;
+    gap: 0.75rem;
+    height: calc(100vh - 160px);
+    min-height: 420px;
+    max-height: calc(100vh - 120px);
+  }
+  @media (max-width: 800px) {
+    .msg-shell {
+      grid-template-columns: 1fr;
+      height: auto;
+      max-height: none;
+      min-height: 0;
+    }
+    .msg-sidebar {
+      height: 38vh !important;
+      max-height: 38vh !important;
+    }
+    .msg-thread-panel, .msg-chat {
+      height: 55vh !important;
+      min-height: 50vh !important;
+      max-height: 60vh !important;
+    }
+  }
+  .msg-panel {
+    background: var(--paper);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-height: 0;
+    height: 100%;
+  }
+  .msg-sidebar {
+    max-height: none;
+    height: 100%;
+  }
+  .msg-list {
+    flex: 1 1 auto;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+  .msg-thread-panel, .msg-chat {
+    height: 100%;
+    min-height: 0;
+    max-height: none;
+  }
+  .msg-thread {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    padding: 0.85rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    background: #e5ddd5;
+    background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0h60v60H0z' fill='%23e5ddd5'/%3E%3Cpath d='M10 10h2v2h-2zm20 0h2v2h-2zm20 0h2v2h-2zM0 30h2v2H0zm20 0h2v2h-2zm20 0h2v2h-2zm20 0h2v2h-2zM10 50h2v2h-2zm20 0h2v2h-2zm20 0h2v2h-2z' fill='%23d4ccc4' fill-opacity='.35'/%3E%3C/svg%3E");
+  }
+  [data-theme="dark"] .msg-thread {
+    background: #0b141a;
+    background-image: none;
+  }
+  .msg-side-head, .msg-tabs, .msg-chat-head, .msg-search, .msg-composer {
+    flex-shrink: 0;
+  }
+  .msg-bubble {
+    max-width: min(78%, 420px);
+    padding: 0.4rem 0.55rem 0.3rem;
+    border-radius: 8px;
+    font-size: 0.92rem;
+    line-height: 1.4;
+    word-break: break-word;
+    box-shadow: 0 1px 0.5px rgba(0,0,0,.13);
+  }
+  .msg-bubble.mine {
+    align-self: flex-end;
+    background: #d9fdd3;
+    color: #111;
+    border-top-right-radius: 2px;
+  }
+  .msg-bubble.theirs {
+    align-self: flex-start;
+    background: #fff;
+    color: #111;
+    border-top-left-radius: 2px;
+  }
+  [data-theme="dark"] .msg-bubble.mine { background: #005c4b; color: #e9edef; }
+  [data-theme="dark"] .msg-bubble.theirs { background: #202c33; color: #e9edef; }
+  .msg-composer {
+    border-top: 1px solid var(--border);
+    padding: 0.45rem 0.55rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    background: #f0f2f5;
+    position: relative;
+  }
+  [data-theme="dark"] .msg-composer { background: #1f2c34; }
+  .msg-send {
+    background: #00a884;
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    width: 42px;
+    height: 42px;
+    font-weight: 700;
+    cursor: pointer;
+    padding: 0;
+    flex-shrink: 0;
+  }
+  .emoji-pop {
+    max-height: 340px !important;
+  }
+  .emoji-grid button {
+    font-size: 1.45rem !important;
+    width: 2.2rem !important;
+    height: 2.2rem !important;
+    line-height: 1;
+  }
+
+
+  /* === FORCE member list scroll (final) === */
+  .msg-shell {
+    height: calc(100vh - 160px) !important;
+    max-height: calc(100vh - 120px) !important;
+    min-height: 420px !important;
+    overflow: hidden !important;
+  }
+  body.has-left-nav .msg-shell {
+    height: calc(100vh - 80px) !important;
+    max-height: calc(100vh - 60px) !important;
+  }
+  .msg-panel.msg-sidebar {
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100% !important;
+    max-height: 100% !important;
+    overflow: hidden !important;
+    min-height: 0 !important;
+  }
+  #chats-pane,
+  #groups-pane {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+  }
+  .msg-list,
+  #member-list,
+  #group-list {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    overflow-y: scroll !important; /* always show scroll track when needed */
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    overscroll-behavior: contain;
+  }
+  .msg-search {
+    flex-shrink: 0 !important;
+  }
+  @media (max-width: 800px) {
+    .msg-shell {
+      height: auto !important;
+      max-height: none !important;
+      overflow: visible !important;
+    }
+    .msg-panel.msg-sidebar {
+      height: 42vh !important;
+      max-height: 42vh !important;
+    }
+  }
+
 </style>
 </head>
 <body>
@@ -168,7 +426,7 @@
     </div>
   </aside>
 
-  <section class="msg-panel msg-chat" id="chat-panel">
+  <section class="msg-panel msg-chat msg-thread-panel" id="chat-panel">
     <div class="msg-chat-head" id="chat-head">
       <div style="display:flex;align-items:center;gap:0.75rem;min-width:0;">
         <div class="msg-avatar" id="chat-avatar">?</div>
@@ -242,7 +500,20 @@
     activities: { icon: '⚽', label: 'Activities', list: ['⚽','🏀','🏈','⚾','🥎','🎾','🏐','🏉','🥏','🎱','🪀','🏓','🏸','🏒','🏑','🥍','🏏','🪃','🥅','⛳','🪁','🏹','🎣','🤿','🥊','🎽','🛹','🛼','⛸','⛷','🏂','🪂','🏋','️','🤼','🤸','⛹','️','🤾','🏌','️','🏇','🧘','🏄','🏊','🤽','🚵','🚴','🥇','🥈','🥉','🏅','🎖','🏵','🎗','🎟','🤹','🎭','🎨','🎤','🎧','🎼','🎹','🥁','🎺','🎲','♟','🎯','🎮','🧩'] },
     objects: { icon: '💡', label: 'Objects', list: ['⌚','📱','📲','💻','⌨','️','🖥','🖨','🖱','🖲','🕹','🗜','💽','💾','💿','📀','📼','📷','📸','📹','🎥','📽','🎞','📞','☎','️','📠','📺','🎙','🎚','🎛','⏱','⏲','⏰','🕰','⌛','⏳','📡','🔌','💡','🕯','🪔','🧯','🛢','💸','💵','💴','💶','💷','💰','💎','⚖','️','🔧','🔨','⚒','🛠','⛏','⚙','️','⛓','💣','🧨','🔪','🗡','⚔','️','🚬','⚰','️','🪦','⚱','️','🏺','🔮','📿','🧿','⚗','️','🔭','🔬','🕳','🩹','🩺','🩸','🧬','🦠','🧫','🧪','🌡','🧺','🧻','🚽','🚰','🛁','🪥','🧽','🧴','🛎','🗝','🛋','🛏','🛌','🖼','🛍','🎈','🎏','🪄','🪅','🎊','🎉','🏮','🎐','🧧','✉','️','📩','📨','📧','💌','📥','📤','📦','🏷','📪','📫','📬','📭','📮','📯','📃','📄','📑','📊','📈','📉','🗒','🗓','📆','📅','🗑','📇','🗃','🗳','🗄','📁','📂','🗂','🗞','📓','📔','📕','📗','📘','📙','📚','📖','🧷','📎','🖇','📐','📏','🧮','📌','📍','✂','️','🖊','🖋','✒','️','🖌','🖍','📝','✏','️','🔍','🔎','🔏','🔐','🔒','🔓'] },
     symbols: { icon: '☮️', label: 'Symbols', list: ['❤','️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💔','❣','️','💕','💞','💓','💗','💖','💘','💝','💟','☮','️','✝','️','☪','️','🕉','☸','️','✡','️','🔯','🕎','☯','️','☦','️','🛐','⛎','♈','♉','♊','♋','♌','♍','♎','♏','♐','♑','♒','♓','🆔','⚛','️','🉑','☢','️','☣','️','📴','📳','🈶','🈚','️','🈸','🈺','🈷','️','✴','️','🆚','💮','🉐','㊙','️','㊗','️','🈴','🈵','🈹','🈲','🅰','️','🅱','️','🆎','🆑','🅾','️','🆘','❌','⭕','️','🛑','⛔','📛','🚫','💯','💢','♨','️','🚷','🚯','🚳','🚱','🔞','📵','🚭','❗','️','❕','❓','❔','‼','️','⁉','️','🔅','🔆','〽','️','⚠','️','🚸','🔱','⚜','️','🔰','♻','️','✅','🈯','️','💹','❇','️','✳','️','❎','🌐','💠','Ⓜ','️','🌀','💤','🏧','🚾','♿','🅿','️','🛗','🈳','🈂','️','🛂','🛃','🛄','🛅','🚹','🚺','🚼','⚧','🚻','🚮','🎦','📶','🈁','🔣','ℹ','️','🔤','🔡','🔠','🆖','🆗','🆙','🆒','🆕','🆓','0','️','⃣','1','️','⃣','2','️','⃣','3','️','⃣','4','️','⃣','5','️','⃣','6','️','⃣','7','️','⃣','8','️','⃣','9','️','⃣','🔟','🔢','#','️','⃣','*','️','⃣','⏏','️','▶','️','⏸','⏯','⏹','⏺','⏭','⏮','⏩','⏪','⏫','⏬','◀','️','🔼','🔽','➡','️','⬅','️','⬆','️','⬇','️','↗','️','↘','️','↙','️','↖','️','↕','️','↔','️','↪','️','↩','️','⤴','️','⤵','️','🔀','🔁','🔂','🔄','🔃','🎵','🎶','➕','➖','➗','✖','️','♾','💲','💱','™','️','©','️','®','️','🔚','🔙','🔛','🔝','🔜','〰','️','➰','➿','✔','️','☑','️','🔘','🔴','🟠','🟡','🟢','🔵','🟣','⚫','⚪','🟤','🔺','🔻','🔸','🔹','🔶','🔷','🔳','🔲','▪','️','▫','️','◾','◽','◼','️','◻','️','🟥','🟧','🟨','🟩','🟦','🟪','⬛','⬜','🟫','🔈','🔇','🔉','🔊','🔔','🔕','📣','📢','💬','💭','🗯','♠','️','♣','️','♥','️','♦','️','🃏','🎴','🀄','️'] },
-    flags: { icon: '🏳️', label: 'Flags', list: ['🏳️','🏴','🏁','🚩','🏳️\u200d🌈','🏳️\u200d⚧️','🇺🇳','🇺🇬','🇰🇪','🇹🇿','🇷🇼','🇧🇮','🇸🇸','🇪🇹','🇸🇴','🇨🇩','🇪🇬','🇳🇬','🇬🇭','🇿🇦','🇬🇧','🇺🇸','🇨🇦','🇫🇷','🇩🇪','🇮🇹','🇪🇸','🇵🇹','🇳🇱','🇧🇪','🇨🇭','🇦🇹','🇸🇪','🇳🇴','🇩🇰','🇫🇮','🇵🇱','🇺🇦','🇷🇺','🇹🇷','🇸🇦','🇦🇪','🇮🇳','🇨🇳','🇯🇵','🇰🇷','🇦🇺','🇳🇿','🇧🇷','🇦🇷','🇲🇽'] },
+    flags: { icon: '🏳️', label: 'Flags', list: ['🏳️','🏴','🏁','🚩',String.fromCodePoint(0x1F1E6+'A'.charCodeAt(0)-65,0x1F1E6+'D'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'A'.charCodeAt(0)-65,0x1F1E6+'E'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'A'.charCodeAt(0)-65,0x1F1E6+'F'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'A'.charCodeAt(0)-65,0x1F1E6+'G'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'A'.charCodeAt(0)-65,0x1F1E6+'I'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'A'.charCodeAt(0)-65,0x1F1E6+'L'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'A'.charCodeAt(0)-65,0x1F1E6+'M'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'A'.charCodeAt(0)-65,0x1F1E6+'O'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'A'.charCodeAt(0)-65,0x1F1E6+'Q'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'A'.charCodeAt(0)-65,0x1F1E6+'R'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'A'.charCodeAt(0)-65,0x1F1E6+'S'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'A'.charCodeAt(0)-65,0x1F1E6+'T'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'A'.charCodeAt(0)-65,0x1F1E6+'U'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'A'.charCodeAt(0)-65,0x1F1E6+'W'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'A'.charCodeAt(0)-65,0x1F1E6+'X'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'A'.charCodeAt(0)-65,0x1F1E6+'Z'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'B'.charCodeAt(0)-65,0x1F1E6+'A'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'B'.charCodeAt(0)-65,0x1F1E6+'B'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'B'.charCodeAt(0)-65,0x1F1E6+'D'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'B'.charCodeAt(0)-65,0x1F1E6+'E'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'B'.charCodeAt(0)-65,0x1F1E6+'F'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'B'.charCodeAt(0)-65,0x1F1E6+'G'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'B'.charCodeAt(0)-65,0x1F1E6+'H'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'B'.charCodeAt(0)-65,0x1F1E6+'I'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'B'.charCodeAt(0)-65,0x1F1E6+'J'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'B'.charCodeAt(0)-65,0x1F1E6+'L'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'B'.charCodeAt(0)-65,0x1F1E6+'M'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'B'.charCodeAt(0)-65,0x1F1E6+'N'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'B'.charCodeAt(0)-65,0x1F1E6+'O'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'B'.charCodeAt(0)-65,0x1F1E6+'Q'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'B'.charCodeAt(0)-65,0x1F1E6+'R'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'B'.charCodeAt(0)-65,0x1F1E6+'S'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'B'.charCodeAt(0)-65,0x1F1E6+'T'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'B'.charCodeAt(0)-65,0x1F1E6+'V'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'B'.charCodeAt(0)-65,0x1F1E6+'W'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'B'.charCodeAt(0)-65,0x1F1E6+'Y'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'B'.charCodeAt(0)-65,0x1F1E6+'Z'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'C'.charCodeAt(0)-65,0x1F1E6+'A'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'C'.charCodeAt(0)-65,0x1F1E6+'C'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'C'.charCodeAt(0)-65,0x1F1E6+'D'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'C'.charCodeAt(0)-65,0x1F1E6+'F'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'C'.charCodeAt(0)-65,0x1F1E6+'G'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'C'.charCodeAt(0)-65,0x1F1E6+'H'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'C'.charCodeAt(0)-65,0x1F1E6+'I'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'C'.charCodeAt(0)-65,0x1F1E6+'K'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'C'.charCodeAt(0)-65,0x1F1E6+'L'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'C'.charCodeAt(0)-65,0x1F1E6+'M'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'C'.charCodeAt(0)-65,0x1F1E6+'N'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'C'.charCodeAt(0)-65,0x1F1E6+'O'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'C'.charCodeAt(0)-65,0x1F1E6+'R'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'C'.charCodeAt(0)-65,0x1F1E6+'U'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'C'.charCodeAt(0)-65,0x1F1E6+'V'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'C'.charCodeAt(0)-65,0x1F1E6+'W'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'C'.charCodeAt(0)-65,0x1F1E6+'X'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'C'.charCodeAt(0)-65,0x1F1E6+'Y'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'C'.charCodeAt(0)-65,0x1F1E6+'Z'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'D'.charCodeAt(0)-65,0x1F1E6+'E'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'D'.charCodeAt(0)-65,0x1F1E6+'J'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'D'.charCodeAt(0)-65,0x1F1E6+'K'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'D'.charCodeAt(0)-65,0x1F1E6+'M'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'D'.charCodeAt(0)-65,0x1F1E6+'O'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'D'.charCodeAt(0)-65,0x1F1E6+'Z'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'E'.charCodeAt(0)-65,0x1F1E6+'C'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'E'.charCodeAt(0)-65,0x1F1E6+'E'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'E'.charCodeAt(0)-65,0x1F1E6+'G'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'E'.charCodeAt(0)-65,0x1F1E6+'H'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'E'.charCodeAt(0)-65,0x1F1E6+'R'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'E'.charCodeAt(0)-65,0x1F1E6+'S'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'E'.charCodeAt(0)-65,0x1F1E6+'T'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'F'.charCodeAt(0)-65,0x1F1E6+'I'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'F'.charCodeAt(0)-65,0x1F1E6+'J'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'F'.charCodeAt(0)-65,0x1F1E6+'K'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'F'.charCodeAt(0)-65,0x1F1E6+'M'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'F'.charCodeAt(0)-65,0x1F1E6+'O'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'F'.charCodeAt(0)-65,0x1F1E6+'R'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'G'.charCodeAt(0)-65,0x1F1E6+'A'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'G'.charCodeAt(0)-65,0x1F1E6+'B'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'G'.charCodeAt(0)-65,0x1F1E6+'D'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'G'.charCodeAt(0)-65,0x1F1E6+'E'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'G'.charCodeAt(0)-65,0x1F1E6+'F'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'G'.charCodeAt(0)-65,0x1F1E6+'G'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'G'.charCodeAt(0)-65,0x1F1E6+'H'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'G'.charCodeAt(0)-65,0x1F1E6+'I'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'G'.charCodeAt(0)-65,0x1F1E6+'L'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'G'.charCodeAt(0)-65,0x1F1E6+'M'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'G'.charCodeAt(0)-65,0x1F1E6+'N'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'G'.charCodeAt(0)-65,0x1F1E6+'P'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'G'.charCodeAt(0)-65,0x1F1E6+'Q'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'G'.charCodeAt(0)-65,0x1F1E6+'R'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'G'.charCodeAt(0)-65,0x1F1E6+'S'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'G'.charCodeAt(0)-65,0x1F1E6+'T'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'G'.charCodeAt(0)-65,0x1F1E6+'U'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'G'.charCodeAt(0)-65,0x1F1E6+'W'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'G'.charCodeAt(0)-65,0x1F1E6+'Y'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'H'.charCodeAt(0)-65,0x1F1E6+'K'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'H'.charCodeAt(0)-65,0x1F1E6+'M'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'H'.charCodeAt(0)-65,0x1F1E6+'N'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'H'.charCodeAt(0)-65,0x1F1E6+'R'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'H'.charCodeAt(0)-65,0x1F1E6+'T'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'H'.charCodeAt(0)-65,0x1F1E6+'U'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'I'.charCodeAt(0)-65,0x1F1E6+'D'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'I'.charCodeAt(0)-65,0x1F1E6+'E'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'I'.charCodeAt(0)-65,0x1F1E6+'L'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'I'.charCodeAt(0)-65,0x1F1E6+'M'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'I'.charCodeAt(0)-65,0x1F1E6+'N'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'I'.charCodeAt(0)-65,0x1F1E6+'O'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'I'.charCodeAt(0)-65,0x1F1E6+'Q'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'I'.charCodeAt(0)-65,0x1F1E6+'R'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'I'.charCodeAt(0)-65,0x1F1E6+'S'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'I'.charCodeAt(0)-65,0x1F1E6+'T'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'J'.charCodeAt(0)-65,0x1F1E6+'E'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'J'.charCodeAt(0)-65,0x1F1E6+'M'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'J'.charCodeAt(0)-65,0x1F1E6+'O'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'J'.charCodeAt(0)-65,0x1F1E6+'P'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'K'.charCodeAt(0)-65,0x1F1E6+'E'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'K'.charCodeAt(0)-65,0x1F1E6+'G'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'K'.charCodeAt(0)-65,0x1F1E6+'H'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'K'.charCodeAt(0)-65,0x1F1E6+'I'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'K'.charCodeAt(0)-65,0x1F1E6+'M'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'K'.charCodeAt(0)-65,0x1F1E6+'N'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'K'.charCodeAt(0)-65,0x1F1E6+'P'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'K'.charCodeAt(0)-65,0x1F1E6+'R'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'K'.charCodeAt(0)-65,0x1F1E6+'W'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'K'.charCodeAt(0)-65,0x1F1E6+'Y'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'K'.charCodeAt(0)-65,0x1F1E6+'Z'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'L'.charCodeAt(0)-65,0x1F1E6+'A'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'L'.charCodeAt(0)-65,0x1F1E6+'B'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'L'.charCodeAt(0)-65,0x1F1E6+'C'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'L'.charCodeAt(0)-65,0x1F1E6+'I'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'L'.charCodeAt(0)-65,0x1F1E6+'K'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'L'.charCodeAt(0)-65,0x1F1E6+'R'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'L'.charCodeAt(0)-65,0x1F1E6+'S'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'L'.charCodeAt(0)-65,0x1F1E6+'T'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'L'.charCodeAt(0)-65,0x1F1E6+'U'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'L'.charCodeAt(0)-65,0x1F1E6+'V'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'L'.charCodeAt(0)-65,0x1F1E6+'Y'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'M'.charCodeAt(0)-65,0x1F1E6+'A'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'M'.charCodeAt(0)-65,0x1F1E6+'C'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'M'.charCodeAt(0)-65,0x1F1E6+'D'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'M'.charCodeAt(0)-65,0x1F1E6+'E'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'M'.charCodeAt(0)-65,0x1F1E6+'F'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'M'.charCodeAt(0)-65,0x1F1E6+'G'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'M'.charCodeAt(0)-65,0x1F1E6+'H'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'M'.charCodeAt(0)-65,0x1F1E6+'K'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'M'.charCodeAt(0)-65,0x1F1E6+'L'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'M'.charCodeAt(0)-65,0x1F1E6+'M'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'M'.charCodeAt(0)-65,0x1F1E6+'N'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'M'.charCodeAt(0)-65,0x1F1E6+'O'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'M'.charCodeAt(0)-65,0x1F1E6+'P'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'M'.charCodeAt(0)-65,0x1F1E6+'Q'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'M'.charCodeAt(0)-65,0x1F1E6+'R'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'M'.charCodeAt(0)-65,0x1F1E6+'S'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'M'.charCodeAt(0)-65,0x1F1E6+'T'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'M'.charCodeAt(0)-65,0x1F1E6+'U'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'M'.charCodeAt(0)-65,0x1F1E6+'V'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'M'.charCodeAt(0)-65,0x1F1E6+'W'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'M'.charCodeAt(0)-65,0x1F1E6+'X'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'M'.charCodeAt(0)-65,0x1F1E6+'Y'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'M'.charCodeAt(0)-65,0x1F1E6+'Z'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'N'.charCodeAt(0)-65,0x1F1E6+'A'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'N'.charCodeAt(0)-65,0x1F1E6+'C'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'N'.charCodeAt(0)-65,0x1F1E6+'E'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'N'.charCodeAt(0)-65,0x1F1E6+'F'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'N'.charCodeAt(0)-65,0x1F1E6+'G'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'N'.charCodeAt(0)-65,0x1F1E6+'I'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'N'.charCodeAt(0)-65,0x1F1E6+'L'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'N'.charCodeAt(0)-65,0x1F1E6+'O'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'N'.charCodeAt(0)-65,0x1F1E6+'P'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'N'.charCodeAt(0)-65,0x1F1E6+'R'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'N'.charCodeAt(0)-65,0x1F1E6+'U'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'N'.charCodeAt(0)-65,0x1F1E6+'Z'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'O'.charCodeAt(0)-65,0x1F1E6+'M'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'P'.charCodeAt(0)-65,0x1F1E6+'A'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'P'.charCodeAt(0)-65,0x1F1E6+'E'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'P'.charCodeAt(0)-65,0x1F1E6+'F'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'P'.charCodeAt(0)-65,0x1F1E6+'G'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'P'.charCodeAt(0)-65,0x1F1E6+'H'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'P'.charCodeAt(0)-65,0x1F1E6+'K'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'P'.charCodeAt(0)-65,0x1F1E6+'L'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'P'.charCodeAt(0)-65,0x1F1E6+'M'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'P'.charCodeAt(0)-65,0x1F1E6+'N'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'P'.charCodeAt(0)-65,0x1F1E6+'R'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'P'.charCodeAt(0)-65,0x1F1E6+'S'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'P'.charCodeAt(0)-65,0x1F1E6+'T'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'P'.charCodeAt(0)-65,0x1F1E6+'W'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'P'.charCodeAt(0)-65,0x1F1E6+'Y'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'Q'.charCodeAt(0)-65,0x1F1E6+'A'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'R'.charCodeAt(0)-65,0x1F1E6+'E'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'R'.charCodeAt(0)-65,0x1F1E6+'O'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'R'.charCodeAt(0)-65,0x1F1E6+'S'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'R'.charCodeAt(0)-65,0x1F1E6+'U'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'R'.charCodeAt(0)-65,0x1F1E6+'W'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'S'.charCodeAt(0)-65,0x1F1E6+'A'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'S'.charCodeAt(0)-65,0x1F1E6+'B'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'S'.charCodeAt(0)-65,0x1F1E6+'C'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'S'.charCodeAt(0)-65,0x1F1E6+'D'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'S'.charCodeAt(0)-65,0x1F1E6+'E'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'S'.charCodeAt(0)-65,0x1F1E6+'G'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'S'.charCodeAt(0)-65,0x1F1E6+'H'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'S'.charCodeAt(0)-65,0x1F1E6+'I'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'S'.charCodeAt(0)-65,0x1F1E6+'J'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'S'.charCodeAt(0)-65,0x1F1E6+'K'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'S'.charCodeAt(0)-65,0x1F1E6+'L'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'S'.charCodeAt(0)-65,0x1F1E6+'M'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'S'.charCodeAt(0)-65,0x1F1E6+'N'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'S'.charCodeAt(0)-65,0x1F1E6+'O'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'S'.charCodeAt(0)-65,0x1F1E6+'R'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'S'.charCodeAt(0)-65,0x1F1E6+'S'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'S'.charCodeAt(0)-65,0x1F1E6+'T'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'S'.charCodeAt(0)-65,0x1F1E6+'V'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'S'.charCodeAt(0)-65,0x1F1E6+'X'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'S'.charCodeAt(0)-65,0x1F1E6+'Y'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'S'.charCodeAt(0)-65,0x1F1E6+'Z'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'T'.charCodeAt(0)-65,0x1F1E6+'C'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'T'.charCodeAt(0)-65,0x1F1E6+'D'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'T'.charCodeAt(0)-65,0x1F1E6+'F'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'T'.charCodeAt(0)-65,0x1F1E6+'G'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'T'.charCodeAt(0)-65,0x1F1E6+'H'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'T'.charCodeAt(0)-65,0x1F1E6+'J'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'T'.charCodeAt(0)-65,0x1F1E6+'K'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'T'.charCodeAt(0)-65,0x1F1E6+'L'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'T'.charCodeAt(0)-65,0x1F1E6+'M'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'T'.charCodeAt(0)-65,0x1F1E6+'N'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'T'.charCodeAt(0)-65,0x1F1E6+'O'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'T'.charCodeAt(0)-65,0x1F1E6+'R'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'T'.charCodeAt(0)-65,0x1F1E6+'T'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'T'.charCodeAt(0)-65,0x1F1E6+'V'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'T'.charCodeAt(0)-65,0x1F1E6+'W'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'T'.charCodeAt(0)-65,0x1F1E6+'Z'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'U'.charCodeAt(0)-65,0x1F1E6+'A'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'U'.charCodeAt(0)-65,0x1F1E6+'G'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'U'.charCodeAt(0)-65,0x1F1E6+'M'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'U'.charCodeAt(0)-65,0x1F1E6+'S'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'U'.charCodeAt(0)-65,0x1F1E6+'Y'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'U'.charCodeAt(0)-65,0x1F1E6+'Z'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'V'.charCodeAt(0)-65,0x1F1E6+'A'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'V'.charCodeAt(0)-65,0x1F1E6+'C'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'V'.charCodeAt(0)-65,0x1F1E6+'E'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'V'.charCodeAt(0)-65,0x1F1E6+'G'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'V'.charCodeAt(0)-65,0x1F1E6+'I'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'V'.charCodeAt(0)-65,0x1F1E6+'N'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'V'.charCodeAt(0)-65,0x1F1E6+'U'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'W'.charCodeAt(0)-65,0x1F1E6+'F'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'W'.charCodeAt(0)-65,0x1F1E6+'S'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'Y'.charCodeAt(0)-65,0x1F1E6+'E'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'Y'.charCodeAt(0)-65,0x1F1E6+'T'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'Z'.charCodeAt(0)-65,0x1F1E6+'A'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'Z'.charCodeAt(0)-65,0x1F1E6+'M'.charCodeAt(0)-65),String.fromCodePoint(0x1F1E6+'Z'.charCodeAt(0)-65,0x1F1E6+'W'.charCodeAt(0)-65)] },
+    stickers: {
+      icon: '🎨',
+      label: 'Stickers',
+      list: [
+        '👋','🙏','👍','👎','👏','🙌','🤝','💪','🔥','✨','⭐','🌟','💫','🎉','🎊','🎈',
+        '❤️','💕','😍','🥰','😂','🤣','😅','😊','😇','🤗','🤩','😎','🥳','😭','😢','😤',
+        '🤬','🤯','🫠','🫡','🤔','👀','💀','🤡','👻','🤖','💩','🙈','🙉','🙊','😺','😸',
+        '🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐷','🐸','🐵','🦄',
+        '🌹','🌸','🌺','🌻','🌼','🍀','🌈','☀️','🌙','⚡','❄️','🌊','🍕','🍔','🍟','🍩',
+        '🍪','🎂','☕','🍺','🍷','⚽','🏀','🏆','🎮','🎧','📚','💼','🎓','✈️','🏠','🚗',
+        '💡','✅','❌','💯','🇺🇬','💚','💙','🧡','🖤','🤍','🤎','💜','💛','🤝','🫡','🙌'
+      ]
+    }
   };
 
   let recentEmojis = JSON.parse(localStorage.getItem('nsa_recent_emoji') || 'null') || EMOJI_PACKS.recent.list.slice();

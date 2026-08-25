@@ -129,10 +129,8 @@
   mountNav('activities');
   mountFooter();
 
-  const session = await requireLoggedIn();
-  if (!session) throw new Error('redirecting');
-
-  const { data: profile } = await supabase.from('profiles').select('id, full_name').eq('id', session.user.id).single();
+  const profile = await requireLoggedIn();
+  if (!profile) throw new Error('redirecting');
 
   const container = document.getElementById('activities-container');
   const alertBox = document.getElementById('alert-box');

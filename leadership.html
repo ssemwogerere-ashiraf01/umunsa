@@ -77,7 +77,7 @@
 
   <div id="current-leaders-section" class="term-section">
     <div class="term-header">
-      <h3>Current Term · 2025/26</h3>
+      <h3 id="current-term-heading">Current Term</h3>
     </div>
     <div class="leader-grid" id="current-leaders-grid">
       <div class="empty-state"><p>Loading current leaders...</p></div>
@@ -112,29 +112,89 @@
     return name.trim().split(/\s+/).slice(0, 2).map(w => w[0]?.toUpperCase()).join('');
   }
 
-  async function attachPublicProfile(leader) {
-    let profile = {};
-    if (leader.user_id) {
-      const { data: pub } = await supabase.rpc('public_leader_profile', { p_user_id: leader.user_id });
-      profile = pub && pub[0] ? pub[0] : {};
-    }
-    return {
-      ...leader,
-      full_name: leader.full_name || profile.full_name || null,
-      avatar_url: leader.photo_url || profile.avatar_url || null,
-    };
+  
+  function normName(s) {
+    return (s || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9\s]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
   }
+
+  function namesLooselyMatch(a, b) {
+    const na = normName(a);
+    const nb = normName(b);
+    if (!na || !nb) return false;
+    if (na === nb) return true;
+    const wa = na.split(' ').filter(Boolean);
+    const wb = nb.split(' ').filter(Boolean);
+    if (wa.length >= 2 && wb.length >= 2) {
+      const setB = new Set(wb);
+      const overlap = wa.filter(w => setB.has(w) || [...setB].some(x => x.startsWith(w.slice(0, 4)) || w.startsWith(x.slice(0, 4))));
+      if (overlap.length >= Math.min(2, wa.length, wb.length)) return true;
+      const lastA = wa[wa.length - 1], lastB = wb[wb.length - 1];
+      if (lastA.length >= 5 && lastA === lastB) return true;
+    }
+    return false;
+  }
+
+  /** Load profile photos via security-definer RPC (works for public visitors). */
+  async function enrichLeadersFromProfiles(leaders) {
+    if (!leaders?.length) return leaders || [];
+    const ids = [...new Set(leaders.map(l => l.user_id).filter(Boolean))];
+    const names = [...new Set(leaders.map(l => (l.full_name || '').trim()).filter(Boolean))];
+    let rows = [];
+    try {
+      const { data, error } = await supabase.rpc('get_leader_display_photos', {
+        p_ids: ids.length ? ids : null,
+        p_names: names.length ? names : null,
+      });
+      if (!error && data) rows = data;
+    } catch (_) {}
+    // Fallback: direct profiles select (works for logged-in members/admins)
+    if (!rows.length) {
+      try {
+        let q = supabase.from('profiles').select('id, full_name, avatar_url').not('avatar_url', 'is', null);
+        if (ids.length) {
+          const { data } = await q.in('id', ids);
+          rows = (data || []).map(p => ({ user_id: p.id, full_name: p.full_name, avatar_url: p.avatar_url }));
+        } else {
+          const { data } = await q.limit(300);
+          rows = (data || []).map(p => ({ user_id: p.id, full_name: p.full_name, avatar_url: p.avatar_url }));
+        }
+      } catch (_) {}
+    }
+    const byId = new Map(rows.map(r => [r.user_id, r]));
+    const byName = rows;
+    return leaders.map(l => {
+      let hit = l.user_id ? byId.get(l.user_id) : null;
+      if (!hit && (l.full_name || '').trim()) {
+        hit = byName.find(r => namesLooselyMatch(r.full_name, l.full_name));
+      }
+      return {
+        ...l,
+        full_name: (l.full_name && l.full_name.trim()) || hit?.full_name || null,
+        avatar_url: l.photo_url || hit?.avatar_url || null,
+      };
+    });
+  }
+
 
   function leaderCardHtml(leader, isCurrent = true) {
     const name = leader.full_name || 'Unknown Member';
     const photoUrl = leader.avatar_url || null;
     const bio = leader.bio || '';
     const badgeClass = isCurrent ? 'term-badge-current' : 'term-badge-past';
-    const badgeLabel = leader.term_label || (isCurrent ? 'Current Term · 2025/26' : 'Past Term');
+    const badgeLabel = isCurrent
+      ? (typeof expectedTerm !== 'undefined' ? expectedTerm : (leader.term_label || 'Current'))
+      : (leader.term_label || 'Past Term');
 
+    const ini = initials(name);
     const avatarContent = photoUrl
-      ? `<img src="${escapeHtml(photoUrl)}" alt="${escapeHtml(name)}" />`
-      : `<div class="avatar-fallback">${initials(name)}</div>`;
+      ? `<img src="${escapeHtml(photoUrl)}" alt="${escapeHtml(name)}" loading="lazy" referrerpolicy="no-referrer" onerror="this.onerror=null;this.replaceWith(Object.assign(document.createElement('div'),{className:'avatar-fallback',textContent:'${ini}'}));" />`
+      : `<div class="avatar-fallback">${ini}</div>`;
 
     return `
       <div class="leader-card">
@@ -207,16 +267,46 @@
     allLeaders = await applyTermRollover(allLeaders);
   }
 
-  let currentLeaders = (allLeaders || []).filter(l => l.is_current);
-  // Prefer leaders whose term_label matches expected academic year
-  const matched = currentLeaders.filter(l => (l.term_label || '').startsWith(expectedTerm.split('/')[0]) || l.term_label === expectedTerm);
-  if (matched.length) currentLeaders = matched;
+  function termMatchesExpected(label, expected) {
+    const lab = (label || '').trim();
+    if (!lab) return false;
+    if (lab === expected) return true;
+    // Accept "2026/2027" style as well as "2026/27"
+    const ey = expected.split('/')[0];
+    const parts = lab.split('/');
+    if (parts[0] === ey) {
+      const end = (parts[1] || '').replace(/^20/, '');
+      const expEnd = (expected.split('/')[1] || '').replace(/^20/, '');
+      return !parts[1] || end === expEnd || parts[1] === expected.split('/')[1];
+    }
+    return false;
+  }
+
+  // STRICT: only leaders for THIS academic year appear under Current
+  let currentLeaders = (allLeaders || []).filter(l =>
+    l.is_current && termMatchesExpected(l.term_label, expectedTerm)
+  );
+  // Rows marked is_current but belonging to an older term → treat as past for display
+  const staleCurrent = (allLeaders || []).filter(l =>
+    l.is_current && !termMatchesExpected(l.term_label, expectedTerm)
+  );
+
+  
+  // Soft-archive leaders still marked current but for a previous term year
+  if (typeof staleCurrent !== 'undefined' && staleCurrent.length) {
+    const staleIds = staleCurrent.map(l => l.id).filter(Boolean);
+    if (staleIds.length) {
+      try {
+        await supabase.from('leaders').update({ is_current: false }).in('id', staleIds);
+      } catch (_) {}
+    }
+  }
 
   if (!currentErr && currentLeaders.length) {
-    const enriched = await Promise.all(currentLeaders.map(attachPublicProfile));
+    currentLeaders = await enrichLeadersFromProfiles(currentLeaders);
     // Hide incomplete rows (no name) and de-dupe by position
     const byPos = new Map();
-    for (const l of enriched) {
+    for (const l of currentLeaders) {
       const name = (l.full_name || '').trim();
       if (!name) continue;
       const key = (l.position || '').trim().toLowerCase() || l.id;
@@ -242,16 +332,23 @@
   // -----------------------------------------------------------------------
   // 2. Load past-term leaders
   // -----------------------------------------------------------------------
-  const { data: pastLeaders, error: pastErr } = await supabase
+  // Past = not current, plus stale "current" rows from previous academic years
+  let pastLeaders = (allLeaders || []).filter(l =>
+    !l.is_current || (l.is_current && !termMatchesExpected(l.term_label, expectedTerm))
+  );
+  // Prefer dedicated past query order when available
+  const { data: pastRows, error: pastErr } = await supabase
     .from('leaders')
-    .select('id, user_id, position, bio, term_start, term_end, display_order, full_name, term_label, photo_url')
-    .eq('is_current', false)
+    .select('id, user_id, position, bio, term_start, term_end, display_order, full_name, term_label, photo_url, is_current')
     .order('term_start', { ascending: false })
     .order('display_order');
-
-  if (!pastErr && pastLeaders) {
-    const enrichedLeaders = await Promise.all(pastLeaders.map(attachPublicProfile));
-    pastLeaders.splice(0, pastLeaders.length, ...enrichedLeaders);
+  if (!pastErr && pastRows) {
+    pastLeaders = pastRows.filter(l =>
+      !l.is_current || !termMatchesExpected(l.term_label, expectedTerm)
+    );
+  }
+  if (pastLeaders && pastLeaders.length) {
+    pastLeaders = await enrichLeadersFromProfiles(pastLeaders);
   }
 
   if (pastErr) {

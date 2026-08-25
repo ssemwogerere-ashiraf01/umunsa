@@ -306,16 +306,63 @@
   const grid = document.getElementById('leaders-grid');
   try {
     const today = new Date(); today.setHours(0,0,0,0);
+    function leadershipTermLabel(refDate = new Date()) {
+      const y = refDate.getFullYear();
+      const m = refDate.getMonth();
+      const d = refDate.getDate();
+      const startYear = (m > 7 || (m === 7 && d >= 24)) ? y : y - 1;
+      return `${startYear}/${String(startYear + 1).slice(-2)}`;
+    }
+    const expectedTerm = leadershipTermLabel();
     let { data: leaders } = await supabase
       .from('leaders')
-      .select('full_name, position, bio, photo_url, is_current, term_end, term_label, display_order')
+      .select('full_name, position, bio, photo_url, user_id, is_current, term_end, term_label, display_order')
       .eq('is_current', true)
       .order('display_order');
-    // Drop expired current rows client-side
+    // Only this academic year (dynamic from 24 Aug)
     leaders = (leaders || []).filter(l => {
+      const lab = (l.term_label || '').trim();
+      if (!lab) return false;
+      if (lab === expectedTerm) return true;
+      const ey = expectedTerm.split('/')[0];
+      return lab.startsWith(ey + '/');
+    });
+    // Drop expired by term_end
+    leaders = leaders.filter(l => {
       if (!l.term_end) return true;
       return new Date(l.term_end + 'T23:59:59') >= today;
     });
+    // Fill missing photos/names from profiles (id + loose name match)
+    {
+      function normName(s) {
+        return (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+          .replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+      }
+      function namesLooselyMatch(a, b) {
+        const na = normName(a), nb = normName(b);
+        if (!na || !nb) return false;
+        if (na === nb) return true;
+        const wa = na.split(' ').filter(Boolean), wb = nb.split(' ').filter(Boolean);
+        if (wa.length < 2 || wb.length < 2) return false;
+        const setB = new Set(wb);
+        const overlap = wa.filter(w => setB.has(w) || [...setB].some(x => x.startsWith(w.slice(0, 4)) || w.startsWith(x.slice(0, 4))));
+        return overlap.length >= 2;
+      }
+      const { data: allProf } = await supabase.from('profiles').select('id, full_name, avatar_url').not('avatar_url', 'is', null);
+      const byId = Object.fromEntries((allProf || []).map(p => [p.id, p]));
+      leaders = leaders.map(l => {
+        let p = l.user_id ? byId[l.user_id] : null;
+        if (!p || !p.avatar_url) {
+          p = (allProf || []).find(x => namesLooselyMatch(x.full_name, l.full_name)) || p;
+        }
+        if (!p) return l;
+        return {
+          ...l,
+          full_name: (l.full_name && l.full_name.trim()) || p.full_name,
+          photo_url: l.photo_url || p.avatar_url || null,
+        };
+      });
+    }
     // Require a name; one card per position
     {
       const byPos = new Map();
