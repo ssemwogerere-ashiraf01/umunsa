@@ -202,7 +202,7 @@
         <div id="members-list" class="members-list"><p style="color:var(--text-muted);font-size:0.9rem;">Loading members…</p></div>
         <div class="data-table-wrap table-scroll members-table-desktop">
           <table class="admin-table">
-            <thead><tr><th></th><th>Name</th><th>Email</th><th>Hostel</th><th>Faculty</th><th>Programme</th><th>Status</th><th>Role</th><th>Actions</th></tr></thead>
+            <thead><tr><th></th><th>Name</th><th>Email</th><th>Hostel</th><th>Faculty</th><th>Phone</th><th>Programme</th><th>Tribe</th><th>Status</th><th>Role</th><th>Actions</th></tr></thead>
             <tbody id="members-tbody"><tr><td colspan="9" style="color:var(--text-muted);">Loading members…</td></tr></tbody>
           </table>
         </div>
@@ -344,6 +344,14 @@ Preferred meeting day (multiple_choice: Monday, Wednesday, Friday)"></textarea>
         <div id="leadership-alert"></div>
         <form id="leader-form" class="form-row-2" style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:1rem;">
           <input type="hidden" id="leader-id" value="" />
+          <div class="form-group" style="grid-column:1/-1;">
+            <label>Link to member (recommended)</label>
+            <select id="leader-member-select">
+              <option value="">— Select active member to load name &amp; photo —</option>
+            </select>
+            <input type="hidden" id="leader-user-id" value="" />
+            <p style="font-size:0.75rem;color:var(--text-muted);margin:0.25rem 0 0;">Selecting a member loads their profile photo from Supabase. You can still upload a different photo below.</p>
+          </div>
           <div class="form-group" style="grid-column:1/-1;"><label>Full name</label><input type="text" id="leader-name" required placeholder="Leader's full name" /></div>
           <div class="form-group"><label>Position</label>
             <div id="leader-position-mount"></div>
@@ -358,7 +366,7 @@ Preferred meeting day (multiple_choice: Monday, Wednesday, Friday)"></textarea>
             <input type="file" id="leader-photo-file" accept="image/*" />
             <input type="hidden" id="leader-photo" value="" />
             <div id="leader-photo-preview" style="margin-top:0.5rem;"></div>
-            <p style="font-size:0.75rem;color:var(--text-muted);margin:0.25rem 0 0;">Upload a photo (optional). Order is set by position rank.</p>
+            <p style="font-size:0.75rem;color:var(--text-muted);margin:0.25rem 0 0;">Optional override. If empty, the linked member’s profile photo from Supabase is used.</p>
           </div>
           <input type="hidden" id="leader-order" value="1" />
           <div class="form-group" style="grid-column:1/-1;"><label>Bio (optional)</label><textarea id="leader-bio" rows="2"></textarea></div>
@@ -521,7 +529,9 @@ Preferred meeting day (multiple_choice: Monday, Wednesday, Friday)"></textarea>
             <dl class="member-card-meta">
               <div><dt>Hostel</dt><dd>${escapeHtml(m.hostel || '—')}</dd></div>
               <div><dt>Faculty</dt><dd>${escapeHtml(m.faculty || '—')}</dd></div>
+              <div><dt>Phone</dt><dd>${escapeHtml(m.phone || '—')}</dd></div>
               <div><dt>Programme</dt><dd>${escapeHtml(m.programme || '—')}</dd></div>
+              <div><dt>Tribe / Clan</dt><dd>${escapeHtml([m.tribe, m.clan].filter(Boolean).join(' · ') || '—')}</dd></div>
               <div><dt>Status / Role</dt><dd>${pill(m.membership_status)} · ${escapeHtml(m.role || '—')}</dd></div>
             </dl>
             <div class="member-card-actions">
@@ -548,7 +558,9 @@ Preferred meeting day (multiple_choice: Monday, Wednesday, Friday)"></textarea>
             <td>${escapeHtml(m.email)}</td>
             <td>${escapeHtml(m.hostel || '—')}</td>
             <td>${escapeHtml(m.faculty || '—')}</td>
+            <td>${escapeHtml(m.phone || '—')}</td>
             <td>${escapeHtml(m.programme || '—')}</td>
+            <td>${escapeHtml([m.tribe, m.clan].filter(Boolean).join(' / ') || '—')}</td>
             <td>${pill(m.membership_status)}</td>
             <td>${escapeHtml(m.role)}</td>
             <td style="display:flex;gap:0.4rem;flex-wrap:wrap;">
@@ -591,7 +603,7 @@ Preferred meeting day (multiple_choice: Monday, Wednesday, Friday)"></textarea>
     async function loadMembers() {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, full_name, email, phone, programme, hostel, faculty, membership_status, role, avatar_url, created_at')
+        .select('id, full_name, email, phone, programme, hostel, faculty, tribe, clan, membership_status, role, avatar_url, created_at')
         .order('created_at', { ascending: false });
       if (error) {
         console.error(error);
@@ -882,59 +894,63 @@ document.getElementById('news-form').addEventListener('submit', async (e) => {
         if (!cands || !cands.length) {
           container.innerHTML = '<p style="font-size:0.85rem;color:var(--text-muted);">No applicants yet.</p>';
         } else {
-          container.innerHTML = `
-            <div class="data-table-wrap table-scroll" style="margin-top:0.5rem;">
-              <table class="admin-table" style="min-width:640px;">
-                <thead>
-                  <tr>
-                    <th>Applicant</th>
-                    <th>Position</th>
-                    <th>Status</th>
-                    <th>Documents</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${cands.map(c => {
-                    const st = c.application_status || (c.approved ? 'approved' : 'pending');
-                    const docs = [
-                      c.cv_url ? `<a href="${escapeHtml(c.cv_url)}" target="_blank" rel="noopener">CV</a>` : null,
-                      c.leadership_certificate_url ? `<a href="${escapeHtml(c.leadership_certificate_url)}" target="_blank" rel="noopener">Cert</a>` : null,
-                      c.application_letter_url ? `<a href="${escapeHtml(c.application_letter_url)}" target="_blank" rel="noopener">Letter</a>` : null,
-                    ].filter(Boolean).join(' · ') || '—';
-                    return `<tr>
-                      <td>
-                        <strong>${escapeHtml(c.profiles?.full_name || 'Candidate')}</strong>
-                        <div style="font-size:0.78rem;color:var(--text-muted);word-break:break-all;">${escapeHtml(c.profiles?.email || '')}</div>
-                        ${c.manifesto ? `<div style="font-size:0.8rem;margin-top:0.25rem;max-width:220px;">${escapeHtml(c.manifesto)}</div>` : ''}
-                      </td>
-                      <td>${escapeHtml(c.positions?.name || '—')}</td>
-                      <td><span class="pill pill-${st === 'approved' ? 'active' : (st === 'suspended' ? 'rejected' : 'pending')}">${escapeHtml(st)}</span></td>
-                      <td style="font-size:0.82rem;">${docs}</td>
-                      <td style="white-space:nowrap;">
-                        ${st !== 'approved' ? `<button class="mini-btn good" data-approve-candidate="${c.id}">Approve</button>` : ''}
-                        ${st !== 'suspended' ? `<button class="mini-btn" style="background:#fdf3e0;color:#8a6100;" data-suspend-candidate="${c.id}">Suspend</button>` : ''}
-                        <button class="mini-btn bad" data-delete-candidate="${c.id}">Delete</button>
-                      </td>
-                    </tr>`;
-                  }).join('')}
-                </tbody>
-              </table>
+          // Group by position so admin sees who applied for each office
+          const byPos = new Map();
+          for (const c of cands) {
+            const pos = c.positions?.name || 'Unspecified position';
+            if (!byPos.has(pos)) byPos.set(pos, []);
+            byPos.get(pos).push(c);
+          }
+          const sections = [...byPos.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([pos, list]) => {
+            const rows = list.map(c => {
+              const st = c.application_status || (c.approved ? 'approved' : 'pending');
+              const docs = [
+                c.cv_url ? `<a href="${escapeHtml(c.cv_url)}" target="_blank" rel="noopener">CV</a>` : null,
+                c.leadership_certificate_url ? `<a href="${escapeHtml(c.leadership_certificate_url)}" target="_blank" rel="noopener">Cert</a>` : null,
+                c.application_letter_url ? `<a href="${escapeHtml(c.application_letter_url)}" target="_blank" rel="noopener">Letter</a>` : null,
+              ].filter(Boolean).join(' · ') || '—';
+              return `<tr>
+                <td>
+                  <strong>${escapeHtml(c.profiles?.full_name || 'Candidate')}</strong>
+                  <div style="font-size:0.78rem;color:var(--text-muted);word-break:break-all;">${escapeHtml(c.profiles?.email || '')}</div>
+                </td>
+                <td><span class="pill" style="background:#eef2ff;color:#3730a3;">${escapeHtml(st)}</span></td>
+                <td style="font-size:0.82rem;">${docs}</td>
+                <td style="white-space:nowrap;">
+                  <button type="button" class="mini-btn good" data-cand-approve="${c.id}" data-election="${el.id}">Approve</button>
+                  <button type="button" class="mini-btn" data-cand-suspend="${c.id}" data-election="${el.id}" style="background:#fef3c7;">Suspend</button>
+                  <button type="button" class="mini-btn bad" data-cand-delete="${c.id}" data-election="${el.id}">Delete</button>
+                </td>
+              </tr>`;
+            }).join('');
+            return `<div style="margin-top:0.85rem;border:1px solid var(--border);border-radius:10px;overflow:hidden;">
+              <div style="background:var(--forest);color:#fff;padding:0.55rem 0.85rem;font-weight:700;font-size:0.9rem;display:flex;justify-content:space-between;gap:0.5rem;flex-wrap:wrap;">
+                <span>${escapeHtml(pos)}</span>
+                <span style="font-weight:600;opacity:0.9;">${list.length} applicant${list.length === 1 ? '' : 's'}</span>
+              </div>
+              <div class="data-table-wrap table-scroll">
+                <table class="admin-table" style="min-width:560px;margin:0;">
+                  <thead><tr><th>Applicant</th><th>Status</th><th>Documents</th><th>Actions</th></tr></thead>
+                  <tbody>${rows}</tbody>
+                </table>
+              </div>
             </div>`;
+          }).join('');
+          container.innerHTML = `<p style="font-size:0.85rem;color:var(--text-muted);margin:0.35rem 0 0;">${cands.length} application(s) across ${byPos.size} position(s)</p>${sections}`;
         }
 
-        container.querySelectorAll('[data-approve-candidate]').forEach(btn => btn.addEventListener('click', async () => {
-          const { error } = await supabase.from('candidates').update({ approved: true, application_status: 'approved' }).eq('id', btn.dataset.approveCandidate);
+        container.querySelectorAll('[data-cand-approve]').forEach(btn => btn.addEventListener('click', async () => {
+          const { error } = await supabase.from('candidates').update({ approved: true, application_status: 'approved' }).eq('id', btn.dataset.candApprove);
           if (error) alert(error.message); else await loadElections();
         }));
-        container.querySelectorAll('[data-suspend-candidate]').forEach(btn => btn.addEventListener('click', async () => {
+        container.querySelectorAll('[data-cand-suspend]').forEach(btn => btn.addEventListener('click', async () => {
           if (!confirm('Suspend this application? The candidate will not appear for voting.')) return;
-          const { error } = await supabase.from('candidates').update({ approved: false, application_status: 'suspended' }).eq('id', btn.dataset.suspendCandidate);
+          const { error } = await supabase.from('candidates').update({ approved: false, application_status: 'suspended' }).eq('id', btn.dataset.candSuspend);
           if (error) alert(error.message); else await loadElections();
         }));
-        container.querySelectorAll('[data-delete-candidate]').forEach(btn => btn.addEventListener('click', async () => {
+        container.querySelectorAll('[data-cand-delete]').forEach(btn => btn.addEventListener('click', async () => {
           if (!confirm('Delete this candidate application permanently? Their uploaded documents will remain in storage unless removed separately.')) return;
-          const { error } = await supabase.from('candidates').delete().eq('id', btn.dataset.deleteCandidate);
+          const { error } = await supabase.from('candidates').delete().eq('id', btn.dataset.candDelete);
           if (error) alert(error.message); else await loadElections();
         }));
       }
@@ -1002,6 +1018,34 @@ document.getElementById('news-form').addEventListener('submit', async (e) => {
     let leadershipPositions = [];
     let leaderPositionSelect = null;
     
+    
+    function applyDynamicTermLabels() {
+      const td = defaultLeadershipTermDates();
+      const h = document.querySelector('#tab-leadership h3');
+      if (h && h.textContent.includes('Leadership')) {
+        h.textContent = `Leadership · Current term ${td.label}`;
+      }
+      const p = document.querySelector('#tab-leadership p');
+      if (p && p.textContent.includes('Mark')) {
+        p.innerHTML = `Add or edit current and previous executive members shown on the public Leadership page. Mark <strong>Current</strong> for the ${td.label} committee; uncheck it for past terms.`;
+      }
+      const lab = document.getElementById('leader-term-label');
+      if (lab) {
+        lab.placeholder = `e.g. ${td.label}`;
+        if (!lab.value || lab.value === '2025/26') lab.value = td.label;
+      }
+      const chk = document.querySelector('label[for="leader-is-current"], #leader-is-current');
+      const chkLabel = document.querySelector('#leader-is-current')?.closest('label');
+      if (chkLabel) chkLabel.innerHTML = `<input type="checkbox" id="leader-is-current" checked /> Current term (${td.label})`;
+      const h4 = document.querySelector('#tab-leadership h4');
+      if (h4 && h4.textContent.includes('Current')) h4.textContent = `Current · ${td.label}`;
+      const settingTerm = document.getElementById('setting-term-label');
+      if (settingTerm && (!settingTerm.value || settingTerm.value === '2025/26')) {
+        settingTerm.value = td.label;
+        settingTerm.placeholder = td.label;
+      }
+    }
+
     function defaultLeadershipTermDates() {
       const now = new Date();
       const y = now.getFullYear();
@@ -1014,6 +1058,63 @@ document.getElementById('news-form').addEventListener('submit', async (e) => {
         end: `${startYear + 1}-08-23`,
       };
     }
+
+    
+    async function populateLeaderMemberSelect() {
+      const sel = document.getElementById('leader-member-select');
+      if (!sel) return;
+      const { data } = await supabase
+        .from('profiles')
+        .select('id, full_name, avatar_url, email')
+        .eq('membership_status', 'active')
+        .order('full_name');
+      const cur = sel.value;
+      sel.innerHTML = '<option value="">— Select active member to load name & photo —</option>'
+        + (data || []).map(m =>
+          `<option value="${m.id}" data-name="${escapeHtml(m.full_name || '')}" data-avatar="${escapeHtml(m.avatar_url || '')}">${escapeHtml(m.full_name || m.email || m.id)}</option>`
+        ).join('');
+      if (cur) sel.value = cur;
+    }
+
+    function showLeaderPhotoPreview(url, note) {
+      const prev = document.getElementById('leader-photo-preview');
+      const hidden = document.getElementById('leader-photo');
+      if (!prev) return;
+      if (url) {
+        if (hidden && !hidden.value) hidden.value = ''; // keep empty so we store profile via user_id unless admin uploads
+        prev.innerHTML = `<div style="display:flex;align-items:center;gap:0.65rem;">
+          <img src="${escapeHtml(url)}" alt="" style="width:72px;height:72px;object-fit:cover;border-radius:50%;border:2px solid var(--border);" onerror="this.style.display='none'" />
+          <span style="font-size:0.8rem;color:var(--text-muted);">${escapeHtml(note || 'Current photo')}</span>
+        </div>`;
+      } else {
+        prev.innerHTML = '<span style="font-size:0.8rem;color:var(--text-muted);">No photo yet</span>';
+      }
+    }
+
+    document.getElementById('leader-member-select')?.addEventListener('change', async (e) => {
+      const opt = e.target.selectedOptions?.[0];
+      if (!opt || !opt.value) {
+        document.getElementById('leader-user-id').value = '';
+        return;
+      }
+      document.getElementById('leader-user-id').value = opt.value;
+      const name = opt.getAttribute('data-name') || opt.textContent;
+      const avatar = opt.getAttribute('data-avatar') || '';
+      const nameEl = document.getElementById('leader-name');
+      if (nameEl && name) nameEl.value = name;
+      // Show existing profile photo; only set hidden photo if admin hasn't uploaded a custom one
+      const hiddenPhoto = document.getElementById('leader-photo');
+      const fileInput = document.getElementById('leader-photo-file');
+      const hasNewFile = fileInput?.files?.length > 0;
+      if (!hasNewFile) {
+        // Prefer leaving photo_url empty so public page resolves from profile;
+        // still show preview from profile
+        if (hiddenPhoto && hiddenPhoto.dataset.manual !== '1') {
+          hiddenPhoto.value = '';
+        }
+        showLeaderPhotoPreview(avatar, avatar ? 'Profile photo from Supabase (member)' : 'Member has no profile photo yet');
+      }
+    });
 
     async function loadLeadershipPositions() {
       const mount = document.getElementById('leader-position-mount');
@@ -1086,6 +1187,8 @@ document.getElementById('news-form').addEventListener('submit', async (e) => {
       });
     }
     loadLeadershipPositions().catch(e => console.warn("positions", e));
+    populateLeaderMemberSelect().catch(() => {});
+    try { applyDynamicTermLabels(); } catch (_) {}
     (function prefillTermDates() {
       const td = defaultLeadershipTermDates();
       const lab = document.getElementById('leader-term-label');
@@ -1108,11 +1211,13 @@ document.getElementById('news-form').addEventListener('submit', async (e) => {
         if (up2) { alert('Photo upload failed: ' + (upErr.message || up2.message)); return; }
         const { data: pub } = supabase.storage.from('content-media').getPublicUrl(path);
         document.getElementById('leader-photo').value = pub.publicUrl;
+        document.getElementById('leader-photo').dataset.manual = '1';
         document.getElementById('leader-photo-preview').innerHTML = `<img src="${pub.publicUrl}" alt="" style="width:72px;height:72px;object-fit:cover;border-radius:50%;" />`;
         return;
       }
       const { data: pub } = supabase.storage.from('avatars').getPublicUrl(path);
       document.getElementById('leader-photo').value = pub.publicUrl;
+      document.getElementById('leader-photo').dataset.manual = '1';
       document.getElementById('leader-photo-preview').innerHTML = `<img src="${pub.publicUrl}" alt="" style="width:72px;height:72px;object-fit:cover;border-radius:50%;" />`;
     });
 
@@ -1125,6 +1230,10 @@ document.getElementById('news-form').addEventListener('submit', async (e) => {
       document.getElementById('leader-term-start').value = '';
       document.getElementById('leader-term-end').value = '';
       document.getElementById('leader-photo').value = '';
+      const _ph = document.getElementById('leader-photo'); if (_ph) _ph.dataset.manual = '';
+      const _uid = document.getElementById('leader-user-id'); if (_uid) _uid.value = '';
+      const _ms = document.getElementById('leader-member-select'); if (_ms) _ms.value = '';
+      const _prev = document.getElementById('leader-photo-preview'); if (_prev) _prev.innerHTML = '';
       document.getElementById('leader-order').value = '0';
       document.getElementById('leader-bio').value = '';
       document.getElementById('leader-is-current').checked = true;
@@ -1150,7 +1259,7 @@ document.getElementById('news-form').addEventListener('submit', async (e) => {
           <div>
             <strong>${escapeHtml(l.full_name || '⚠ No name')}</strong>
             <span style="color:var(--text-muted);"> · ${escapeHtml(l.position || '')}</span>
-            <div style="font-size:0.8rem;color:var(--text-muted);">${escapeHtml(l.term_label || (l.is_current ? '2025/26' : '—'))}${incomplete ? ' · incomplete — delete or edit' : ''}</div>
+            <div style="font-size:0.8rem;color:var(--text-muted);">${escapeHtml(l.term_label || (l.is_current ? defaultLeadershipTermDates().label : '—'))}${incomplete ? ' · incomplete — delete or edit' : ''}</div>
           </div>
           <div style="display:flex;gap:0.4rem;">
             <button type="button" class="mini-btn" data-edit-leader="${l.id}" style="background:#eef1f5;">Edit</button>
@@ -1170,13 +1279,37 @@ document.getElementById('news-form').addEventListener('submit', async (e) => {
           const hiddenPos = document.getElementById('leader-position');
           if (hiddenPos) hiddenPos.value = l.position || '';
           if (leaderPositionSelect) leaderPositionSelect.value = l.position || '';
-          document.getElementById('leader-term-label').value = l.term_label || (l.is_current ? '2025/26' : '');
+          document.getElementById('leader-term-label').value = l.term_label || (l.is_current ? defaultLeadershipTermDates().label : '');
           document.getElementById('leader-term-start').value = l.term_start || '';
           document.getElementById('leader-term-end').value = l.term_end || '';
           document.getElementById('leader-photo').value = l.photo_url || '';
+          document.getElementById('leader-photo').dataset.manual = l.photo_url ? '1' : '';
           document.getElementById('leader-order').value = l.display_order ?? 0;
-          const prev = document.getElementById('leader-photo-preview');
-          if (prev) prev.innerHTML = l.photo_url ? `<img src="${escapeHtml(l.photo_url)}" alt="" style="width:72px;height:72px;object-fit:cover;border-radius:50%;" />` : '';
+          const uidEl = document.getElementById('leader-user-id');
+          if (uidEl) uidEl.value = l.user_id || '';
+          const memSel = document.getElementById('leader-member-select');
+          if (memSel && l.user_id) memSel.value = l.user_id;
+          (async () => {
+            let previewUrl = l.photo_url || '';
+            let note = l.photo_url ? 'Saved leadership photo' : '';
+            if (!previewUrl && l.user_id) {
+              const { data: prof } = await supabase.from('profiles').select('avatar_url, full_name').eq('id', l.user_id).maybeSingle();
+              if (prof?.avatar_url) {
+                previewUrl = prof.avatar_url;
+                note = 'Profile photo from Supabase (member)';
+              }
+            }
+            if (!previewUrl && (l.full_name || '').trim()) {
+              const { data: prof } = await supabase.from('profiles').select('id, avatar_url').ilike('full_name', l.full_name.trim()).not('avatar_url', 'is', null).limit(1).maybeSingle();
+              if (prof?.avatar_url) {
+                previewUrl = prof.avatar_url;
+                note = 'Matched profile photo by name';
+                if (uidEl && !uidEl.value) uidEl.value = prof.id;
+                if (memSel && prof.id) memSel.value = prof.id;
+              }
+            }
+            showLeaderPhotoPreview(previewUrl, note || (previewUrl ? 'Photo' : 'No photo yet'));
+          })();
           document.getElementById('leader-bio').value = l.bio || '';
           document.getElementById('leader-is-current').checked = !!l.is_current;
           document.getElementById('leader-save-btn').textContent = 'Update leader';
@@ -1204,13 +1337,23 @@ document.getElementById('news-form').addEventListener('submit', async (e) => {
       e.preventDefault();
       const alertBox = document.getElementById('leadership-alert');
       const id = document.getElementById('leader-id').value.trim();
+      let photoUrl = document.getElementById('leader-photo').value.trim() || null;
+      const linkedUserId = document.getElementById('leader-user-id')?.value?.trim() || null;
+      // If no custom photo uploaded, copy profile avatar into photo_url so public page always has an image
+      if (!photoUrl && linkedUserId) {
+        try {
+          const { data: prof } = await supabase.from('profiles').select('avatar_url').eq('id', linkedUserId).maybeSingle();
+          if (prof?.avatar_url) photoUrl = prof.avatar_url;
+        } catch (_) {}
+      }
       const payload = {
         full_name: document.getElementById('leader-name').value.trim(),
         position: document.getElementById('leader-position').value.trim(),
         term_label: document.getElementById('leader-term-label').value.trim() || null,
         term_start: document.getElementById('leader-term-start').value || null,
         term_end: document.getElementById('leader-term-end').value || null,
-        photo_url: document.getElementById('leader-photo').value.trim() || null,
+        user_id: linkedUserId,
+        photo_url: photoUrl,
         display_order: (function(){
           const name = document.getElementById('leader-position')?.value?.trim();
           const found = (leadershipPositions || []).find(p => p.name === name);
@@ -1282,7 +1425,7 @@ document.getElementById('news-form').addEventListener('submit', async (e) => {
       const cb = document.getElementById('setting-auto-approve');
       if (cb) cb.checked = parseSettingBool(map.auto_approve_members);
       const term = document.getElementById('setting-term-label');
-      if (term) term.value = parseSettingString(map.current_leadership_term, '2025/26');
+      if (term) term.value = parseSettingString(map.current_leadership_term, defaultLeadershipTermDates().label);
     }
 
     async function saveClubSetting(key, value) {
@@ -1332,7 +1475,7 @@ document.getElementById('news-form').addEventListener('submit', async (e) => {
     document.getElementById('settings-save-btn')?.addEventListener('click', async () => {
       const alertBox = document.getElementById('settings-alert');
       const auto = !!document.getElementById('setting-auto-approve')?.checked;
-      const termLabel = (document.getElementById('setting-term-label')?.value || '2025/26').trim();
+      const termLabel = (document.getElementById('setting-term-label')?.value || defaultLeadershipTermDates().label).trim();
       const err1 = await saveClubSetting('auto_approve_members', auto);
       const err2 = await saveClubSetting('current_leadership_term', termLabel);
       if (err1 || err2) {

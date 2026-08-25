@@ -355,11 +355,12 @@ export async function logout() {
   window.location.href = `${BASE_URL}/index.html`;
 }
 
-/** Required fields before dashboard access */
+/** Required fields before dashboard / member-area access */
 export function isProfileComplete(profile) {
   if (!profile) return false;
+  // Explicit flag from onboarding form — always required
+  if (profile.onboarding_completed !== true) return false;
   const str = (v) => typeof v === 'string' && v.trim().length > 0;
-  // Hard requirements — force return to onboarding if any are missing
   if (!str(profile.full_name)) return false;
   if (!str(profile.phone)) return false;
   if (!str(profile.registration_number)) return false;
@@ -371,8 +372,9 @@ export function isProfileComplete(profile) {
   if (profile.year_of_study == null || Number(profile.year_of_study) < 1) return false;
   if (profile.semester == null || ![1, 2].includes(Number(profile.semester))) return false;
   if (!str(profile.avatar_url)) return false;
-  // Flag must also be true once they finished the form
-  if (!profile.onboarding_completed) return false;
+  // Tribe / clan required once those columns exist (ignore if column never selected)
+  if ('tribe' in profile && !str(profile.tribe)) return false;
+  if ('clan' in profile && !str(profile.clan)) return false;
   return true;
 }
 
@@ -389,7 +391,7 @@ export async function routeAfterLogin() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('membership_status, onboarding_completed, full_name, phone, registration_number, campus, faculty, programme, hostel, academic_year, year_of_study, semester, avatar_url')
+    .select('membership_status, onboarding_completed, full_name, phone, registration_number, campus, faculty, programme, hostel, academic_year, year_of_study, semester, avatar_url, tribe, clan')
     .eq('id', user.id)
     .maybeSingle();
 

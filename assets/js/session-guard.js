@@ -21,8 +21,6 @@ function resetIdleTimer() {
 );
 resetIdleTimer();
 
-// Periodic refresh: renews the auth token and lets pages re-pull fresh data
-// without a manual reload.
 setInterval(async () => {
   const { error } = await supabase.auth.refreshSession();
   if (error) {
@@ -32,11 +30,11 @@ setInterval(async () => {
   window.dispatchEvent(new CustomEvent('app:refresh'));
 }, REFRESH_INTERVAL_MS);
 
-// Guard export: call at the top of any protected page (member dashboard,
-// profile, activities, projects, discussions). Redirects to login if
-// there's no session, and to pending-approval / onboarding if the
-// account isn't fully cleared yet.
-export async function requireApprovedMember() {
+/**
+ * Load the signed-in profile or redirect to login.
+ * Always redirects incomplete profiles to onboarding.html.
+ */
+async function loadProfileOrRedirect() {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) {
     window.location.href = `${BASE_URL}/login.html`;
@@ -46,16 +44,24 @@ export async function requireApprovedMember() {
     .from('profiles')
     .select('*')
     .eq('id', session.user.id)
-    .single();
+    .maybeSingle();
 
   if (!profile) {
     window.location.href = `${BASE_URL}/onboarding.html`;
     return null;
   }
+  // Incomplete onboarding → always back to onboarding (even if status is active)
   if (!isProfileComplete(profile)) {
     window.location.href = `${BASE_URL}/onboarding.html`;
     return null;
   }
+  return profile;
+}
+
+// Guard for member-only pages (dashboard, messages, forum, elections, …)
+export async function requireApprovedMember() {
+  const profile = await loadProfileOrRedirect();
+  if (!profile) return null;
   if (profile.membership_status !== 'active') {
     window.location.href = `${BASE_URL}/pending-approval.html`;
     return null;
@@ -63,10 +69,14 @@ export async function requireApprovedMember() {
   return profile;
 }
 
-// Lighter guard: just check the user is logged in, without requiring an
-// active membership status. Suitable for pages pending members should
-// still be able to view.
+// Logged in + completed onboarding (pending members may use limited pages)
 export async function requireLoggedIn() {
+  const profile = await loadProfileOrRedirect();
+  return profile; // null if redirected
+}
+
+// Session only — does NOT check onboarding (use sparingly; prefer requireLoggedIn)
+export async function requireSessionOnly() {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) {
     window.location.href = `${BASE_URL}/login.html`;

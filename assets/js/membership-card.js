@@ -165,7 +165,7 @@ const STATUS_LABEL = { active: 'ACTIVE MEMBER', pending: 'PENDING', suspended: '
 /**
  * Draws the FRONT of the card.
  * @param {HTMLCanvasElement} canvas
- * @param {object} member - { full_name, programme, year_of_study, membership_card_number,
+ * @param {object} member - { full_name, programme, tribe, clan, year_of_study, membership_card_number,
  *                             student_id, registration_number, avatar_url, membership_status }
  */
 export async function drawCardFront(canvas, member) {
@@ -229,29 +229,58 @@ export async function drawCardFront(canvas, member) {
     drawPlaceholderAvatar(ctx, px0, py0, photoW, photoH);
   }
 
-  // name + details
+  // name + details (clear labels; never ambiguous)
   const tx = px0 + photoW + 36;
   let ty = py0 + 4;
+  const maxTextW = CARD_W - tx - 40;
+
+  function fitText(text, font, maxW) {
+    ctx.font = font;
+    let s = String(text || '');
+    if (ctx.measureText(s).width <= maxW) return s;
+    while (s.length > 3 && ctx.measureText(s + '…').width > maxW) s = s.slice(0, -1);
+    return s + '…';
+  }
+
   ctx.fillStyle = CARD_COLORS.inkNavy;
-  ctx.font = "700 30px Fraunces, Georgia, serif";
+  ctx.font = "700 28px Fraunces, Georgia, serif";
   ctx.textAlign = 'left';
-  ctx.fillText(member.full_name || '', tx, ty + 28);
-  ctx.font = '17px Inter, Arial, sans-serif';
-  ctx.fillStyle = CARD_COLORS.textMuted;
-  ctx.fillText(member.programme || '', tx, ty + 60);
-  ctx.font = '15px Inter, Arial, sans-serif';
-  ctx.fillText(member.year_of_study ? `Year ${member.year_of_study}` : '', tx, ty + 84);
+  ctx.fillText(fitText(member.full_name || 'Member', "700 28px Fraunces, Georgia, serif", maxTextW), tx, ty + 26);
+
+  // Programme line
+  ctx.fillStyle = CARD_COLORS.gold;
+  ctx.font = '700 11px Inter, Arial, sans-serif';
+  ctx.fillText('PROGRAMME', tx, ty + 52);
+  ctx.fillStyle = CARD_COLORS.inkNavy;
+  ctx.font = '16px Inter, Arial, sans-serif';
+  ctx.fillText(fitText(member.programme || '—', '16px Inter, Arial, sans-serif', maxTextW), tx, ty + 72);
+
+  // Tribe + Clan on separate clear lines
+  ctx.fillStyle = CARD_COLORS.gold;
+  ctx.font = '700 11px Inter, Arial, sans-serif';
+  ctx.fillText('TRIBE', tx, ty + 96);
+  ctx.fillStyle = CARD_COLORS.inkNavy;
+  ctx.font = '16px Inter, Arial, sans-serif';
+  ctx.fillText(fitText(member.tribe || '—', '16px Inter, Arial, sans-serif', maxTextW), tx, ty + 116);
+
+  ctx.fillStyle = CARD_COLORS.gold;
+  ctx.font = '700 11px Inter, Arial, sans-serif';
+  ctx.fillText('CLAN', tx, ty + 140);
+  ctx.fillStyle = CARD_COLORS.inkNavy;
+  ctx.font = '16px Inter, Arial, sans-serif';
+  ctx.fillText(fitText(member.clan || '—', '16px Inter, Arial, sans-serif', maxTextW), tx, ty + 160);
 
   function field(label, value, yy) {
     ctx.fillStyle = CARD_COLORS.gold;
     ctx.font = '700 11px Inter, Arial, sans-serif';
     ctx.fillText(label.toUpperCase(), tx, yy);
     ctx.fillStyle = CARD_COLORS.inkNavy;
-    ctx.font = '700 19px Inter, Arial, sans-serif';
-    ctx.fillText(value || '—', tx, yy + 24);
+    ctx.font = '700 18px Inter, Arial, sans-serif';
+    ctx.fillText(fitText(value || '—', '700 18px Inter, Arial, sans-serif', maxTextW), tx, yy + 22);
   }
-  field('Membership No.', member.membership_card_number, ty + 122);
-  field('Student ID', member.student_id, ty + 174);
+  // Shift membership fields down so they don't overlap tribe/clan
+  field('Membership No.', member.membership_card_number, ty + 188);
+  field('Student ID', member.student_id, ty + 238);
 
   // small QR bottom-right
   const qrSize = 118;
@@ -345,11 +374,11 @@ export async function drawCardBack(canvas, member) {
   ctx.fillText('Scan to verify membership', tx, ty + 20);
 
   const body = [
-    "Scanning this code opens the member's",
-    'live NSA profile: name, programme,',
-    'student ID and current membership',
-    'status — confirmed straight from the',
-    'official Association register.',
+    'Scan this QR code to open the official',
+    'NSA verification page for this member.',
+    'It shows their name, programme, tribe,',
+    'clan, student ID, and membership status',
+    'from the Association register.',
   ];
   ctx.fillStyle = CARD_COLORS.textMuted;
   ctx.font = '15px Inter, Arial, sans-serif';

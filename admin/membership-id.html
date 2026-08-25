@@ -207,7 +207,7 @@
       let data, error;
       ({ data, error } = await supabase
         .from('profiles')
-        .select('id, full_name, email, programme, year_of_study, avatar_url, registration_number, student_id, membership_card_number, card_issued_at, membership_status')
+        .select('id, full_name, email, programme, tribe, clan, year_of_study, avatar_url, registration_number, student_id, membership_card_number, card_issued_at, membership_status')
         .eq('membership_status', 'active')
         .order('full_name'));
 
@@ -215,7 +215,7 @@
         console.warn('full select failed, retrying minimal', error);
         ({ data, error } = await supabase
           .from('profiles')
-          .select('id, full_name, email, programme, year_of_study, avatar_url, registration_number, membership_status')
+          .select('id, full_name, email, programme, tribe, clan, year_of_study, avatar_url, registration_number, membership_status')
           .eq('membership_status', 'active')
           .order('full_name'));
       }

@@ -166,7 +166,7 @@
             </div>
           </div>
           <div class="form-row-2">
-            <div class="form-group"><label>Phone (optional)</label><input type="tel" inputmode="tel" autocomplete="tel" placeholder="+256 700 000000 / +1 …" id="am-phone" data-phone-intl inputmode="tel" autocomplete="tel" placeholder="+256 7XX XXX XXX or any country code" /></div>
+            <div class="form-group"><label>Phone (optional)</label><input type="tel" id="am-phone" data-phone-intl autocomplete="tel" placeholder="Phone number" /></div>
             <div class="form-group"><label>Programme (optional)</label><input type="text" id="am-programme" /></div>
           </div>
           <div class="form-row-2">
@@ -254,7 +254,7 @@
   <div id="app-footer"></div>
 
   <script type="module">
-    import { supabase, SUPABASE_URL } from '../assets/js/supabase-client.js';
+    import { supabase, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY as SUPABASE_ANON_KEY } from '../assets/js/supabase-client.js';
     import { requireSuperAdmin } from '../assets/js/admin-guard.js';
     import { mountNav, mountFooter } from '../assets/js/nav.js';
 
@@ -387,35 +387,76 @@
       const alertBox = document.getElementById('add-member-alert');
       btn.disabled = true; btn.textContent = 'Creating...';
 
-      const { data: { session } } = await supabase.auth.getSession();
-
       try {
-        const res = await fetch(`${SUPABASE_URL}/functions/v1/admin-create-user`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${session.access_token}`,
-            apikey: typeof SUPABASE_ANON_KEY !== 'undefined' ? SUPABASE_ANON_KEY : '',
-          },
-          body: JSON.stringify({
-            fullName: document.getElementById('am-name').value.trim(),
-            email: document.getElementById('am-email').value.trim(),
-            password: document.getElementById('am-password').value,
-            role: document.getElementById('am-role').value,
-            phone: document.getElementById('am-phone').value.trim(),
-            hostel: (function(){ const h=document.getElementById('am-hostel')?.value.trim()||''; if(h!=='Other') return h||null; return (document.getElementById('am-hostel-other')?.value||'').trim()||null; })(),
-            faculty: document.getElementById('am-faculty')?.value.trim() || null || null,
-            programme: document.getElementById('am-programme').value.trim() || null,
-          }),
-        });
-        const result = await res.json();
-        if (!res.ok) throw new Error(result.error || 'Failed to create account');
+        // Ensure we have a fresh access token (expired JWT causes 401 Not authenticated)
+        let { data: { session }, error: sessErr } = await supabase.auth.getSession();
+        if (!session?.access_token) {
+          const { data: refreshed, error: refErr } = await supabase.auth.refreshSession();
+          if (refErr || !refreshed?.session?.access_token) {
+            throw new Error('Not authenticated — sign out and sign in again as super admin, then retry.');
+          }
+          session = refreshed.session;
+        } else {
+          // Proactively refresh if token is near expiry
+          const expiresAt = session.expires_at ? session.expires_at * 1000 : 0;
+          if (expiresAt && expiresAt < Date.now() + 60_000) {
+            const { data: refreshed } = await supabase.auth.refreshSession();
+            if (refreshed?.session) session = refreshed.session;
+          }
+        }
 
-        alertBox.innerHTML = `<div class="alert alert-success">Account created for ${escapeHtml(document.getElementById('am-email').value)}.</div>`;
+        const payload = {
+          fullName: document.getElementById('am-name').value.trim(),
+          email: document.getElementById('am-email').value.trim(),
+          password: document.getElementById('am-password').value,
+          role: document.getElementById('am-role').value,
+          phone: document.getElementById('am-phone').value.trim(),
+          hostel: (function(){ const h=document.getElementById('am-hostel')?.value.trim()||''; if(h!=='Other') return h||null; return (document.getElementById('am-hostel-other')?.value||'').trim()||null; })(),
+          faculty: document.getElementById('am-faculty')?.value.trim() || null,
+          programme: document.getElementById('am-programme').value.trim() || null,
+        };
+
+        // Prefer functions.invoke (attaches Authorization from the current session)
+        let result = null;
+        let invokeErr = null;
+        try {
+          const inv = await supabase.functions.invoke('admin-create-user', { body: payload });
+          invokeErr = inv.error;
+          result = inv.data;
+          // functions.invoke may put error JSON in data when status is 4xx
+          if (invokeErr && !result) {
+            // Fall back to fetch with explicit headers
+            throw invokeErr;
+          }
+          if (result?.error) throw new Error(result.error);
+        } catch (invFail) {
+          const res = await fetch(`${SUPABASE_URL}/functions/v1/admin-create-user`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${session.access_token}`,
+              apikey: SUPABASE_ANON_KEY,
+            },
+            body: JSON.stringify(payload),
+          });
+          const json = await res.json().catch(() => ({}));
+          if (!res.ok) {
+            const msg = json.error || invFail?.message || `Request failed (${res.status})`;
+            if (res.status === 401) {
+              throw new Error('Not authenticated — your login session expired. Sign out, sign in again as super admin, then retry.');
+            }
+            throw new Error(msg);
+          }
+          result = json;
+        }
+
+        if (result?.error) throw new Error(result.error);
+
+        alertBox.innerHTML = `<div class="alert alert-success">Account created for ${escapeHtml(payload.email)}.</div>`;
         e.target.reset();
         await loadAccess();
       } catch (err) {
-        alertBox.innerHTML = `<div class="alert alert-error">${escapeHtml(err.message)}</div>`;
+        alertBox.innerHTML = `<div class="alert alert-error">${escapeHtml(err.message || String(err))}</div>`;
       }
       btn.disabled = false; btn.textContent = 'Create Account';
     });

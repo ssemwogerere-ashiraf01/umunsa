@@ -71,6 +71,7 @@ function wireThemeToggle() {
 }
 
 function afterNavMount() {
+  document.body.classList.add('has-left-nav');
   wireThemeToggle();
   initUiChrome({
     clockEl: document.getElementById('digital-clock'),
@@ -142,7 +143,8 @@ async function renderNav(mount, activeKey = '') {
         ${mobileMenuEnd}
       </nav>`;
     wireMobileNav(mount);
-    afterNavMount();
+    document.body.classList.add('has-left-nav');
+  afterNavMount();
     return;
   }
 

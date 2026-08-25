@@ -15,12 +15,22 @@ Deno.serve(async (req) => {
     const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!
 
     const authHeader = req.headers.get('Authorization') || ''
+    const token = authHeader.replace(/^Bearer\s+/i, '').trim()
+    if (!token) {
+      return new Response(JSON.stringify({ error: 'Not authenticated — missing Authorization bearer token' }), {
+        status: 401, headers: { ...cors, 'Content-Type': 'application/json' },
+      })
+    }
     const userClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: authHeader } },
+      global: { headers: { Authorization: `Bearer ${token}` } },
     })
-    const { data: { user: caller }, error: callerErr } = await userClient.auth.getUser()
+    // Pass JWT explicitly so verification does not depend on ambient session state
+    const { data: { user: caller }, error: callerErr } = await userClient.auth.getUser(token)
     if (callerErr || !caller) {
-      return new Response(JSON.stringify({ error: 'Not authenticated' }), {
+      return new Response(JSON.stringify({
+        error: 'Not authenticated — invalid or expired session. Sign in again as super admin.',
+        detail: callerErr?.message || null,
+      }), {
         status: 401, headers: { ...cors, 'Content-Type': 'application/json' },
       })
     }
