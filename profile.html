@@ -34,8 +34,11 @@
   .admin-banner {
     background: linear-gradient(135deg, #1b4332, #16233a);
     color: #fff; border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 1.25rem;
-    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;
+    justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;
   }
+  /* `hidden` must win over display:flex (otherwise members see Admin view) */
+  .admin-banner[hidden] { display: none !important; }
+  .admin-banner:not([hidden]) { display: flex; }
   .admin-banner a { color: #d4af37; font-weight: 600; text-decoration: none; }
   .admin-banner a:hover { text-decoration: underline; }
   .form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
@@ -342,7 +345,19 @@
       document.getElementById('password-card')?.setAttribute('hidden', '');
     } else {
       profile = await requireApprovedMember();
+      if (!profile) throw new Error('redirecting');
       targetId = profile.id;
+      isAdminMode = false;
+      const banner = document.getElementById('admin-banner');
+      if (banner) {
+        banner.hidden = true;
+        banner.setAttribute('hidden', '');
+      }
+      const adminFields = document.getElementById('admin-fields');
+      if (adminFields) {
+        adminFields.hidden = true;
+        adminFields.setAttribute('hidden', '');
+      }
     }
 
     await fillForm(profile);
