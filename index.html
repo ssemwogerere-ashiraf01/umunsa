@@ -249,7 +249,7 @@
 <div id="app-footer"></div>
 
 <script type="module">
-  import { supabase } from './assets/js/supabase-client.js';
+  import { supabase, publicSupabase } from './assets/js/supabase-client.js';
   import { mountNav, mountFooter } from './assets/js/nav.js';
   mountNav();
   mountFooter();
@@ -314,7 +314,7 @@
       return `${startYear}/${String(startYear + 1).slice(-2)}`;
     }
     const expectedTerm = leadershipTermLabel();
-    let { data: leaders } = await supabase
+    let { data: leaders, error: leadersErr } = await publicSupabase
       .from('leaders')
       .select('full_name, position, bio, photo_url, user_id, is_current, term_end, term_label, display_order')
       .eq('is_current', true)
@@ -377,7 +377,7 @@
       grid.innerHTML = leaders.map(l => {
         const name = l.full_name || 'Leader';
         const photo = l.photo_url
-          ? `<img src="${escapeHtml(l.photo_url)}" alt="" style="width:56px;height:56px;border-radius:50%;object-fit:cover;margin-bottom:0.75rem;" />`
+          ? `<img src="${escapeHtml(l.photo_url)}" alt="" loading="lazy" referrerpolicy="no-referrer" style="width:56px;height:56px;border-radius:50%;object-fit:cover;margin-bottom:0.75rem;" onerror="this.style.display='none'" />`
           : '';
         return `<div class="card" style="text-align:center;">
           ${photo}

@@ -95,7 +95,7 @@
 <div id="app-footer"></div>
 
 <script type="module">
-  import { supabase } from './assets/js/supabase-client.js';
+  import { supabase, publicSupabase } from './assets/js/supabase-client.js';
   import { mountNav, mountFooter } from './assets/js/nav.js';
 
   mountNav();
@@ -147,7 +147,7 @@
     const names = [...new Set(leaders.map(l => (l.full_name || '').trim()).filter(Boolean))];
     let rows = [];
     try {
-      const { data, error } = await supabase.rpc('get_leader_display_photos', {
+      const { data, error } = await publicSupabase.rpc('get_leader_display_photos', {
         p_ids: ids.length ? ids : null,
         p_names: names.length ? names : null,
       });
@@ -258,13 +258,33 @@
   const termHdr = document.querySelector('#current-leaders-section .term-header h3');
   if (termHdr) termHdr.textContent = `Current Term · ${expectedTerm}`;
 
-  let { data: allLeaders, error: currentErr } = await supabase
-    .from('leaders')
-    .select('id, user_id, position, bio, term_start, term_end, display_order, full_name, term_label, photo_url, is_current')
-    .order('display_order');
+  async function fetchAllLeaders() {
+    // Prefer public (no session JWT) so a skewed phone clock / bad token cannot block the page
+    const clients = [publicSupabase, supabase];
+    let lastErr = null;
+    for (const client of clients) {
+      const { data, error } = await client
+        .from('leaders')
+        .select('id, user_id, position, bio, term_start, term_end, display_order, full_name, term_label, photo_url, is_current')
+        .order('display_order');
+      if (!error) return { data: data || [], error: null };
+      lastErr = error;
+      // Retry next client on auth/JWT clock issues
+      if (!/JWT|issued at future|session|token|expir/i.test(error.message || '')) {
+        return { data: null, error };
+      }
+    }
+    return { data: null, error: lastErr };
+  }
+
+  let { data: allLeaders, error: currentErr } = await fetchAllLeaders();
 
   if (!currentErr && allLeaders) {
-    allLeaders = await applyTermRollover(allLeaders);
+    try {
+      allLeaders = await applyTermRollover(allLeaders);
+    } catch (_) {
+      // Rollover is best-effort; never block the page
+    }
   }
 
   function termMatchesExpected(label, expected) {
@@ -319,7 +339,11 @@
   }
 
   if (currentErr) {
-    currentGrid.innerHTML = `<div class="empty-state"><p>Could not load current leaders. ${escapeHtml(currentErr.message)}</p></div>`;
+    const msg = currentErr.message || '';
+    const clockHint = /JWT|issued at future|clock/i.test(msg)
+      ? ' Your device clock may be wrong — set the correct date and time, then refresh.'
+      : '';
+    currentGrid.innerHTML = `<div class="empty-state"><p>Could not load current leaders.${escapeHtml(clockHint || ' ' + msg)}</p></div>`;
   } else if (!currentLeaders || currentLeaders.length === 0) {
     currentGrid.innerHTML = `<div class="empty-state" style="border-color:#f59e0b;background:#fffbeb;">
       <p style="color:#92400e;font-weight:600;">No current leadership published for ${escapeHtml(expectedTerm)}.</p>
