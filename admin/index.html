@@ -904,6 +904,10 @@ document.getElementById('news-form').addEventListener('submit', async (e) => {
           const sections = [...byPos.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([pos, list]) => {
             const rows = list.map(c => {
               const st = c.application_status || (c.approved ? 'approved' : 'pending');
+              const stStyle = st === 'approved' ? 'background:#d1fae5;color:#065f46;'
+                : st === 'suspended' ? 'background:#fef3c7;color:#92400e;'
+                : (st === 'withdrawn' || st === 'rejected') ? 'background:#fee2e2;color:#991b1b;'
+                : 'background:#eef2ff;color:#3730a3;';
               const docs = [
                 c.cv_url ? `<a href="${escapeHtml(c.cv_url)}" target="_blank" rel="noopener">CV</a>` : null,
                 c.leadership_certificate_url ? `<a href="${escapeHtml(c.leadership_certificate_url)}" target="_blank" rel="noopener">Cert</a>` : null,
@@ -914,7 +918,7 @@ document.getElementById('news-form').addEventListener('submit', async (e) => {
                   <strong>${escapeHtml(c.profiles?.full_name || 'Candidate')}</strong>
                   <div style="font-size:0.78rem;color:var(--text-muted);word-break:break-all;">${escapeHtml(c.profiles?.email || '')}</div>
                 </td>
-                <td><span class="pill" style="background:#eef2ff;color:#3730a3;">${escapeHtml(st)}</span></td>
+                <td><span class="pill" style="${stStyle}">${escapeHtml(st)}</span></td>
                 <td style="font-size:0.82rem;">${docs}</td>
                 <td style="white-space:nowrap;">
                   <button type="button" class="mini-btn good" data-cand-approve="${c.id}" data-election="${el.id}">Approve</button>
@@ -940,18 +944,53 @@ document.getElementById('news-form').addEventListener('submit', async (e) => {
         }
 
         container.querySelectorAll('[data-cand-approve]').forEach(btn => btn.addEventListener('click', async () => {
-          const { error } = await supabase.from('candidates').update({ approved: true, application_status: 'approved' }).eq('id', btn.dataset.candApprove);
-          if (error) alert(error.message); else await loadElections();
+          const id = btn.dataset.candApprove;
+          const { error } = await supabase.from('candidates')
+            .update({ approved: true, application_status: 'approved' })
+            .eq('id', id);
+          if (error) alert('Approve failed: ' + error.message);
+          else await loadElections();
         }));
         container.querySelectorAll('[data-cand-suspend]').forEach(btn => btn.addEventListener('click', async () => {
-          if (!confirm('Suspend this application? The candidate will not appear for voting.')) return;
-          const { error } = await supabase.from('candidates').update({ approved: false, application_status: 'suspended' }).eq('id', btn.dataset.candSuspend);
-          if (error) alert(error.message); else await loadElections();
+          if (!confirm('Suspend this application? The candidate will not appear on the ballot.')) return;
+          const id = btn.dataset.candSuspend;
+          const { error } = await supabase.from('candidates')
+            .update({ approved: false, application_status: 'suspended' })
+            .eq('id', id);
+          if (error) alert('Suspend failed: ' + error.message);
+          else await loadElections();
         }));
         container.querySelectorAll('[data-cand-delete]').forEach(btn => btn.addEventListener('click', async () => {
-          if (!confirm('Delete this candidate application permanently? Their uploaded documents will remain in storage unless removed separately.')) return;
-          const { error } = await supabase.from('candidates').delete().eq('id', btn.dataset.candDelete);
-          if (error) alert(error.message); else await loadElections();
+          const id = btn.dataset.candDelete;
+          if (!confirm('Permanently delete this application?\n\nAny votes cast for this candidate will also be removed. This cannot be undone.')) return;
+          // Remove dependent votes first (FK), then the candidate row
+          const { error: vErr } = await supabase.from('votes').delete().eq('candidate_id', id);
+          if (vErr) {
+            const { error: softErr } = await supabase.from('candidates')
+              .update({ approved: false, application_status: 'withdrawn' })
+              .eq('id', id);
+            if (softErr) {
+              alert('Could not delete application: ' + (vErr.message || softErr.message) +
+                '\n\nRun SQL 037_candidate_delete_cascade.sql in Supabase, then try again.');
+            } else {
+              alert('Votes could not be removed under current permissions, so the application was marked withdrawn instead of deleted.');
+              await loadElections();
+            }
+            return;
+          }
+          const { error } = await supabase.from('candidates').delete().eq('id', id);
+          if (error) {
+            const { error: softErr } = await supabase.from('candidates')
+              .update({ approved: false, application_status: 'withdrawn' })
+              .eq('id', id);
+            if (softErr) alert('Delete failed: ' + error.message);
+            else {
+              alert('Hard delete failed; application marked as withdrawn.');
+              await loadElections();
+            }
+          } else {
+            await loadElections();
+          }
         }));
       }
     }
