@@ -243,7 +243,7 @@
   <div class="card-grid" id="leaders-grid">
     <p style="text-align:center;color:var(--text-muted);grid-column:1/-1;">Leadership profiles load here once published by an admin.</p>
   </div>
-  <p style="text-align:center;margin-top:1.5rem;"><a href="leadership.html">View full leadership history &rarr;</a></p>
+  <p style="text-align:center;margin-top:1.5rem;"><a href="leadership.html">View full leadership &rarr;</a></p>
 </section>
 
 <div id="app-footer"></div>
@@ -373,6 +373,14 @@
       }
       leaders = [...byPos.values()].sort((a, b) => (a.display_order || 99) - (b.display_order || 99));
     }
+    // Homepage: only core executive officers
+    const HOME_CORE = ['president', 'vice president', 'speaker', 'treasurer', 'general secretary'];
+    leaders = leaders.filter(l => HOME_CORE.includes((l.position || '').trim().toLowerCase()));
+    const coreOrder = (pos) => {
+      const i = HOME_CORE.indexOf((pos || '').trim().toLowerCase());
+      return i === -1 ? 99 : i;
+    };
+    leaders.sort((a, b) => coreOrder(a.position) - coreOrder(b.position));
     if (leaders.length) {
       grid.innerHTML = leaders.map(l => {
         const name = l.full_name || 'Leader';

@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex, nofollow" />
 <title>Leadership - Nkobazambogo Students' Association</title>
 <meta name="description" content="Current leaders of the Nkobazambogo Students" />
 <!-- Social / Open Graph (link previews) -->
@@ -97,6 +98,11 @@
 <script type="module">
   import { supabase, publicSupabase } from './assets/js/supabase-client.js';
   import { mountNav, mountFooter } from './assets/js/nav.js';
+  import { requireApprovedMember } from './assets/js/session-guard.js';
+
+  // Full leadership directory is members-only
+  const member = await requireApprovedMember();
+  if (!member) throw new Error('redirecting');
 
   mountNav();
   mountFooter();
@@ -153,16 +159,33 @@
       });
       if (!error && data) rows = data;
     } catch (_) {}
+    // Always try to attach faculty/hostel (and fill gaps) from profiles for known user ids
+    if (ids.length) {
+      try {
+        const { data: scopeRows } = await supabase.from('profiles').select('id, full_name, avatar_url, faculty, hostel').in('id', ids);
+        if (scopeRows && scopeRows.length) {
+          const byScope = new Map(scopeRows.map(p => [p.id, p]));
+          if (rows.length) {
+            rows = rows.map(r => {
+              const s = byScope.get(r.user_id);
+              return s ? { ...r, faculty: s.faculty, hostel: s.hostel, full_name: r.full_name || s.full_name, avatar_url: r.avatar_url || s.avatar_url } : r;
+            });
+          } else {
+            rows = scopeRows.map(p => ({ user_id: p.id, full_name: p.full_name, avatar_url: p.avatar_url, faculty: p.faculty, hostel: p.hostel }));
+          }
+        }
+      } catch (_) {}
+    }
     // Fallback: direct profiles select (works for logged-in members/admins)
     if (!rows.length) {
       try {
-        let q = supabase.from('profiles').select('id, full_name, avatar_url').not('avatar_url', 'is', null);
+        let q = supabase.from('profiles').select('id, full_name, avatar_url, faculty, hostel');
         if (ids.length) {
           const { data } = await q.in('id', ids);
-          rows = (data || []).map(p => ({ user_id: p.id, full_name: p.full_name, avatar_url: p.avatar_url }));
+          rows = (data || []).map(p => ({ user_id: p.id, full_name: p.full_name, avatar_url: p.avatar_url, faculty: p.faculty, hostel: p.hostel }));
         } else {
           const { data } = await q.limit(300);
-          rows = (data || []).map(p => ({ user_id: p.id, full_name: p.full_name, avatar_url: p.avatar_url }));
+          rows = (data || []).map(p => ({ user_id: p.id, full_name: p.full_name, avatar_url: p.avatar_url, faculty: p.faculty, hostel: p.hostel }));
         }
       } catch (_) {}
     }
@@ -177,15 +200,38 @@
         ...l,
         full_name: (l.full_name && l.full_name.trim()) || hit?.full_name || null,
         avatar_url: l.photo_url || hit?.avatar_url || null,
+        faculty: l.faculty || hit?.faculty || null,
+        hostel: l.hostel || hit?.hostel || null,
       };
     });
   }
 
 
+  /** Faculty / Hall reps show the unit they represent, e.g. "Agriculture Faculty Representative / Coordinator". */
+  function formatLeaderPosition(position, faculty, hostel) {
+    const pos = (position || '').trim();
+    const pl = pos.toLowerCase();
+    if (pl.includes('faculty')) {
+      const f = (faculty || '').trim();
+      if (!f) return pos;
+      const hasFacultyWord = /\bfaculty\b/i.test(f);
+      const unit = hasFacultyWord ? f : (f + ' Faculty');
+      return unit + ' Representative / Coordinator';
+    }
+    if (pl.includes('hall') || pl.includes('hostel')) {
+      const h = (hostel || '').trim();
+      if (!h) return pos;
+      if (/\b(hall|hostel)\b/i.test(h)) return h + ' Representative';
+      return h + ' Hall/Hostel Representative';
+    }
+    return pos;
+  }
+
   function leaderCardHtml(leader, isCurrent = true) {
     const name = leader.full_name || 'Unknown Member';
     const photoUrl = leader.avatar_url || null;
     const bio = leader.bio || '';
+    const positionLabel = formatLeaderPosition(leader.position, leader.faculty, leader.hostel);
     const badgeClass = isCurrent ? 'term-badge-current' : 'term-badge-past';
     const badgeLabel = isCurrent
       ? (typeof expectedTerm !== 'undefined' ? expectedTerm : (leader.term_label || 'Current'))
@@ -200,7 +246,7 @@
       <div class="leader-card">
         <div class="avatar-wrap">${avatarContent}</div>
         <h3>${escapeHtml(name)}</h3>
-        <div class="position-label">${escapeHtml(leader.position)}</div>
+        <div class="position-label">${escapeHtml(positionLabel)}</div>
         ${bio ? `<div class="bio">${escapeHtml(bio)}</div>` : ''}
         <span class="term-badge ${badgeClass}">${badgeLabel}</span>
       </div>
