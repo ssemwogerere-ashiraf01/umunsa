@@ -191,6 +191,17 @@
     }
 
     // If we just inserted a notice, clear previous content carefully
+    const isFacultyRep = (pos) => {
+      const n = (pos.name || '').toLowerCase();
+      const c = (pos.category || '').toLowerCase();
+      return c.includes('faculty') || n.includes('faculty');
+    };
+    const isHallRep = (pos) => {
+      const n = (pos.name || '').toLowerCase();
+      const c = (pos.category || '').toLowerCase();
+      return c.includes('hall') || n.includes('hall') || n.includes('hostel');
+    };
+
     const cardsHtml = positions.map(pos => {
       let actionHtml;
       if (appliedFor.has(pos.id)) {
@@ -212,10 +223,17 @@
                  <button type="button" class="btn btn-gold" style="margin-top:0.5rem;" data-submit-apply="${pos.id}">Submit Application</button>
                </div>`;
       }
+      let scopeNote = '';
+      if (isFacultyRep(pos)) {
+        scopeNote = `<p style="font-size:0.85rem;color:var(--forest);margin:0.35rem 0;">Your registered faculty: <strong>${escapeHtml(profile.faculty || '(not set — update My Profile)')}</strong></p>`;
+      } else if (isHallRep(pos)) {
+        scopeNote = `<p style="font-size:0.85rem;color:var(--forest);margin:0.35rem 0;">Your registered hall/hostel: <strong>${escapeHtml(profile.hostel || '(not set — update My Profile)')}</strong></p>`;
+      }
       return `
       <div class="position-card">
         <h4>${escapeHtml(pos.name)}</h4>
         ${pos.name_luganda ? `<p class="luganda">${escapeHtml(pos.name_luganda)} &middot; ${pos.category ? escapeHtml(pos.category) : ''} &middot; UGX ${Number(pos.application_fee).toLocaleString()} application fee</p>` : ''}
+        ${scopeNote}
         ${actionHtml}
       </div>`;
     }).join('');
@@ -246,6 +264,15 @@
     pane.querySelectorAll('[data-submit-apply]').forEach(btn => {
       btn.addEventListener('click', async () => {
         const posId = btn.dataset.submitApply;
+        const pos = positions.find(x => x.id === posId);
+        if (pos && isFacultyRep(pos) && !(profile.faculty || '').trim()) {
+          alertBox.innerHTML = `<div class="alert alert-error">Set your Faculty on My Profile before applying for Faculty Representative / Coordinator.</div>`;
+          return;
+        }
+        if (pos && isHallRep(pos) && !(profile.hostel || '').trim()) {
+          alertBox.innerHTML = `<div class="alert alert-error">Set your Hall / Hostel on My Profile before applying for Hall / Hostel Representative.</div>`;
+          return;
+        }
         const manifesto = document.getElementById(`manifesto-${posId}`).value.trim();
         const cvFile = document.getElementById(`cv-${posId}`)?.files?.[0] || null;
         const certFile = document.getElementById(`cert-${posId}`)?.files?.[0] || null;
@@ -292,7 +319,7 @@
     const pane = document.getElementById('pane-candidates');
     const { data, error } = await supabase
       .from('candidates')
-      .select('id, manifesto, approved, positions(name), profiles(full_name, avatar_url)')
+      .select('id, manifesto, approved, positions(name, category), profiles(full_name, avatar_url, faculty, hostel)')
       .eq('election_id', election.id)
       .eq('approved', true);
 
@@ -313,6 +340,17 @@
           <div class="candidate-row">
             <div>
               <strong>${escapeHtml(c.profiles?.full_name || 'Candidate')}</strong>
+              ${(() => {
+                const cat = (c.positions?.category || '').toLowerCase();
+                const pn = (c.positions?.name || '').toLowerCase();
+                if (cat.includes('faculty') || pn.includes('faculty')) {
+                  return c.profiles?.faculty ? `<div style="font-size:0.8rem;color:var(--forest);">Faculty: ${escapeHtml(c.profiles.faculty)}</div>` : '';
+                }
+                if (cat.includes('hall') || pn.includes('hall') || pn.includes('hostel')) {
+                  return c.profiles?.hostel ? `<div style="font-size:0.8rem;color:var(--forest);">Hall/Hostel: ${escapeHtml(c.profiles.hostel)}</div>` : '';
+                }
+                return '';
+              })()}
               ${c.manifesto ? `<div style="font-size:0.85rem;color:var(--text-muted);">${escapeHtml(c.manifesto)}</div>` : ''}
             </div>
           </div>

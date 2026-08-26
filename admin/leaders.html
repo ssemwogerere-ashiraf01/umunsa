@@ -97,10 +97,38 @@
       return;
     }
 
-    // Enrich with public profile info via RPC
+    function formatLeaderPosition(position, faculty, hostel) {
+      const pos = (position || '').trim();
+      const pl = pos.toLowerCase();
+      if (pl.includes('faculty')) {
+        const f = (faculty || '').trim();
+        if (!f) return pos;
+        const unit = /\bfaculty\b/i.test(f) ? f : (f + ' Faculty');
+        return unit + ' Representative / Coordinator';
+      }
+      if (pl.includes('hall') || pl.includes('hostel')) {
+        const h = (hostel || '').trim();
+        if (!h) return pos;
+        if (/\b(hall|hostel)\b/i.test(h)) return h + ' Representative';
+        return h + ' Hall/Hostel Representative';
+      }
+      return pos;
+    }
+
+    // Enrich with profile name, photo, faculty, hostel
     const enriched = await Promise.all(data.map(async l => {
       const { data: pub } = await supabase.rpc('public_leader_profile', { p_user_id: l.user_id });
-      return { ...l, full_name: pub && pub[0] ? pub[0].full_name : null, avatar_url: pub && pub[0] ? pub[0].avatar_url : null };
+      let faculty = null, hostel = null, full_name = pub && pub[0] ? pub[0].full_name : null, avatar_url = pub && pub[0] ? pub[0].avatar_url : null;
+      if (l.user_id) {
+        const { data: pr } = await supabase.from('profiles').select('full_name, avatar_url, faculty, hostel').eq('id', l.user_id).maybeSingle();
+        if (pr) {
+          full_name = full_name || pr.full_name;
+          avatar_url = avatar_url || pr.avatar_url;
+          faculty = pr.faculty;
+          hostel = pr.hostel;
+        }
+      }
+      return { ...l, full_name, avatar_url, faculty, hostel };
     }));
 
     leadersList.innerHTML = enriched.map(l => `
@@ -109,7 +137,7 @@
           <div style="width:48px;height:48px;border-radius:50%;overflow:hidden;background:var(--parchment);display:flex;align-items:center;justify-content:center;">${escapeHtml(initials(l.full_name || ''))}</div>
           <div>
             <strong>${escapeHtml(l.full_name || 'Unknown')}</strong>
-            <div style="color:var(--text-muted);font-size:0.9rem;">${escapeHtml(l.position)}</div>
+            <div style="color:var(--text-muted);font-size:0.9rem;">${escapeHtml(formatLeaderPosition(l.position, l.faculty, l.hostel))}</div>
             <div style="color:var(--text-muted);font-size:0.85rem;">${l.term_start ? new Date(l.term_start).toLocaleDateString() : ''} ${l.term_end ? '— ' + new Date(l.term_end).toLocaleDateString() : ''}</div>
           </div>
         </div>

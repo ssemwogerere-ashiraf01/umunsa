@@ -879,16 +879,47 @@ document.getElementById('news-form').addEventListener('submit', async (e) => {
 
       document.querySelectorAll('[data-close-apps]').forEach(btn => btn.addEventListener('click', async () => {
         if (!confirm('Terminate candidacy applications for this election? Members will no longer be able to apply for positions.')) return;
-        const { error } = await supabase.from('elections').update({ accepting_applications: false }).eq('id', btn.dataset.closeApps);
-        if (error) alert(error.message); else await loadElections();
+        const electionId = btn.dataset.closeApps;
+        btn.disabled = true;
+        const { data, error } = await supabase
+          .from('elections')
+          .update({ accepting_applications: false })
+          .eq('id', electionId)
+          .select('id, accepting_applications');
+        if (error) {
+          alert('Terminate applications failed: ' + error.message +
+            (String(error.message).includes('accepting_applications')
+              ? '\n\nRun sql/010_admin_settings_leadership.sql in the Supabase SQL Editor, then try again.'
+              : ''));
+          btn.disabled = false;
+        } else if (!data || !data.length) {
+          alert('Terminate applications did not apply. Confirm you are signed in as an admin and that the accepting_applications column exists (sql/010_admin_settings_leadership.sql).');
+          btn.disabled = false;
+        } else {
+          await loadElections();
+        }
       }));
       document.querySelectorAll('[data-open-apps]').forEach(btn => btn.addEventListener('click', async () => {
-        const { error } = await supabase.from('elections').update({ accepting_applications: true }).eq('id', btn.dataset.openApps);
-        if (error) alert(error.message); else await loadElections();
+        const electionId = btn.dataset.openApps;
+        btn.disabled = true;
+        const { data, error } = await supabase
+          .from('elections')
+          .update({ accepting_applications: true })
+          .eq('id', electionId)
+          .select('id, accepting_applications');
+        if (error) {
+          alert('Re-open applications failed: ' + error.message);
+          btn.disabled = false;
+        } else if (!data || !data.length) {
+          alert('Re-open did not apply. Confirm you are signed in as an admin.');
+          btn.disabled = false;
+        } else {
+          await loadElections();
+        }
       }));
 
       for (const el of (elections || [])) {
-        const { data: cands } = await supabase.from('candidates').select('id, manifesto, approved, application_status, cv_url, leadership_certificate_url, application_letter_url, positions(name), profiles(full_name, email)').eq('election_id', el.id);
+        const { data: cands } = await supabase.from('candidates').select('id, manifesto, approved, application_status, cv_url, leadership_certificate_url, application_letter_url, positions(name, category), profiles(full_name, email, faculty, hostel)').eq('election_id', el.id);
         const container = document.getElementById(`candidates-${el.id}`);
         if (!container) continue;
         if (!cands || !cands.length) {
@@ -913,10 +944,23 @@ document.getElementById('news-form').addEventListener('submit', async (e) => {
                 c.leadership_certificate_url ? `<a href="${escapeHtml(c.leadership_certificate_url)}" target="_blank" rel="noopener">Cert</a>` : null,
                 c.application_letter_url ? `<a href="${escapeHtml(c.application_letter_url)}" target="_blank" rel="noopener">Letter</a>` : null,
               ].filter(Boolean).join(' · ') || '—';
+              const cat = (c.positions?.category || '').toLowerCase();
+              const pn = (pos || '').toLowerCase();
+              let scopeLine = '';
+              if (cat.includes('faculty') || pn.includes('faculty')) {
+                scopeLine = c.profiles?.faculty
+                  ? `<div style="font-size:0.78rem;color:var(--forest);">Faculty: ${escapeHtml(c.profiles.faculty)}</div>`
+                  : `<div style="font-size:0.78rem;color:#b91c1c;">Faculty: (not set on profile)</div>`;
+              } else if (cat.includes('hall') || pn.includes('hall') || pn.includes('hostel')) {
+                scopeLine = c.profiles?.hostel
+                  ? `<div style="font-size:0.78rem;color:var(--forest);">Hall/Hostel: ${escapeHtml(c.profiles.hostel)}</div>`
+                  : `<div style="font-size:0.78rem;color:#b91c1c;">Hall/Hostel: (not set on profile)</div>`;
+              }
               return `<tr>
                 <td>
                   <strong>${escapeHtml(c.profiles?.full_name || 'Candidate')}</strong>
                   <div style="font-size:0.78rem;color:var(--text-muted);word-break:break-all;">${escapeHtml(c.profiles?.email || '')}</div>
+                  ${scopeLine}
                 </td>
                 <td><span class="pill" style="${stStyle}">${escapeHtml(st)}</span></td>
                 <td style="font-size:0.82rem;">${docs}</td>
