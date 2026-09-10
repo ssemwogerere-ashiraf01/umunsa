@@ -910,10 +910,30 @@ html { scroll-behavior: smooth; }
   color: var(--text-muted);
 }
 
-/* Brand seal image in nav when used */
-.site-nav .seal-img {
-  width: 32px; height: 32px; border-radius: 50%;
-  object-fit: cover; border: 2px solid var(--gold);
+/* Brand logo image in nav / footer (replaces plain NSA wordmark) */
+.site-nav .seal-img,
+.footer-brand .seal-img,
+.site-footer .seal-img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: center;
+  border: 2px solid var(--gold);
+  background: #fff;
+  flex-shrink: 0;
+}
+.site-footer .seal-img,
+.footer-brand .seal-img {
+  width: 52px;
+  height: 52px;
+}
+.site-nav .brand-text,
+.footer-brand .brand-text {
+  line-height: 1.2;
+}
+@media (max-width: 720px) {
+  .site-nav .brand-text { font-size: 0.92rem; }
 }
 
 /* Page header band for activities/news */
@@ -2154,3 +2174,16 @@ img[style*="border-radius:50%"][style*="object-fit"] {
   object-fit: cover !important;
   object-position: center 20% !important;
 }
+
+/* umunsa logo force */
+.site-nav .brand .seal-img,
+.footer-brand .seal-img {
+  display: inline-block !important;
+  width: 42px !important;
+  height: 42px !important;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #fff;
+  border: 2px solid var(--gold, #c9a227);
+}
+.site-nav .brand .seal { display: none !important; }

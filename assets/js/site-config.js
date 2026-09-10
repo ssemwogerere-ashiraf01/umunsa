@@ -15,8 +15,9 @@ export const SOCIAL_LINKS = {
 export const THEME_STORAGE_KEY = 'nsa-theme';
 
 export const SITE_NAME = 'Nkobazambogo Students\' Association';
-export const SITE_FULL_NAME = 'Uganda Martyrs University Nkobazambogo Students\' Association';
-export const SITE_SHORT_SEAL = 'NSA';
+export const SITE_FULL_NAME = 'Uganda Martyrs University Nkobazambogo Students Association';
+export const SITE_SHORT_SEAL = 'UMUNSA';
+export const SITE_LOGO_PATH = '/assets/img/umunsa_logo.png';
 export const SITE_DESCRIPTION = 'The official home of the Nkobazambogo Students\' Association at Uganda Martyrs University, Nkozi: news, activities, projects, and discussions for our members.';
 export const DEFAULT_OG_IMAGE_PATH = '/assets/img/og-default.jpg';
 export const CANONICAL_ORIGIN = 'https://umunsa.vercel.app';
@@ -44,12 +45,18 @@ export function isUmuEmail(email) {
 
 /** Local cultural / campus images under assets/img */
 export const CULTURAL_IMAGES = {
-  umuCampus: '/assets/img/campus-bg.jpg',
+  umuCampus: '/assets/img/umu.webp',
+  umuCampusLawn: '/assets/img/umu b.webp',
+  culturalFestival: '/assets/img/25.jpg',
+  culturalMoment: '/assets/img/fix.jpg',
+  bugandaFlag: '/assets/img/flag.webp',
+  zambogoCrest: '/assets/img/zambogo.webp',
   bugandaKasubiTombs: '/assets/img/kasubi.jpg',
   bugandaDancers: '/assets/img/dancers.jpg',
   heroBg: '/assets/img/hero-bg.jpg',
   cultureBg: '/assets/img/culture-bg.jpg',
-  seal: '/assets/img/nsa-seal.png',
+  seal: '/assets/img/umunsa_logo.png',
+  logo: '/assets/img/umunsa_logo.png',
 };
 
 /** Canonical hall / hostel list for registration and profile forms */

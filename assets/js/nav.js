@@ -1,5 +1,5 @@
 import { supabase } from './supabase-client.js';
-import { BASE_URL, SOCIAL_LINKS, SITE_NAME, SITE_SHORT_SEAL } from './site-config.js';
+import { BASE_URL, SOCIAL_LINKS, SITE_NAME, SITE_SHORT_SEAL, SITE_LOGO_PATH } from './site-config.js';
 import { logout } from './auth.js';
 import { applyTheme, cycleTheme, getStoredTheme, themeLabel } from './theme.js';
 import { initUiChrome } from './ui-chrome.js';
@@ -93,7 +93,7 @@ export async function mountNav(activeKey = '') {
     console.error('mountNav failed, showing fallback nav:', err);
     mount.innerHTML = `
       <nav class="site-nav">
-        <a href="${BASE_URL}/index.html" class="brand"><span class="seal">${SITE_SHORT_SEAL}</span> ${SITE_NAME}</a>
+        <a href="${BASE_URL}/index.html" class="brand" title="${SITE_NAME}"><img class="seal-img" src="${BASE_URL}${SITE_LOGO_PATH}" alt="UMUNSA logo" width="40" height="40" /> <span class="brand-text">${SITE_NAME}</span></a>
         <div class="nav-actions">
           <a href="${BASE_URL}/index.html" class="btn btn-outline-light">Home</a>
           <a href="${BASE_URL}/dashboard.html" class="btn btn-outline">Dashboard</a>
@@ -123,7 +123,7 @@ async function renderNav(mount, activeKey = '') {
     mount.innerHTML = `
       ${chromeBar}
       <nav class="site-nav">
-        <a href="${BASE_URL}/index.html" class="brand"><span class="seal">${SITE_SHORT_SEAL}</span> ${SITE_NAME}</a>
+        <a href="${BASE_URL}/index.html" class="brand" title="${SITE_NAME}"><img class="seal-img" src="${BASE_URL}${SITE_LOGO_PATH}" alt="UMUNSA logo" width="40" height="40" /> <span class="brand-text">${SITE_NAME}</span></a>
         <div class="nav-header-actions">${mobileToggle}</div>
         ${mobileMenuStart}
           <ul>
@@ -174,7 +174,7 @@ async function renderNav(mount, activeKey = '') {
   mount.innerHTML = `
     ${chromeBar}
     <nav class="site-nav">
-      <a href="${BASE_URL}/index.html" class="brand"><span class="seal">${SITE_SHORT_SEAL}</span> ${SITE_NAME}</a>
+      <a href="${BASE_URL}/index.html" class="brand" title="${SITE_NAME}"><img class="seal-img" src="${BASE_URL}${SITE_LOGO_PATH}" alt="UMUNSA logo" width="40" height="40" /> <span class="brand-text">${SITE_NAME}</span></a>
       <div class="nav-header-actions">
         ${mobileToggle}
         <div class="nav-avatar-wrap" id="nav-avatar-wrap">
@@ -290,7 +290,7 @@ export function mountFooter() {
     <footer class="site-footer">
       <div class="footer-grid">
         <div>
-          <div class="brand" style="color:#fff;justify-content:flex-start;"><span class="seal">${SITE_SHORT_SEAL}</span> ${SITE_NAME}</div>
+          <div class="brand footer-brand" style="color:#fff;justify-content:flex-start;"><img class="seal-img" src="${BASE_URL}${SITE_LOGO_PATH}" alt="UMUNSA logo" width="48" height="48" /> <span class="brand-text">${SITE_NAME}</span></div>
           <p style="margin-top:0.6rem;color:#9aa4b2;font-size:0.85rem;max-width:280px;">Uganda Martyrs University, Nkozi: a community that shows up for one another, on and off campus.</p>
           ${socialRowHtml()}
         </div>
