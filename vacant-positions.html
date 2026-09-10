@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Vacant Positions — Nkobazambogo Students' Association</title>
+<meta name="description" content="Leadership positions currently vacant for this term." />
+<link rel="stylesheet" href="assets/css/style.css" />
+<style>
+  .position-card { background: var(--paper); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1rem; }
+  .position-card h4 { margin: 0 0 0.2rem; }
+  .position-card .luganda { color: var(--text-muted); font-size: 0.85rem; margin: 0 0 0.5rem; }
+  .term-banner { text-align: center; color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem; }
+</style>
+</head>
+<body>
+<div id="app-nav"></div>
+
+<div class="section" style="max-width: 720px;">
+  <div class="section-head">
+    <span class="eyebrow">Leadership</span>
+    <h2>Vacant Positions</h2>
+    <p style="color:var(--text-muted);">Positions with no sitting leader for the current term. Head to <a href="elections/index.html">Elections</a> to apply while applications are open.</p>
+  </div>
+
+  <p class="term-banner" id="term-banner"></p>
+  <div id="alert-box"></div>
+  <div id="positions-container">
+    <p style="text-align:center;color:var(--text-muted);">Loading positions...</p>
+  </div>
+</div>
+
+<div id="app-footer"></div>
+
+<script type="module">
+  import { supabase } from './assets/js/supabase-client.js';
+  import { mountNav, mountFooter } from './assets/js/nav.js';
+  import { requireApprovedMember } from './assets/js/session-guard.js';
+
+  mountNav('elections');
+  mountFooter();
+
+  const profile = await requireApprovedMember();
+  if (!profile) throw new Error('redirecting');
+
+  const container = document.getElementById('positions-container');
+  const alertBox = document.getElementById('alert-box');
+
+  // Current term label, same source promote_election_winners() uses, so
+  // this page and the actual promotion logic always agree on "this year".
+  const { data: termSetting } = await supabase.from('club_settings').select('value').eq('key', 'current_leadership_term').maybeSingle();
+  const termLabel = termSetting?.value ? String(termSetting.value).replace(/^"|"$/g, '') : null;
+  document.getElementById('term-banner').textContent = termLabel
+    ? `Showing vacancies for the ${termLabel} term.`
+    : 'Showing current vacancies.';
+
+  const [{ data: positionsRaw, error: posErr }, { data: currentLeaders, error: leadersErr }] = await Promise.all([
+    supabase.from('positions').select('*').order('display_order'),
+    supabase.from('leaders').select('position').eq('is_current', true),
+  ]);
+
+  if (posErr || leadersErr) {
+    alertBox.innerHTML = `<div class="alert alert-error">${escapeHtml((posErr || leadersErr).message)}</div>`;
+    throw new Error('load failed');
+  }
+
+  // De-duplicate positions by name, same as elections/index.html does.
+  const seen = new Set();
+  const positions = (positionsRaw || []).filter(p => {
+    if (!p?.name || seen.has(p.name)) return false;
+    seen.add(p.name);
+    return true;
+  });
+
+  const occupiedNames = new Set((currentLeaders || []).map(l => (l.position || '').toLowerCase().trim()));
+  const vacantPositions = positions.filter(p => !occupiedNames.has((p.name || '').toLowerCase().trim()));
+
+  if (vacantPositions.length === 0) {
+    container.innerHTML = `<p style="text-align:center;color:var(--text-muted);">Every position is currently filled. Check back after the next election cycle opens.</p>`;
+  } else {
+    container.innerHTML = vacantPositions.map(pos => `
+      <div class="position-card">
+        <h4>${escapeHtml(pos.name)}</h4>
+        ${pos.name_luganda ? `<p class="luganda">${escapeHtml(pos.name_luganda)}${pos.category ? ' &middot; ' + escapeHtml(pos.category) : ''}${pos.requires_fee ? ` &middot; UGX ${Number(pos.application_fee).toLocaleString()} application fee` : ''}</p>` : ''}
+        <span class="pill pill-draft">Vacant</span>
+      </div>
+    `).join('');
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str ?? '';
+    return div.innerHTML;
+  }
+</script>
+</body>
+</html>

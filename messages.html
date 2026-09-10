@@ -413,12 +413,12 @@
       <button type="button" class="msg-create-btn" id="new-group-btn">+ Group</button>
     </div>
     <div class="msg-tabs">
-      <button type="button" class="msg-tab active" data-tab="chats">Direct</button>
+      <button type="button" class="msg-tab active" data-tab="chats">All chats</button>
       <button type="button" class="msg-tab" data-tab="groups">Groups</button>
       <button type="button" class="msg-tab" data-tab="notes">Personal</button>
     </div>
     <div id="chats-pane">
-      <input type="search" class="msg-search" id="member-search" placeholder="Search members..." />
+      <input type="search" class="msg-search" id="member-search" placeholder="Search members or groups..." />
       <div class="msg-list" id="member-list"><div class="msg-empty">Loading...</div></div>
     </div>
     <div id="groups-pane" style="display:none;">
@@ -681,18 +681,31 @@
 
   function renderMembers(filter = '') {
     const q = filter.trim().toLowerCase();
-    const list = members.filter(m => !q || (m.full_name || '').toLowerCase().includes(q) || (m.email || '').toLowerCase().includes(q));
-    memberList.innerHTML = list.map(m => `
-      <button type="button" class="msg-person ${active?.type==='dm' && active.id===m.id ? 'active' : ''}" data-id="${m.id}">
-        <div class="msg-avatar">${m.avatar_url ? `<img src="${escapeHtml(m.avatar_url)}" alt="" />` : escapeHtml(initials(m.full_name))}</div>
+    const memberRows = members
+      .filter(m => !q || (m.full_name || '').toLowerCase().includes(q) || (m.email || '').toLowerCase().includes(q))
+      .map(m => `
+      <button type="button" class="msg-person ${active?.type==='dm' && active.id===m.id ? 'active' : ''}" data-type="dm" data-id="${m.id}">
+        <div class="msg-avatar">${m.avatar_url ? `<img src="${escapeHtml(m.avatar_url)}" alt="" style="object-fit:cover;object-position:center top;" />` : escapeHtml(initials(m.full_name))}</div>
         <div style="min-width:0;">
           <div class="msg-person-name">${escapeHtml(m.full_name || 'Member')}</div>
           <div class="msg-person-sub">${escapeHtml(m.email || '')}</div>
         </div>
-      </button>
-    `).join('') || `<div class="msg-empty">No members found.</div>`;
+      </button>`);
+    // Groups appear together with direct chats in the main "All chats" list
+    const groupRows = (groups || [])
+      .filter(g => !q || (g.name || '').toLowerCase().includes(q) || (g.description || '').toLowerCase().includes(q))
+      .map(g => `
+      <button type="button" class="msg-person ${active?.type==='group' && active.id===g.id ? 'active' : ''}" data-type="group" data-id="${g.id}">
+        <div class="msg-avatar">👥</div>
+        <div style="min-width:0;">
+          <div class="msg-person-name">${escapeHtml(g.name)}</div>
+          <div class="msg-person-sub">${escapeHtml(g.description || 'Group chat')}</div>
+        </div>
+      </button>`);
+    const all = [...groupRows, ...memberRows];
+    memberList.innerHTML = all.join('') || `<div class="msg-empty">No chats or members found.</div>`;
     memberList.querySelectorAll('.msg-person').forEach(btn => {
-      btn.addEventListener('click', () => openChat('dm', btn.dataset.id));
+      btn.addEventListener('click', () => openChat(btn.dataset.type || 'dm', btn.dataset.id));
     });
   }
 
@@ -710,20 +723,22 @@
     groups = (memberships || []).map(m => m.chat_groups).filter(Boolean);
     if (!groups.length) {
       groupList.innerHTML = `<div class="msg-empty">No groups yet. Tap + Group to create one.</div>`;
-      return;
+    } else {
+      groupList.innerHTML = groups.map(g => `
+        <button type="button" class="msg-person ${active?.type==='group' && active.id===g.id ? 'active' : ''}" data-id="${g.id}">
+          <div class="msg-avatar">👥</div>
+          <div style="min-width:0;">
+            <div class="msg-person-name">${escapeHtml(g.name)}</div>
+            <div class="msg-person-sub">${escapeHtml(g.description || 'Group chat')}</div>
+          </div>
+        </button>
+      `).join('');
+      groupList.querySelectorAll('.msg-person').forEach(btn => {
+        btn.addEventListener('click', () => openChat('group', btn.dataset.id));
+      });
     }
-    groupList.innerHTML = groups.map(g => `
-      <button type="button" class="msg-person ${active?.type==='group' && active.id===g.id ? 'active' : ''}" data-id="${g.id}">
-        <div class="msg-avatar">👥</div>
-        <div style="min-width:0;">
-          <div class="msg-person-name">${escapeHtml(g.name)}</div>
-          <div class="msg-person-sub">${escapeHtml(g.description || 'Group chat')}</div>
-        </div>
-      </button>
-    `).join('');
-    groupList.querySelectorAll('.msg-person').forEach(btn => {
-      btn.addEventListener('click', () => openChat('group', btn.dataset.id));
-    });
+    // Keep groups visible alongside direct chats in the main list
+    renderMembers(document.getElementById('member-search')?.value || '');
   }
 
   async function openChat(type, id) {
@@ -861,6 +876,7 @@
   });
 
   await loadMembers();
+  await loadGroups();
 </script>
 </body>
 </html>
