@@ -72,7 +72,7 @@ Commons (Uganda Martyrs University and Buganda cultural heritage sites),
 with plain-text attribution in the image captions. Swap these for your own
 hosted photos any time: see `CULTURAL_IMAGES` in `assets/js/site-config.js`
 and the `<img>`/CSS background references in `index.html` and `about.html`.
-The "NSA" wordmark in the nav/footer is plain text, not a fixed logo file:
+The nav/footer brand uses the UMUNSA crest at `assets/img/umunsa_logo.png` (also `umunsa_logo.jpg`). Replace those files to update the logo site-wide; paths are set in `assets/js/site-config.js` (`SITE_LOGO_PATH`).
 drop in your own crest image if you have one.
 
 ## Deploying

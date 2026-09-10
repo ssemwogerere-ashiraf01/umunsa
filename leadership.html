@@ -64,6 +64,52 @@
 
   .empty-state { text-align:center; padding:2rem 0; color:var(--text-muted); grid-column:1/-1; }
   .empty-state p { font-size:0.95rem; }
+
+  .leader-details-btn { cursor: pointer; }
+  #leader-detail-modal {
+    position: fixed; inset: 0; z-index: 12000;
+    background: rgba(10, 18, 28, 0.55);
+    display: none; align-items: center; justify-content: center;
+    padding: 1rem;
+  }
+  #leader-detail-modal.open { display: flex; }
+  .leader-detail-card {
+    background: var(--paper, #fff);
+    border-radius: 14px;
+    border: 1px solid var(--border, #ddd);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.28);
+    max-width: 440px; width: 100%;
+    max-height: min(88vh, 640px);
+    overflow: auto;
+    padding: 1.25rem 1.35rem 1.4rem;
+    position: relative;
+  }
+  .leader-detail-close {
+    position: absolute; top: 0.65rem; right: 0.7rem;
+    border: none; background: transparent; font-size: 1.4rem;
+    cursor: pointer; color: var(--text-muted, #666); line-height: 1;
+  }
+  .leader-detail-hero {
+    display: flex; gap: 0.9rem; align-items: center; margin-bottom: 0.9rem;
+  }
+  .leader-detail-avatar {
+    width: 72px; height: 72px; border-radius: 50%; overflow: hidden;
+    border: 2px solid var(--gold, #c9a227); flex-shrink: 0; background: #eee;
+  }
+  .leader-detail-avatar img { width: 100%; height: 100%; object-fit: cover; object-position: center 20%; }
+  .leader-detail-hero h3 { margin: 0 0 0.2rem; font-size: 1.15rem; }
+  .leader-detail-role { margin: 0; color: var(--forest, #1f4b3f); font-weight: 600; font-size: 0.9rem; }
+  .leader-detail-term { margin: 0.25rem 0 0; font-size: 0.8rem; color: var(--text-muted, #666); }
+  .leader-detail-about { font-size: 0.9rem; line-height: 1.5; color: var(--text, #222); margin: 0 0 1rem; }
+  .leader-detail-about.muted { color: var(--text-muted, #777); font-style: italic; }
+  .leader-detail-grid { display: grid; gap: 0.55rem; margin: 0; }
+  .leader-detail-grid div {
+    display: grid; grid-template-columns: 120px 1fr; gap: 0.4rem;
+    border-top: 1px solid var(--border, #eee); padding-top: 0.45rem;
+  }
+  .leader-detail-grid dt { margin: 0; font-size: 0.78rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; }
+  .leader-detail-grid dd { margin: 0; font-size: 0.9rem; }
+
 </style>
 </head>
 <body>
@@ -94,6 +140,14 @@
 </div>
 
 <div id="app-footer"></div>
+
+<div id="leader-detail-modal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="leader-detail-title">
+  <div class="leader-detail-card">
+    <button type="button" class="leader-detail-close" data-close-leader-detail aria-label="Close">&times;</button>
+    <div id="leader-detail-body"></div>
+  </div>
+</div>
+
 
 <script type="module">
   import { supabase, publicSupabase } from './assets/js/supabase-client.js';
@@ -162,16 +216,16 @@
     // Always try to attach faculty/hostel (and fill gaps) from profiles for known user ids
     if (ids.length) {
       try {
-        const { data: scopeRows } = await supabase.from('profiles').select('id, full_name, avatar_url, faculty, hostel').in('id', ids);
+        const { data: scopeRows } = await supabase.from('profiles').select('id, full_name, avatar_url, faculty, hostel, programme, year_of_study, academic_year, bio, phone, email, registration_number').in('id', ids);
         if (scopeRows && scopeRows.length) {
           const byScope = new Map(scopeRows.map(p => [p.id, p]));
           if (rows.length) {
             rows = rows.map(r => {
               const s = byScope.get(r.user_id);
-              return s ? { ...r, faculty: s.faculty, hostel: s.hostel, full_name: r.full_name || s.full_name, avatar_url: r.avatar_url || s.avatar_url } : r;
+              return s ? { ...r, faculty: s.faculty, hostel: s.hostel, full_name: r.full_name || s.full_name, avatar_url: r.avatar_url || s.avatar_url, programme: s.programme, year_of_study: s.year_of_study, academic_year: s.academic_year, profile_bio: s.bio, phone: s.phone, email: s.email, registration_number: s.registration_number } : r;
             });
           } else {
-            rows = scopeRows.map(p => ({ user_id: p.id, full_name: p.full_name, avatar_url: p.avatar_url, faculty: p.faculty, hostel: p.hostel }));
+            rows = scopeRows.map(p => ({ user_id: p.id, full_name: p.full_name, avatar_url: p.avatar_url, faculty: p.faculty, hostel: p.hostel, programme: p.programme, year_of_study: p.year_of_study, academic_year: p.academic_year, profile_bio: p.bio, phone: p.phone, email: p.email, registration_number: p.registration_number }));
           }
         }
       } catch (_) {}
@@ -179,13 +233,13 @@
     // Fallback: direct profiles select (works for logged-in members/admins)
     if (!rows.length) {
       try {
-        let q = supabase.from('profiles').select('id, full_name, avatar_url, faculty, hostel');
+        let q = supabase.from('profiles').select('id, full_name, avatar_url, faculty, hostel, programme, year_of_study, academic_year, bio, phone, email, registration_number');
         if (ids.length) {
           const { data } = await q.in('id', ids);
-          rows = (data || []).map(p => ({ user_id: p.id, full_name: p.full_name, avatar_url: p.avatar_url, faculty: p.faculty, hostel: p.hostel }));
+          rows = (data || []).map(p => ({ user_id: p.id, full_name: p.full_name, avatar_url: p.avatar_url, faculty: p.faculty, hostel: p.hostel, programme: p.programme, year_of_study: p.year_of_study, academic_year: p.academic_year, profile_bio: p.bio, phone: p.phone, email: p.email, registration_number: p.registration_number }));
         } else {
           const { data } = await q.limit(300);
-          rows = (data || []).map(p => ({ user_id: p.id, full_name: p.full_name, avatar_url: p.avatar_url, faculty: p.faculty, hostel: p.hostel }));
+          rows = (data || []).map(p => ({ user_id: p.id, full_name: p.full_name, avatar_url: p.avatar_url, faculty: p.faculty, hostel: p.hostel, programme: p.programme, year_of_study: p.year_of_study, academic_year: p.academic_year, profile_bio: p.bio, phone: p.phone, email: p.email, registration_number: p.registration_number }));
         }
       } catch (_) {}
     }
@@ -202,6 +256,13 @@
         avatar_url: l.photo_url || hit?.avatar_url || null,
         faculty: l.faculty || hit?.faculty || null,
         hostel: l.hostel || hit?.hostel || null,
+        programme: l.programme || hit?.programme || null,
+        year_of_study: l.year_of_study || hit?.year_of_study || null,
+        academic_year: l.academic_year || hit?.academic_year || null,
+        profile_bio: l.profile_bio || hit?.profile_bio || hit?.bio || null,
+        phone: l.phone || hit?.phone || null,
+        email: l.email || hit?.email || null,
+        registration_number: l.registration_number || hit?.registration_number || null,
       };
     });
   }
@@ -227,6 +288,8 @@
     return pos;
   }
 
+  const leaderByKey = new Map();
+
   function leaderCardHtml(leader, isCurrent = true) {
     const name = leader.full_name || 'Unknown Member';
     const photoUrl = leader.avatar_url || null;
@@ -236,6 +299,9 @@
     const badgeLabel = isCurrent
       ? (typeof expectedTerm !== 'undefined' ? expectedTerm : (leader.term_label || 'Current'))
       : (leader.term_label || 'Past Term');
+
+    const key = leader.id || `${leader.user_id || name}-${leader.position || ''}`;
+    leaderByKey.set(String(key), { ...leader, _isCurrent: isCurrent, _positionLabel: positionLabel, _badgeLabel: badgeLabel });
 
     const ini = initials(name);
     const avatarContent = photoUrl
@@ -249,9 +315,77 @@
         <div class="position-label">${escapeHtml(positionLabel)}</div>
         ${bio ? `<div class="bio">${escapeHtml(bio)}</div>` : ''}
         <span class="term-badge ${badgeClass}">${badgeLabel}</span>
+        <button type="button" class="btn btn-outline leader-details-btn" data-leader-key="${escapeHtml(String(key))}" style="margin-top:0.85rem;width:100%;font-size:0.85rem;">View details</button>
       </div>
     `;
   }
+
+  function openLeaderDetails(key) {
+    const leader = leaderByKey.get(String(key));
+    if (!leader) return;
+    const name = leader.full_name || 'Unknown Member';
+    const photoUrl = leader.avatar_url || null;
+    const ini = initials(name);
+    const rows = [
+      ['Position', leader._positionLabel || leader.position],
+      ['Term', leader._badgeLabel || leader.term_label],
+      ['Faculty', leader.faculty],
+      ['Hall / Hostel', leader.hostel],
+      ['Programme', leader.programme],
+      ['Year of study', leader.year_of_study],
+      ['Academic year', leader.academic_year],
+      ['Registration no.', leader.registration_number],
+      ['Email', leader.email],
+      ['Phone', leader.phone],
+    ].filter(([, v]) => v !== null && v !== undefined && String(v).trim() !== '');
+
+    const termDates = [];
+    if (leader.term_start) termDates.push('From ' + new Date(leader.term_start).toLocaleDateString());
+    if (leader.term_end) termDates.push('To ' + new Date(leader.term_end).toLocaleDateString());
+
+    const about = leader.bio || leader.profile_bio || '';
+    const avatar = photoUrl
+      ? `<img src="${escapeHtml(photoUrl)}" alt="" />`
+      : `<div class="avatar-fallback" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:1.6rem;">${ini}</div>`;
+
+    const modal = document.getElementById('leader-detail-modal');
+    document.getElementById('leader-detail-body').innerHTML = `
+      <div class="leader-detail-hero">
+        <div class="leader-detail-avatar">${avatar}</div>
+        <div>
+          <h3 id="leader-detail-title">${escapeHtml(name)}</h3>
+          <p class="leader-detail-role">${escapeHtml(leader._positionLabel || leader.position || '')}</p>
+          ${termDates.length ? `<p class="leader-detail-term">${escapeHtml(termDates.join(' · '))}</p>` : ''}
+        </div>
+      </div>
+      ${about ? `<p class="leader-detail-about">${escapeHtml(about)}</p>` : '<p class="leader-detail-about muted">No biography submitted yet.</p>'}
+      <dl class="leader-detail-grid">
+        ${rows.map(([k, v]) => `<div><dt>${escapeHtml(k)}</dt><dd>${escapeHtml(String(v))}</dd></div>`).join('')}
+      </dl>
+    `;
+    modal.classList.add('open');
+    modal.setAttribute('aria-hidden', 'false');
+  }
+
+  function closeLeaderDetails() {
+    const modal = document.getElementById('leader-detail-modal');
+    modal.classList.remove('open');
+    modal.setAttribute('aria-hidden', 'true');
+  }
+
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-leader-key]');
+    if (btn) {
+      openLeaderDetails(btn.dataset.leaderKey);
+      return;
+    }
+    if (e.target.id === 'leader-detail-modal' || e.target.closest('[data-close-leader-detail]')) {
+      closeLeaderDetails();
+    }
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeLeaderDetails();
+  });
 
   // -----------------------------------------------------------------------
   // 1. Load current-term leaders

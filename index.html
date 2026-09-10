@@ -23,7 +23,7 @@
 
 <link rel="icon" href="favicon.ico" sizes="any" />
 <link rel="icon" type="image/png" href="assets/img/favicon-32.png" sizes="32x32" />
-<link rel="apple-touch-icon" href="assets/img/nsa-seal.png" />
+<link rel="apple-touch-icon" href="assets/img/apple-touch-icon.png" />
 <meta name="description" content="The official home of the Nkobazambogo Students' Association at Uganda Martyrs University, Nkozi: news, activities, projects, elections, and discussions for our members." />
 <link rel="stylesheet" href="assets/css/style.css" />
 <style>
@@ -120,6 +120,9 @@
   }
   .hero .eyebrow { color: var(--gold); }
   .culture-strip {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
     display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.25rem;
     max-width: 1000px; margin: 2rem auto 0; padding: 0 1rem;
   }
@@ -168,27 +171,22 @@
   </p>
   <div class="culture-strip">
     <figure>
-      <img src="assets/img/kasubi.jpg" alt="Kasubi Tombs, seat of the Buganda Kingdom" loading="lazy" />
-      <figcaption>Kasubi Tombs - Buganda Kingdom heritage site, Kampala</figcaption>
+      <img src="assets/img/25.jpg" alt="UMUNSA members at a cultural festival" loading="lazy" />
+      <figcaption>General cabinet photograph during 2025/26 handover party</figcaption>
     </figure>
     <figure>
-      <img src="assets/img/dancers.jpg" alt="Traditional Buganda cultural dancers" loading="lazy" />
-      <figcaption>Traditional Buganda cultural dance</figcaption>
+      <img src="assets/img/fix.jpg" alt="Members celebrating together" loading="lazy" />
+      <figcaption>Fellowship and celebration</figcaption>
     </figure>
-  </div>
-  <div style="max-width:900px;margin:2rem auto 0;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1rem;">
-    <div class="card" style="margin:0;">
-      <h3 style="margin-top:0;font-size:1.05rem;">Vision</h3>
-      <p style="margin:0;">A lasting community of UMU students who show up for one another, on and off campus.</p>
-    </div>
-    <div class="card" style="margin:0;">
-      <h3 style="margin-top:0;font-size:1.05rem;">Mission</h3>
-      <p style="margin:0;">Connect and empower members through club activities, projects, mentorship, and fair elections.</p>
-    </div>
-    <div class="card" style="margin:0;">
-      <h3 style="margin-top:0;font-size:1.05rem;">Principles</h3>
-      <p style="margin:0;">Integrity, solidarity, and respect - set out in our Members' Code for everyone to read.</p>
-    </div>
+    <figure>
+      <img src="assets/img/umu.webp" alt="Uganda Martyrs University campus reception" loading="lazy" />
+      <figcaption>UMU Nkozi campus</figcaption>
+    </figure>
+    <figure>
+      <!-- <img src="assets/img/zambogo.webp" alt="Nkobazambogo traditional crest" loading="lazy" />
+      <figcaption>Nkobazambogo crest — Obumu Geemaanyi</figcaption>
+    </figure>
+  </div> -->
   </div>
   <p style="text-align:center;margin-top:1.75rem;">
     <a href="about.html" class="btn btn-gold">Read the full About Us</a>
@@ -255,11 +253,12 @@
   mountFooter();
 
   const heroSlides = [
-    { src: 'assets/img/team.jpg', label: 'Association members at a cultural gathering' },
-    { src: 'assets/img/campus-bg.jpg', label: 'Uganda Martyrs University campus life' },
-    { src: 'assets/img/culture-bg.jpg', label: 'Campus culture and student events' },
-    { src: 'assets/img/kasubi.jpg', label: 'Buganda heritage and identity' },
-    { src: 'assets/img/dancers.jpg', label: 'Traditional cultural performance' },
+    { src: 'assets/img/25.jpg', label: 'UMUNSA at a cultural festival — togetherness in action' },
+    { src: 'assets/img/fix.jpg', label: 'Celebration and fellowship among members' },
+    { src: 'assets/img/umu.webp', label: 'Uganda Martyrs University, Nkozi — reception and campus' },
+    { src: 'assets/img/umu b.webp', label: 'Campus grounds and student life at UMU Nkozi' },
+    { src: 'assets/img/zambogo.webp', label: 'Nkobazambogo crest — Obumu Geemaanyi' },
+    { src: 'assets/img/flag.webp', label: 'Buganda cultural identity' },
   ];
 
   const carousel = document.getElementById('hero-carousel');
