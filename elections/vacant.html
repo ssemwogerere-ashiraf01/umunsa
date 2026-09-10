@@ -4,12 +4,12 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta name="robots" content="noindex, nofollow" />
-<title>Elections: Nkobazambogo Students' Association</title>
+<title>Vacant Positions (Current Year) · NSA</title>
 <meta name="description" content="The official home of the Nkobazambogo Students' Association at Uganda Martyrs University, Nkozi: news, activities, projects, and membership." />
 <!-- Social / Open Graph (link previews) -->
 <meta property="og:site_name" content="Nkobazambogo Students' Association" />
 <meta property="og:type" content="website" />
-<meta property="og:title" content="Elections: Nkobazambogo Students' Association" />
+<meta property="og:title" content="Vacant Positions (Current Year) · NSA" />
 <meta property="og:description" content="The official home of the Nkobazambogo Students' Association at Uganda Martyrs University, Nkozi: news, activities, projects, and membership." />
 <meta property="og:url" content="https://umunsa.vercel.app/elections/index.html" />
 <meta property="og:image" content="https://umunsa.vercel.app/assets/img/og-default.jpg" />
@@ -19,7 +19,7 @@
 <meta property="og:image:height" content="630" />
 <meta property="og:image:alt" content="Nkobazambogo Students' Association" />
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="Elections: Nkobazambogo Students' Association" />
+<meta name="twitter:title" content="Vacant Positions (Current Year) · NSA" />
 <meta name="twitter:description" content="The official home of the Nkobazambogo Students' Association at Uganda Martyrs University, Nkozi: news, activities, projects, and membership." />
 <meta name="twitter:image" content="https://umunsa.vercel.app/assets/img/og-default.jpg" />
 
@@ -55,7 +55,7 @@
 
 <div class="page-header">
   <span class="eyebrow">Association</span>
-  <h1>Elections</h1>
+  <h1>Vacant Positions</h1>
   <p>Apply for a leadership position or cast your vote when an election is open.</p>
   <p style="margin-top:0.75rem;"><a href="vacant.html" style="color:var(--forest);font-weight:600;">View only vacant positions (current year) →</a></p>
 </div>
@@ -91,7 +91,8 @@
   let elections = [];
   let positions = [];
   let selectedElectionId = null;
-  let activeTab = 'positions';
+  let activeTab = 'vacant';
+  window.__electionsShowVacantOnly = true;
 
   const { data: positionsRaw } = await supabase.from('positions').select('*').order('display_order');
   // De-duplicate by name (avoids double Information Minister etc. after rename/reseed)
@@ -149,12 +150,12 @@
         Voting window: ${new Date(election.start_date).toLocaleString()} &rarr; ${new Date(election.end_date).toLocaleString()}
       </p>
       <div class="tab-strip">
-        <button type="button" data-tab="positions" class="${activeTab === 'positions' ? 'active' : ''}">Positions &amp; Apply</button>
+        <button type="button" data-tab="positions" class="${activeTab === 'positions' || activeTab === 'vacant' ? 'active' : ''}">Vacant positions</button>
         <button type="button" data-tab="candidates" class="${activeTab === 'candidates' ? 'active' : ''}">Candidates</button>
         <button type="button" data-tab="vote" class="${activeTab === 'vote' ? 'active' : ''}">Vote</button>
         <button type="button" data-tab="results" class="${activeTab === 'results' ? 'active' : ''}">Results</button>
       </div>
-      <div id="pane-positions" class="tab-pane ${activeTab === 'positions' ? 'active' : ''}"></div>
+      <div id="pane-positions" class="tab-pane ${activeTab === 'positions' || activeTab === 'vacant' ? 'active' : ''}"></div>
       <div id="pane-candidates" class="tab-pane ${activeTab === 'candidates' ? 'active' : ''}"></div>
       <div id="pane-vote" class="tab-pane ${activeTab === 'vote' ? 'active' : ''}"></div>
       <div id="pane-results" class="tab-pane ${activeTab === 'results' ? 'active' : ''}"></div>

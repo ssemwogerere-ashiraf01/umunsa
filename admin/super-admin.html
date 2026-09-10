@@ -452,11 +452,18 @@
 
         if (result?.error) throw new Error(result.error);
 
-        alertBox.innerHTML = `<div class="alert alert-success">Account created for ${escapeHtml(payload.email)}.</div>`;
+        alertBox.innerHTML = `<div class="alert alert-success">Account created for ${escapeHtml(payload.email)} as <strong>${escapeHtml(payload.role)}</strong>. They can sign in with the temporary password.</div>`;
         e.target.reset();
         await loadAccess();
       } catch (err) {
-        alertBox.innerHTML = `<div class="alert alert-error">${escapeHtml(err.message || String(err))}</div>`;
+        let msg = err.message || String(err);
+        if (/database error creating new user/i.test(msg)) {
+          msg += ' — Run sql/011_admin_create_user_fix.sql in Supabase, redeploy the admin-create-user function, and confirm this email is not already registered under Authentication → Users.';
+        }
+        if (/already exists|already been registered/i.test(msg)) {
+          msg += ' Open Supabase → Authentication → Users, find that email, or pick a different address.';
+        }
+        alertBox.innerHTML = `<div class="alert alert-error">${escapeHtml(msg)}</div>`;
       }
       btn.disabled = false; btn.textContent = 'Create Account';
     });
