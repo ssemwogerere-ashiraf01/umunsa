@@ -84,6 +84,17 @@
     <form id="profile-form">
       <div class="form-group"><label for="full_name">Full name</label><input type="text" id="full_name" required data-titlecase /></div>
       <div class="form-group"><label for="phone">Phone number</label><input type="tel" inputmode="tel" autocomplete="tel" placeholder="+256 700 000000 / +1 …" id="phone" data-phone-intl /></div>
+      <div class="form-group"><label for="member_category">Member type</label>
+        <select id="member_category">
+          <option value="student">Student (current)</option>
+          <option value="graduate">Graduate / Alumni</option>
+          <option value="lecturer">Lecturer / Academic staff</option>
+          <option value="patron">Patron</option>
+          <option value="staff">University / Association staff</option>
+        </select>
+        <small style="color:var(--text-muted);">Students use programme / hostel fields. Graduates, lecturers, patrons and staff use designation fields below.</small>
+      </div>
+      <div id="profile-fields-student">
       <div class="form-group"><label for="campus">Campus</label>
         <select id="campus" data-placeholder="Select campus"><option value="">Select campus</option></select>
       </div>
@@ -101,6 +112,16 @@
       </div>
       <div class="form-group"><label for="semester">Semester</label>
         <select id="semester" data-placeholder="Semester"><option value="">Semester</option></select>
+      </div>
+      <div class="form-group"><label for="hostel">Hall / Hostel</label>
+        <select id="hostel" data-placeholder="Select hostel"><option value="">Select hostel</option></select>
+      </div>
+      </div>
+      <div id="profile-fields-nonstudent" style="display:none;">
+        <div class="form-group"><label for="designation">Designation / title</label><input type="text" id="designation" placeholder="e.g. Senior Lecturer, Patron" /></div>
+        <div class="form-group"><label for="department">Department / unit</label><input type="text" id="department" placeholder="Department or faculty unit" /></div>
+        <div class="form-group"><label for="organization">Organization</label><input type="text" id="organization" placeholder="For patrons / affiliates" /></div>
+        <div class="form-group"><label for="graduation_year">Graduation year</label><input type="number" id="graduation_year" min="1970" max="2100" placeholder="Alumni only" /></div>
       </div>
       <div class="form-group"><label for="bio">Short bio</label><input type="text" id="bio" /></div>
       <div class="form-group"><label for="security_question">Security question (choose one)</label>
@@ -170,6 +191,9 @@
     </form>
   </div>
 
+  <div id="change-password-banner" class="alert alert-warning" style="display:none;margin-bottom:1rem;">
+    You signed in with a temporary password from the Super Admin. Please set your own password below before continuing.
+  </div>
   <div class="profile-card" id="password-card">
     <h3 style="margin-top:0;">Change password</h3>
     <div id="pw-alert-box"></div>
@@ -190,7 +214,8 @@
   import { mountAcademicFields, readAcademicFields } from './assets/js/academic.js';
   import { enhancePhoneFields } from './assets/js/phone-input.js';
   import { wireTribeClanSelects, readTribeClan } from './assets/js/uganda-tribes.js';
-  import { enhanceAllSelects, refreshSelects } from './assets/js/ns-select.js';
+  import { enhanceAllSelects, refreshSelects, setSelectValue, syncSelectDisplay } from './assets/js/ns-select.js';
+  import { HOSTEL_OPTIONS } from './assets/js/site-config.js';
 
   mountNav('profile');
   mountFooter();
@@ -245,6 +270,31 @@
     }
   }
 
+
+  function isStudentCategory(cat) {
+    const c = (cat || 'student').toLowerCase();
+    return c === 'student' || c === '';
+  }
+
+  /** Show student academic fields OR non-student designation fields based on member type */
+  function syncProfileCategoryFields() {
+    const cat = document.getElementById('member_category')?.value || 'student';
+    const student = isStudentCategory(cat);
+    const stu = document.getElementById('profile-fields-student');
+    const non = document.getElementById('profile-fields-nonstudent');
+    if (stu) stu.style.display = student ? '' : 'none';
+    if (non) non.style.display = student ? 'none' : '';
+    // Soft-require: clear required on hidden fields so HTML5 validation does not block save
+    (stu || document).querySelectorAll?.('input,select,textarea') && stu?.querySelectorAll('input,select,textarea').forEach((el) => {
+      if (student) {
+        if (el.dataset.wasRequired === '1') el.required = true;
+      } else {
+        if (el.required) el.dataset.wasRequired = '1';
+        el.required = false;
+      }
+    });
+  }
+
   async function fillForm(p) {
     document.getElementById('ro-email').textContent = p.email || '—';
     document.getElementById('ro-status').innerHTML = statusPill(p.membership_status);
@@ -256,6 +306,13 @@
 
     document.getElementById('full_name').value = p.full_name || '';
     document.getElementById('phone').value = p.phone || '';
+    const catEl = document.getElementById('member_category');
+    if (catEl) catEl.value = p.member_category || (p.is_alum ? 'graduate' : 'student') || 'student';
+    const des = document.getElementById('designation'); if (des) des.value = p.designation || '';
+    const dep = document.getElementById('department'); if (dep) dep.value = p.department || '';
+    const org = document.getElementById('organization'); if (org) org.value = p.organization || '';
+    const gy = document.getElementById('graduation_year'); if (gy) gy.value = p.graduation_year || '';
+    syncProfileCategoryFields();
     document.getElementById('bio').value = p.bio || '';
 
     const secQ = document.getElementById('security_question');
@@ -300,9 +357,84 @@
       console.warn('tribe/clan fields', e);
     }
 
+    // member_category + hostel + other selects
+    const setSel = (id, val) => {
+      const el = document.getElementById(id);
+      if (!el || val == null || val === '') return;
+      const v = String(val);
+      if (el.tagName === 'SELECT') {
+        try { setSelectValue(el, v); }
+        catch (_) {
+          if (![...el.options].some(o => o.value === v)) {
+            const opt = document.createElement('option');
+            opt.value = v; opt.textContent = v;
+            el.appendChild(opt);
+          }
+          el.value = v;
+          el.dispatchEvent(new Event('change', { bubbles: true }));
+          try { syncSelectDisplay(el); } catch (_) {}
+        }
+      } else {
+        el.value = v;
+      }
+    };
+    setSel('member_category', p.member_category || (p.is_alum ? 'graduate' : 'student'));
+    const hostelEl = document.getElementById('hostel');
+    if (hostelEl && hostelEl.tagName === 'SELECT' && HOSTEL_OPTIONS?.length) {
+      const cur = p.hostel || '';
+      hostelEl.innerHTML = '<option value="">Select hostel</option>' +
+        HOSTEL_OPTIONS.map((h) => `<option value="${String(h).replace(/"/g,'&quot;')}">${String(h)}</option>`).join('');
+      if (cur && ![...hostelEl.options].some((o) => o.value === cur)) {
+        const o = document.createElement('option'); o.value = cur; o.textContent = cur; hostelEl.appendChild(o);
+      }
+      if (cur) hostelEl.value = cur;
+    }
+    setSel('hostel', p.hostel);
+    setSel('membership_status', p.membership_status);
+    setSel('role', p.role);
+
     try { enhancePhoneFields(document); } catch (_) {}
+    // Re-apply phone after intl enhancer mounts
+    if (p.phone) {
+      const phoneEl = document.getElementById('phone');
+      if (phoneEl) {
+        phoneEl.value = p.phone;
+        phoneEl.dispatchEvent(new Event('input', { bubbles: true }));
+        phoneEl.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+    }
     try { enhanceAllSelects(document); } catch (_) {}
     try { refreshSelects(document); } catch (_) {}
+    syncProfileCategoryFields();
+
+    // Second pass after ns-select builds — ensure visible values match profile
+    setTimeout(() => {
+      setSel('campus', p.campus);
+      setSel('faculty', p.faculty);
+      setSel('programme', p.programme);
+      setSel('academic_year', p.academic_year);
+      setSel('semester', p.semester != null ? String(p.semester) : '');
+      setSel('year_of_study', p.year_of_study != null ? String(p.year_of_study) : '');
+      setSel('tribe', p.tribe);
+      setSel('clan', p.clan);
+      setSel('hostel', p.hostel);
+      setSel('member_category', p.member_category || (p.is_alum ? 'graduate' : 'student'));
+      try { refreshSelects(document); } catch (_) {}
+    }, 50);
+    setTimeout(() => {
+      ['campus','faculty','programme','academic_year','semester','year_of_study','tribe','clan','hostel','member_category','membership_status','role','security_question'].forEach((id) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const wanted = el.value;
+        if (!wanted) return;
+        try { setSelectValue(el, wanted); } catch (_) {
+          el.dispatchEvent(new Event('change', { bubbles: true }));
+          try { syncSelectDisplay(el); } catch (_) {}
+        }
+      });
+      try { refreshSelects(document); } catch (_) {}
+    }, 200);
+    setTimeout(() => { try { refreshSelects(document); } catch (_) {} }, 500);
   }
 
   async function init() {
@@ -363,10 +495,20 @@
     await fillForm(profile);
   }
 
+  if (new URLSearchParams(location.search).get('change_password') === '1') {
+    const ban = document.getElementById('change-password-banner');
+    if (ban) ban.style.display = 'block';
+    document.getElementById('password-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
   init().catch((e) => {
-    console.error(e);
-    document.getElementById('alert-box').innerHTML =
-      `<div class="alert alert-error">Could not load profile. Please refresh.</div>`;
+    console.error('profile init', e);
+    const msg = (e && e.message) ? e.message : String(e || 'Unknown error');
+    const box = document.getElementById('alert-box');
+    if (box) {
+      box.innerHTML =
+        `<div class="alert alert-error">Could not load profile fully: ${escapeHtml(msg)}. You can still edit and save available fields.</div>`;
+    }
   });
 
   document.getElementById('avatar_file')?.addEventListener('change', async (e) => {
@@ -402,6 +544,10 @@
     alertBox.innerHTML = `<div class="alert alert-success">Photo updated.</div>`;
   });
 
+  document.getElementById('member_category')?.addEventListener('change', () => {
+    syncProfileCategoryFields();
+  });
+
   document.getElementById('profile-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = document.getElementById('save-btn');
@@ -418,15 +564,25 @@
       if (existing !== undefined && existing !== null && String(existing).trim() !== '') return existing;
       return null;
     };
+    const cat = document.getElementById('member_category')?.value || profile.member_category || 'student';
+    const student = (cat === 'student' || cat === '');
     const payload = {
       full_name: titleCase(document.getElementById('full_name').value) || profile.full_name,
+      member_category: cat,
+      designation: student ? null : (document.getElementById('designation')?.value.trim() || null),
+      department: student ? null : (document.getElementById('department')?.value.trim() || null),
+      organization: student ? null : (document.getElementById('organization')?.value.trim() || null),
+      graduation_year: (!student && document.getElementById('graduation_year')?.value)
+        ? parseInt(document.getElementById('graduation_year').value, 10) : null,
+      is_alum: cat === 'graduate',
       phone: keep(document.getElementById('phone').value, profile.phone),
-      campus: keep(academic.campus, profile.campus),
-      faculty: keep(academic.faculty, profile.faculty),
-      programme: keep(academic.programme, profile.programme),
-      academic_year: keep(academic.academic_year, profile.academic_year),
-      semester: academic.semester,
-      year_of_study: academic.year_of_study,
+      campus: student ? keep(academic.campus, profile.campus) : keep(academic.campus, profile.campus),
+      faculty: student ? keep(academic.faculty, profile.faculty) : keep(null, profile.faculty),
+      programme: student ? keep(academic.programme, profile.programme) : null,
+      academic_year: student ? keep(academic.academic_year, profile.academic_year) : null,
+      semester: student ? academic.semester : null,
+      year_of_study: student ? academic.year_of_study : null,
+      hostel: student ? keep(document.getElementById('hostel')?.value, profile.hostel) : null,
       tribe: keep(tribeClan.tribe, profile.tribe),
       clan: keep(tribeClan.clan, profile.clan),
       bio: document.getElementById('bio').value.trim() || null,
@@ -500,12 +656,21 @@
     }
     btn.disabled = true;
     btn.textContent = 'Updating...';
-    const { error } = await supabase.auth.updateUser({ password: pw });
+    const { error } = await supabase.auth.updateUser({
+      password: pw,
+      data: { must_change_password: false },
+    });
     if (error) {
       alertBox.innerHTML = `<div class="alert alert-error">${escapeHtml(error.message)}</div>`;
     } else {
-      alertBox.innerHTML = `<div class="alert alert-success">Password updated.</div>`;
+      alertBox.innerHTML = `<div class="alert alert-success">Password updated. You can use this password next time you sign in.</div>`;
       document.getElementById('password-form').reset();
+      const ban = document.getElementById('change-password-banner');
+      if (ban) ban.style.display = 'none';
+      // Leave the forced-change URL so a refresh does not re-trap
+      if (new URLSearchParams(location.search).get('change_password') === '1') {
+        history.replaceState({}, document.title, location.pathname);
+      }
     }
     btn.disabled = false;
     btn.textContent = 'Update Password';

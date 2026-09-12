@@ -43,7 +43,7 @@
 <div class="auth-wrap">
   <div class="auth-card" style="max-width:560px;">
     <h2>Complete your profile</h2>
-    <p class="subtitle">Finish these details to unlock member features. Your progress is saved when you click <strong>Save and continue</strong>.</p>
+    <p class="subtitle">Choose whether you are a student, graduate, lecturer, patron or staff — the required fields change accordingly. Progress is saved when you click <strong>Save and continue</strong>.</p>
 
     <div class="ob-progress" id="ob-progress">
       <div class="ob-progress-bar"><span id="ob-progress-fill"></span></div>
@@ -77,36 +77,68 @@
         <input type="tel" inputmode="tel" autocomplete="tel" placeholder="+256 700 000000" id="phone" data-phone-intl required />
       </div>
       <div class="form-group">
+        <label for="member_category">I am a *</label>
+        <select id="member_category" required>
+          <option value="student">Current student</option>
+          <option value="graduate">Graduate / Alumni</option>
+          <option value="lecturer">Lecturer / Academic staff</option>
+          <option value="patron">Patron</option>
+          <option value="staff">University / Association staff</option>
+        </select>
+        <small style="color:var(--text-muted);">This controls which profile fields you need. Students fill academic details; others fill role details.</small>
+      </div>
+
+      <div id="ob-nonstudent-fields" style="display:none;">
+        <div class="form-group">
+          <label for="designation">Designation / title *</label>
+          <input type="text" id="designation" placeholder="e.g. Senior Lecturer, Patron, Alumni" />
+        </div>
+        <div class="form-group">
+          <label for="department">Department / unit</label>
+          <input type="text" id="department" placeholder="e.g. Faculty of Science" />
+        </div>
+        <div class="form-group">
+          <label for="organization">Organization (patrons)</label>
+          <input type="text" id="organization" placeholder="External organization if any" />
+        </div>
+        <div class="form-group">
+          <label for="graduation_year">Graduation year (alumni)</label>
+          <input type="number" id="graduation_year" min="1970" max="2100" placeholder="e.g. 2019" />
+        </div>
+      </div>
+
+      <div id="ob-student-fields">
+      <div class="form-group">
         <label for="registration_number">Registration number *</label>
-        <input type="text" id="registration_number" required placeholder="e.g. 2026-B101-10000" />
+        <input type="text" id="registration_number" placeholder="e.g. 2026-B101-10000" />
       </div>
       <div class="form-group">
         <label for="campus">Campus *</label>
-        <select id="campus" required data-placeholder="Select campus"><option value="">Select campus</option></select>
+        <select id="campus" data-placeholder="Select campus"><option value="">Select campus</option></select>
       </div>
       <div class="form-group">
         <label for="faculty">Faculty / School *</label>
-        <select id="faculty" required data-placeholder="Select faculty"><option value="">Select faculty</option></select>
+        <select id="faculty" data-placeholder="Select faculty"><option value="">Select faculty</option></select>
       </div>
       <div class="form-group">
         <label for="programme">Programme / Course *</label>
-        <select id="programme" required data-placeholder="Select programme"><option value="">Select programme</option></select>
+        <select id="programme" data-placeholder="Select programme"><option value="">Select programme</option></select>
       </div>
       <div class="form-group">
         <label for="academic_year">Academic year *</label>
-        <select id="academic_year" required data-placeholder="Academic year"><option value="">Select year</option></select>
+        <select id="academic_year" data-placeholder="Academic year"><option value="">Select year</option></select>
       </div>
       <div class="form-group">
         <label for="year_of_study">Year of study *</label>
-        <select id="year_of_study" required data-placeholder="Year of study"><option value="">Select year</option></select>
+        <select id="year_of_study" data-placeholder="Year of study"><option value="">Select year</option></select>
       </div>
       <div class="form-group">
         <label for="semester">Semester *</label>
-        <select id="semester" required data-placeholder="Semester"><option value="">Select semester</option></select>
+        <select id="semester" data-placeholder="Semester"><option value="">Select semester</option></select>
       </div>
       <div class="form-group">
         <label for="hostel">Hall / Hostel *</label>
-        <select id="hostel" required data-placeholder="Select hostel">
+        <select id="hostel" data-placeholder="Select hostel">
           <option value="">Select hostel</option>
           <option value="Katonga hostel">Katonga hostel</option>
           <option value="Bbosa hostel">Bbosa hostel</option>
@@ -137,7 +169,7 @@
 
       <div class="form-group">
         <label for="tribe">Tribe *</label>
-        <select id="tribe" required data-placeholder="Select tribe"><option value="">Select tribe</option></select>
+        <select id="tribe" data-placeholder="Select tribe"><option value="">Select tribe</option></select>
       </div>
       <div class="form-group" id="tribe-other-wrap" style="display:none;">
         <label for="tribe_other">Specify tribe *</label>
@@ -145,12 +177,14 @@
       </div>
       <div class="form-group">
         <label for="clan">Clan *</label>
-        <select id="clan" required data-placeholder="Select clan"><option value="">Select tribe first</option></select>
+        <select id="clan" data-placeholder="Select clan"><option value="">Select tribe first</option></select>
       </div>
       <div class="form-group" id="clan-other-wrap" style="display:none;">
         <label for="clan_other">Specify clan *</label>
         <input type="text" id="clan_other" placeholder="Enter your clan" />
       </div>
+
+      </div><!-- /ob-student-fields -->
 
       <div class="form-group">
         <label for="bio">Short bio (optional)</label>
@@ -232,6 +266,12 @@
   const metaName = session.user.user_metadata?.full_name || session.user.user_metadata?.name || '';
   document.getElementById('full_name').value = profile?.full_name || metaName || '';
   document.getElementById('phone').value = profile?.phone || '';
+  const catEl = document.getElementById('member_category');
+  if (catEl) catEl.value = profile?.member_category || (profile?.is_alum ? 'graduate' : 'student') || 'student';
+  const des = document.getElementById('designation'); if (des) des.value = profile?.designation || '';
+  const dep = document.getElementById('department'); if (dep) dep.value = profile?.department || '';
+  const org = document.getElementById('organization'); if (org) org.value = profile?.organization || '';
+  const gy = document.getElementById('graduation_year'); if (gy) gy.value = profile?.graduation_year || '';
   document.getElementById('registration_number').value = profile?.registration_number || '';
   document.getElementById('bio').value = profile?.bio || '';
 
@@ -299,38 +339,62 @@
   try { enhanceAllSelects(document); } catch (_) {}
   try { refreshSelects(document); } catch (_) {}
 
-  // Progress tracking
-  const STEPS = [
-    { key: 'photo', label: 'Photo', get: () => !!uploadedPhotoUrl },
-    { key: 'name', label: 'Name', get: () => !!document.getElementById('full_name').value.trim() },
-    { key: 'phone', label: 'Phone', get: () => !!document.getElementById('phone').value.trim() },
-    { key: 'reg', label: 'Reg. no.', get: () => !!document.getElementById('registration_number').value.trim() },
-    { key: 'campus', label: 'Campus', get: () => !!document.getElementById('campus').value },
-    { key: 'faculty', label: 'Faculty', get: () => !!document.getElementById('faculty').value },
-    { key: 'programme', label: 'Programme', get: () => !!document.getElementById('programme').value },
-    { key: 'year', label: 'Year', get: () => !!document.getElementById('academic_year').value },
-    { key: 'yos', label: 'Study year', get: () => !!document.getElementById('year_of_study').value },
-    { key: 'sem', label: 'Semester', get: () => !!document.getElementById('semester').value },
-    { key: 'hostel', label: 'Hostel', get: () => {
-      const h = document.getElementById('hostel').value;
-      if (h === 'Other') return !!document.getElementById('hostel_other').value.trim();
-      return !!h;
-    }},
-    { key: 'tribe', label: 'Tribe', get: () => {
-      const t = document.getElementById('tribe').value;
-      if (t === 'Other') return !!document.getElementById('tribe_other')?.value?.trim();
-      return !!t;
-    }},
-    { key: 'clan', label: 'Clan', get: () => {
-      const c = document.getElementById('clan').value;
-      if (c === 'Other') return !!document.getElementById('clan_other')?.value?.trim();
-      return !!c;
-    }},
-  ];
+  // Progress tracking — depends on member category
+  function currentCategory() {
+    return document.getElementById('member_category')?.value || 'student';
+  }
+
+  function buildSteps() {
+    const cat = currentCategory();
+    const base = [
+      { key: 'photo', label: 'Photo', get: () => !!uploadedPhotoUrl },
+      { key: 'name', label: 'Name', get: () => !!document.getElementById('full_name').value.trim() },
+      { key: 'phone', label: 'Phone', get: () => !!document.getElementById('phone').value.trim() },
+      { key: 'type', label: 'Type', get: () => !!currentCategory() },
+    ];
+    if (cat === 'student') {
+      return base.concat([
+        { key: 'reg', label: 'Reg. no.', get: () => !!document.getElementById('registration_number').value.trim() },
+        { key: 'campus', label: 'Campus', get: () => !!document.getElementById('campus').value },
+        { key: 'faculty', label: 'Faculty', get: () => !!document.getElementById('faculty').value },
+        { key: 'programme', label: 'Programme', get: () => !!document.getElementById('programme').value },
+        { key: 'year', label: 'Year', get: () => !!document.getElementById('academic_year').value },
+        { key: 'yos', label: 'Study year', get: () => !!document.getElementById('year_of_study').value },
+        { key: 'sem', label: 'Semester', get: () => !!document.getElementById('semester').value },
+        { key: 'hostel', label: 'Hostel', get: () => {
+          const h = document.getElementById('hostel').value;
+          if (h === 'Other') return !!document.getElementById('hostel_other')?.value?.trim();
+          return !!h;
+        }},
+        { key: 'tribe', label: 'Tribe', get: () => {
+          const tr = document.getElementById('tribe').value;
+          if (tr === 'Other') return !!document.getElementById('tribe_other')?.value?.trim();
+          return !!tr;
+        }},
+        { key: 'clan', label: 'Clan', get: () => {
+          const c = document.getElementById('clan').value;
+          if (c === 'Other') return !!document.getElementById('clan_other')?.value?.trim();
+          return !!c;
+        }},
+      ]);
+    }
+    const extra = [
+      { key: 'designation', label: 'Designation', get: () => !!document.getElementById('designation')?.value?.trim() },
+      { key: 'department', label: 'Department', get: () => true },
+    ];
+    if (cat === 'graduate') {
+      extra.push({ key: 'gradyear', label: 'Grad. year', get: () => !!document.getElementById('graduation_year')?.value });
+    }
+    if (cat === 'patron') {
+      extra.push({ key: 'org', label: 'Organization', get: () => true });
+    }
+    return base.concat(extra);
+  }
 
   function updateProgress() {
+    const STEPS = buildSteps();
     const done = STEPS.filter(s => s.get());
-    const pct = Math.round((done.length / STEPS.length) * 100);
+    const pct = Math.round((done.length / Math.max(STEPS.length, 1)) * 100);
     const fill = document.getElementById('ob-progress-fill');
     if (fill) fill.style.width = pct + '%';
     const lab = document.getElementById('ob-progress-label');
@@ -345,8 +409,19 @@
     }
   }
 
+  function syncObCategoryFields() {
+    const cat = currentCategory();
+    const studentBox = document.getElementById('ob-student-fields');
+    const nonBox = document.getElementById('ob-nonstudent-fields');
+    if (studentBox) studentBox.style.display = cat === 'student' ? 'block' : 'none';
+    if (nonBox) nonBox.style.display = cat === 'student' ? 'none' : 'block';
+    updateProgress();
+  }
+  document.getElementById('member_category')?.addEventListener('change', syncObCategoryFields);
+
   document.getElementById('onboarding-form').addEventListener('input', updateProgress);
   document.getElementById('onboarding-form').addEventListener('change', updateProgress);
+  syncObCategoryFields();
   updateProgress();
 
   document.getElementById('avatar-file').addEventListener('change', async (e) => {
@@ -415,20 +490,34 @@
       const registration_number = document.getElementById('registration_number').value.trim();
       const tribeClan = readTribeClan(document);
 
+      const member_category = document.getElementById('member_category')?.value || 'student';
+      const designation = document.getElementById('designation')?.value.trim() || null;
+      const department = document.getElementById('department')?.value.trim() || null;
+      const organization = document.getElementById('organization')?.value.trim() || null;
+      const graduation_year_raw = document.getElementById('graduation_year')?.value;
+      const graduation_year = graduation_year_raw ? parseInt(graduation_year_raw, 10) : null;
+
       const missing = [];
       if (!uploadedPhotoUrl) missing.push('profile photo');
       if (!full_name) missing.push('full name');
       if (!phone) missing.push('phone');
-      if (!registration_number) missing.push('registration number');
-      if (!academic.campus) missing.push('campus');
-      if (!academic.faculty) missing.push('faculty');
-      if (!academic.programme) missing.push('programme');
-      if (!academic.academic_year) missing.push('academic year');
-      if (!academic.year_of_study) missing.push('year of study');
-      if (!academic.semester) missing.push('semester');
-      if (!hostel) missing.push('hostel');
-      if (!tribeClan.tribe) missing.push('tribe');
-      if (!tribeClan.clan) missing.push('clan');
+      if (!member_category) missing.push('member type');
+
+      if (member_category === 'student') {
+        if (!registration_number) missing.push('registration number');
+        if (!academic.campus) missing.push('campus');
+        if (!academic.faculty) missing.push('faculty');
+        if (!academic.programme) missing.push('programme');
+        if (!academic.academic_year) missing.push('academic year');
+        if (!academic.year_of_study) missing.push('year of study');
+        if (!academic.semester) missing.push('semester');
+        if (!hostel) missing.push('hostel');
+        if (!tribeClan.tribe) missing.push('tribe');
+        if (!tribeClan.clan) missing.push('clan');
+      } else {
+        if (!designation) missing.push('designation / title');
+        if (member_category === 'graduate' && !graduation_year) missing.push('graduation year');
+      }
 
       if (missing.length) {
         alertBox.innerHTML = `<div class="alert alert-error">Please complete: ${escapeHtml(missing.join(', '))}.</div>`;
@@ -442,16 +531,22 @@
       const payload = {
         full_name,
         phone,
-        campus: academic.campus,
-        faculty: academic.faculty,
-        programme: academic.programme,
-        academic_year: academic.academic_year,
-        semester: Number(academic.semester),
-        year_of_study: Number(academic.year_of_study),
-        hostel,
-        registration_number,
-        tribe: tribeClan.tribe,
-        clan: tribeClan.clan,
+        member_category,
+        designation: member_category === 'student' ? null : designation,
+        department: member_category === 'student' ? null : department,
+        organization: member_category === 'patron' ? organization : null,
+        graduation_year: member_category === 'graduate' ? graduation_year : null,
+        is_alum: member_category === 'graduate',
+        campus: member_category === 'student' ? academic.campus : null,
+        faculty: member_category === 'student' ? academic.faculty : (department || null),
+        programme: member_category === 'student' ? academic.programme : null,
+        academic_year: member_category === 'student' ? academic.academic_year : null,
+        semester: member_category === 'student' ? Number(academic.semester) : null,
+        year_of_study: member_category === 'student' ? Number(academic.year_of_study) : null,
+        hostel: member_category === 'student' ? hostel : null,
+        registration_number: member_category === 'student' ? registration_number : null,
+        tribe: member_category === 'student' ? tribeClan.tribe : null,
+        clan: member_category === 'student' ? tribeClan.clan : null,
         bio: document.getElementById('bio').value.trim() || null,
         avatar_url: uploadedPhotoUrl,
         onboarding_completed: true,
@@ -484,11 +579,15 @@
         const still = [];
         if (confirmed) {
           if (!confirmed.onboarding_completed) still.push('onboarding flag');
-          if (!(confirmed.programme || '').trim()) still.push('programme');
           if (!(confirmed.phone || '').trim()) still.push('phone');
           if (!(confirmed.avatar_url || '').trim()) still.push('photo');
-          if (!(confirmed.tribe || '').trim()) still.push('tribe');
-          if (!(confirmed.clan || '').trim()) still.push('clan');
+          if ((confirmed.member_category || 'student') === 'student') {
+            if (!(confirmed.programme || '').trim()) still.push('programme');
+            if (!(confirmed.tribe || '').trim()) still.push('tribe');
+            if (!(confirmed.clan || '').trim()) still.push('clan');
+          } else if (!(confirmed.designation || '').trim()) {
+            still.push('designation');
+          }
         }
         alertBox.innerHTML = `<div class="alert alert-error">Saved, but your profile is still incomplete${still.length ? ' (' + escapeHtml(still.join(', ')) + ')' : ''}. Check the highlighted fields and save again.</div>`;
         status.textContent = '';

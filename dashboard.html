@@ -151,15 +151,8 @@
     <a class="quick-card" href="#my-card" aria-label="View my membership card">
       <div class="icon" style="font-size:0.85rem;">ID</div>
       <h3 style="margin:0;">Membership Card</h3>
-      <p style="color:var(--text-muted);margin:0;font-size:0.92rem;">View and download your official NSA ID card.</p>
+      <p style="color:var(--text-muted);margin:0;font-size:0.92rem;">View and download your official UMUNSA ID card.</p>
       <span class="soon-tag" id="card-status-tag">Loading...</span>
-    </a>
-
-        <a class="quick-card" href="messages.html" aria-label="View my membership card">
-      <div class="icon" style="font-size:0.85rem;">ID</div>
-      <h3 style="margin:0;">Messaging APP</h3>
-      <p style="color:var(--text-muted);margin:0;font-size:0.92rem;">Meet and chat with other members online.</p>
-      <span class="soon-tag" id="messaging-app">App not ready.</span>
     </a>
   </div>
 </div>
@@ -206,15 +199,48 @@
   </div>
 </div>
 
+<div class="card" style="max-width:960px;margin:1.25rem auto;padding:0;" id="dashboard-calendar-wrap">
+  <div class="dash-calendar" id="dash-calendar">
+    <div class="dash-cal-head">
+      <h3 style="margin:0;">My calendar</h3>
+      <div class="dash-cal-nav">
+        <button type="button" class="dash-cal-nav-btn" id="dash-cal-prev" aria-label="Previous month">«</button>
+        <span id="dash-cal-label" style="font-weight:700;color:var(--forest);min-width:9rem;text-align:center;"></span>
+        <button type="button" class="dash-cal-nav-btn" id="dash-cal-next" aria-label="Next month">»</button>
+      </div>
+    </div>
+    <div class="dash-cal-grid" id="dash-cal-grid"></div>
+    <div id="dash-cal-day-detail" class="dash-cal-day-detail" hidden></div>
+    <div class="live-sessions" id="live-sessions"></div>
+  </div>
+</div>
+<div id="ai-dashboard-slot" style="max-width:960px;margin:1.5rem auto;padding:0 1rem;"></div>
 <div id="app-footer"></div>
 
 <script type="module">
   import { supabase } from './assets/js/supabase-client.js';
   import { requireApprovedMember } from './assets/js/session-guard.js';
   import { mountNav, mountFooter } from './assets/js/nav.js';
+  import { mountAiPanel } from './assets/js/ai.js';
   import { drawCardFront, drawCardBack, downloadCanvas, downloadCombined } from './assets/js/membership-card.js';
 
   mountNav('dashboard');
+
+  // Show moderation warning if any
+  try {
+    const { data: { session: s0 } } = await supabase.auth.getSession();
+    if (s0?.user) {
+      const { data: mp } = await supabase.from('profiles').select('moderation_warnings, last_moderation_warning').eq('id', s0.user.id).maybeSingle();
+      if (mp?.moderation_warnings > 0 && mp.last_moderation_warning) {
+        const box = document.createElement('div');
+        box.className = 'alert alert-error';
+        box.style.cssText = 'max-width:960px;margin:1rem auto;';
+        box.innerHTML = `<strong>Community standards notice</strong> (${mp.moderation_warnings} warning${mp.moderation_warnings>1?'s':''}): ${escapeHtml(mp.last_moderation_warning)}`;
+        document.getElementById('dashboard-calendar-wrap')?.before(box);
+      }
+    }
+  } catch (_) {}
+
   mountFooter();
 
   const profile = await requireApprovedMember();
@@ -298,7 +324,7 @@
       cardTag.textContent = 'Ready to download';
       cardTag.classList.add('soon-tag-live');
 
-      const fileBase = `NSA-ID-${member.membership_card_number}`;
+      const fileBase = `UMUNSA-ID-${member.membership_card_number}`;
       document.getElementById('dl-combined').onclick = () => downloadCombined(frontCanvas, backCanvas, `${fileBase}.png`);
       document.getElementById('dl-front').onclick = () => downloadCanvas(frontCanvas, `${fileBase}-front.png`);
       document.getElementById('dl-back').onclick = () => downloadCanvas(backCanvas, `${fileBase}-back.png`);
@@ -348,7 +374,10 @@
       ? `On ${myProjects.length} project${myProjects.length === 1 ? '' : 's'}`
       : 'Not on a project yet';
     document.getElementById('projects-list').innerHTML = (myProjects && myProjects.length)
-      ? myProjects.map(pm => `<div class="list-item"><strong>${escapeHtml(pm.projects?.title || 'Project')}</strong><div class="meta">${escapeHtml(pm.role_in_project)} · ${escapeHtml(pm.projects?.status || '')}</div></div>`).join('') + `<p style="margin:0.75rem 0 0;"><a href="projects.html" style="font-weight:700;">View all my projects &rarr;</a></p>`
+      ? (() => {
+          const pm = myProjects[0];
+          return `<div class="list-item"><strong>${escapeHtml(pm.projects?.title || 'Project')}</strong><div class="meta">${escapeHtml(pm.role_in_project)} · ${escapeHtml(pm.projects?.status || '')}</div></div>`;
+        })() + `<p style="margin:0.75rem 0 0;"><a href="projects.html" style="font-weight:700;">View all my projects &rarr;</a></p>`
       : `<p style="color:var(--text-muted);font-size:0.9rem;">You haven't been assigned to a project yet.</p>`;
   } catch (e) {
     console.warn(e);
@@ -375,22 +404,23 @@
     electionsTag.classList.add('soon-tag-live');
   }
 
-  // Upcoming activities
-  const { data: activities } = await supabase.from('activities').select('title, activity_date, location').gte('activity_date', new Date().toISOString()).order('activity_date').limit(4);
+  // Upcoming activities — show just the single soonest one; the card links
+  // out to the full list rather than trying to summarize several at once.
+  const { data: activities } = await supabase.from('activities').select('title, activity_date, location').gte('activity_date', new Date().toISOString()).order('activity_date').limit(1);
   document.getElementById('activities-list').innerHTML = (activities && activities.length)
     ? activities.map(a => `<div class="list-item"><strong>${escapeHtml(a.title)}</strong><div class="meta">${new Date(a.activity_date).toLocaleDateString()} ${a.location ? '· ' + escapeHtml(a.location) : ''}</div></div>`).join('') + `<p style="margin:0.75rem 0 0;"><a href="activities.html" style="font-weight:700;">View all activities &rarr;</a></p>`
     : `<p style="color:var(--text-muted);font-size:0.9rem;">No upcoming activities right now.</p>`;
 
-  // Latest news
-  const { data: news } = await supabase.from('news').select('title, published_at').order('published_at', { ascending: false }).limit(4);
+  // Latest news — one headline, then out to the full feed.
+  const { data: news } = await supabase.from('news').select('title, published_at').order('published_at', { ascending: false }).limit(1);
   document.getElementById('news-list').innerHTML = (news && news.length)
     ? news.map(n => `<div class="list-item"><strong>${escapeHtml(n.title)}</strong><div class="meta">${new Date(n.published_at).toLocaleDateString()}</div></div>`).join('') + `<p style="margin:0.75rem 0 0;"><a href="news.html" style="font-weight:700;">View all news &rarr;</a></p>`
     : `<p style="color:var(--text-muted);font-size:0.9rem;">No news posted yet.</p>`;
 
-  // Discussion highlights
-  const { data: topics } = await supabase.from('forum_topics').select('title, category, created_at').order('created_at', { ascending: false }).limit(4);
+  // Discussion highlights — one latest topic, then out to the forum.
+  const { data: topics } = await supabase.from('forum_topics').select('title, category, created_at').order('created_at', { ascending: false }).limit(1);
   document.getElementById('forum-list').innerHTML = (topics && topics.length)
-    ? topics.map(topic => `<div class="list-item"><strong>${escapeHtml(topic.title)}</strong><div class="meta">${escapeHtml(topic.category || 'General')} · ${new Date(topic.created_at).toLocaleDateString()}</div></div>`).join('')
+    ? topics.map(topic => `<div class="list-item"><strong>${escapeHtml(topic.title)}</strong><div class="meta">${escapeHtml(topic.category || 'General')} · ${new Date(topic.created_at).toLocaleDateString()}</div></div>`).join('') + `<p style="margin:0.75rem 0 0;"><a href="forum/index.html" style="font-weight:700;">View all discussions &rarr;</a></p>`
     : `<p style="color:var(--text-muted);font-size:0.9rem;">No discussions started yet.</p>`;
   }
 
@@ -399,6 +429,191 @@
     div.textContent = str ?? '';
     return div.innerHTML;
   }
+
+
+  // Calendar + live sessions (navigable months, clickable events)
+  try {
+    const calGrid = document.getElementById('dash-cal-grid');
+    const calLabel = document.getElementById('dash-cal-label');
+    const liveEl = document.getElementById('live-sessions');
+    const dayDetail = document.getElementById('dash-cal-day-detail');
+    const prevBtn = document.getElementById('dash-cal-prev');
+    const nextBtn = document.getElementById('dash-cal-next');
+    if (calGrid && calLabel) {
+      const now = new Date();
+      let viewY = now.getFullYear();
+      let viewM = now.getMonth(); // 0-11
+      let cacheByDay = {};
+
+      async function loadMonth(y, m) {
+        const monthStart = new Date(y, m, 1).toISOString();
+        const monthEnd = new Date(y, m + 1, 0, 23, 59, 59).toISOString();
+        const rangeStart = new Date(y, m - 1, 1).toISOString();
+        const rangeEnd = new Date(y, m + 2, 0, 23, 59, 59).toISOString();
+
+        const [{ data: acts }, { data: elections }, { data: newsItems }, { data: projects }, { data: topics }] = await Promise.all([
+          supabase.from('activities').select('id, title, activity_date, ends_at, location, show_on_calendar').gte('activity_date', rangeStart).lte('activity_date', rangeEnd),
+          supabase.from('elections').select('id, title, status, voting_opens, voting_closes, nominations_open, nominations_close').order('created_at', { ascending: false }).limit(12),
+          supabase.from('news').select('id, title, published_at, starts_at, ends_at, show_on_calendar').order('published_at', { ascending: false }).limit(60),
+          supabase.from('projects').select('id, title, created_at, starts_at, ends_at, show_on_calendar, status').order('created_at', { ascending: false }).limit(40),
+          supabase.from('forum_topics').select('id, title, created_at, ends_at, show_on_calendar').gte('created_at', rangeStart).lte('created_at', rangeEnd).limit(40),
+        ]);
+
+        const byDay = {};
+        const addDay = (iso, item) => {
+          if (!iso) return;
+          const d = new Date(iso);
+          if (d.getMonth() !== m || d.getFullYear() !== y) return;
+          const day = d.getDate();
+          (byDay[day] = byDay[day] || []).push(item);
+        };
+
+        (acts || []).forEach((a) => {
+          if (a.show_on_calendar === false) return;
+          addDay(a.activity_date, { type: 'activity', title: a.title, href: 'activities.html', when: a.activity_date });
+        });
+        (newsItems || []).forEach((n) => {
+          if (n.show_on_calendar === false) return;
+          addDay(n.starts_at || n.published_at, { type: 'news', title: n.title, href: 'news-detail.html?id=' + n.id, when: n.starts_at || n.published_at });
+          if (n.ends_at) addDay(n.ends_at, { type: 'deadline', title: 'Deadline: ' + n.title, href: 'news-detail.html?id=' + n.id, when: n.ends_at });
+        });
+        (projects || []).forEach((p) => {
+          if (p.show_on_calendar === false) return;
+          addDay(p.starts_at || p.created_at, { type: 'project', title: p.title, href: 'projects.html', when: p.starts_at || p.created_at });
+          if (p.ends_at) addDay(p.ends_at, { type: 'deadline', title: 'Due: ' + p.title, href: 'projects.html', when: p.ends_at });
+        });
+        (topics || []).forEach((tp) => {
+          if (tp.show_on_calendar === false) return;
+          addDay(tp.created_at, { type: 'forum', title: tp.title, href: 'forum/index.html', when: tp.created_at });
+        });
+
+        // Elections spanning this month
+        (elections || []).forEach((e) => {
+          const dates = [e.voting_opens, e.voting_closes, e.nominations_open, e.nominations_close].filter(Boolean);
+          dates.forEach((iso) => {
+            addDay(iso, { type: 'election', title: e.title || 'Election', href: 'elections/index.html', when: iso });
+          });
+        });
+
+        cacheByDay = byDay;
+
+        calLabel.textContent = new Date(y, m, 1).toLocaleString(undefined, { month: 'long', year: 'numeric' });
+        const startDow = (new Date(y, m, 1).getDay() + 6) % 7;
+        const daysInMonth = new Date(y, m + 1, 0).getDate();
+        const isCurrentMonth = y === now.getFullYear() && m === now.getMonth();
+        const today = now.getDate();
+
+        let html = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map((d) => `<div class="dash-cal-dow">${d}</div>`).join('');
+        for (let i = 0; i < startDow; i++) html += '<div class="dash-cal-empty"></div>';
+        for (let day = 1; day <= daysInMonth; day++) {
+          const items = byDay[day] || [];
+          const has = items.length > 0;
+          const isToday = isCurrentMonth && day === today;
+          const labels = items.slice(0, 2).map((x) => {
+            const short = escapeHtml((x.title || '').slice(0, 18)) + ((x.title || '').length > 18 ? '…' : '');
+            return `<a class="dash-cal-event" href="${x.href}" title="${escapeHtml(x.title)}">${short}</a>`;
+          }).join('');
+          const more = items.length > 2 ? `<button type="button" class="dash-cal-more" data-day="${day}">+${items.length - 2} more</button>` : '';
+          html += `<div class="dash-cal-day${has ? ' has-event' : ''}${isToday ? ' today' : ''}" data-day="${day}" role="button" tabindex="0">
+            <div class="dash-cal-daynum">${day}</div>
+            <div class="dash-cal-events">${labels}${more}</div>
+            ${has && !labels ? '<div class="dash-cal-dot"></div>' : ''}
+          </div>`;
+        }
+        calGrid.style.display = 'grid';
+        calGrid.style.gridTemplateColumns = 'repeat(7, minmax(0, 1fr))';
+        calGrid.style.gap = '4px';
+        calGrid.style.width = '100%';
+        calGrid.innerHTML = html;
+
+        const showDay = (day) => {
+          const items = cacheByDay[day] || [];
+          if (!dayDetail) return;
+          if (!items.length) {
+            dayDetail.hidden = true;
+            dayDetail.innerHTML = '';
+            return;
+          }
+          dayDetail.hidden = false;
+          const dateLabel = new Date(y, m, day).toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+          dayDetail.innerHTML = `<div class="dash-cal-detail-head"><strong>${escapeHtml(dateLabel)}</strong>
+            <button type="button" class="mini-btn" id="dash-cal-detail-close">Close</button></div>
+            <ul class="dash-cal-detail-list">${items.map((it) =>
+              `<li><a href="${it.href}"><span class="live-badge">${escapeHtml((it.type || 'event').toUpperCase())}</span> ${escapeHtml(it.title)}</a></li>`
+            ).join('')}</ul>`;
+          dayDetail.querySelector('#dash-cal-detail-close')?.addEventListener('click', () => {
+            dayDetail.hidden = true;
+          });
+        };
+
+        calGrid.querySelectorAll('.dash-cal-day').forEach((el) => {
+          el.addEventListener('click', (e) => {
+            if (e.target.closest('a')) return; // event link handles itself
+            const day = Number(el.getAttribute('data-day'));
+            showDay(day);
+          });
+        });
+        calGrid.querySelectorAll('.dash-cal-more').forEach((btn) => {
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            showDay(Number(btn.getAttribute('data-day')));
+          });
+        });
+
+        // Live sessions strip
+        const live = [];
+        (elections || []).forEach((e) => {
+          const st = (e.status || '').toLowerCase();
+          if (st.includes('vote') || st === 'voting' || st === 'open') {
+            live.push({ label: e.title || 'Election', badge: 'LIVE VOTE', href: 'elections/index.html' });
+          } else if (st.includes('nomin') || st === 'nominations') {
+            live.push({ label: e.title || 'Nominations', badge: 'APPLY', href: 'elections/index.html' });
+          }
+        });
+        (acts || []).filter((a) => new Date(a.activity_date) >= new Date()).slice(0, 4).forEach((a) => {
+          live.push({ label: a.title + (a.location ? ' · ' + a.location : ''), badge: 'EVENT', href: 'activities.html' });
+        });
+        (newsItems || []).slice(0, 3).forEach((n) => {
+          live.push({ label: n.title, badge: 'NEWS', href: 'news-detail.html?id=' + n.id });
+        });
+        (projects || []).filter((p) => (p.status || '') !== 'completed').slice(0, 3).forEach((p) => {
+          live.push({ label: p.title, badge: 'PROJECT', href: 'projects.html' });
+        });
+        live.push({ label: 'Vacant positions (current year)', badge: 'OPEN', href: 'elections/vacant.html' });
+
+        if (liveEl) {
+          liveEl.innerHTML = live.length
+            ? live.map((s) => `<a class="live-session-card" href="${s.href}"><div><span class="live-badge">${s.badge}</span> <strong style="margin-left:0.35rem;">${escapeHtml(s.label)}</strong></div><span style="color:var(--text-muted);font-size:0.85rem;">Open →</span></a>`).join('')
+            : '<p style="color:var(--text-muted);font-size:0.9rem;">No live sessions right now.</p>';
+        }
+      }
+
+      prevBtn?.addEventListener('click', async () => {
+        viewM -= 1;
+        if (viewM < 0) { viewM = 11; viewY -= 1; }
+        if (dayDetail) dayDetail.hidden = true;
+        await loadMonth(viewY, viewM);
+      });
+      nextBtn?.addEventListener('click', async () => {
+        viewM += 1;
+        if (viewM > 11) { viewM = 0; viewY += 1; }
+        if (dayDetail) dayDetail.hidden = true;
+        await loadMonth(viewY, viewM);
+      });
+
+      await loadMonth(viewY, viewM);
+    }
+  } catch (e) { console.warn('calendar', e); }
+
+
+
+  try {
+    mountAiPanel(document.getElementById('ai-dashboard-slot'), {
+      title: 'UMUNSA Quick Chat',
+      task: 'faq',
+      placeholder: 'e.g. How do elections work? How do I get my membership card?',
+    });
+  } catch (e) { console.warn('AI panel', e); }
 </script>
 </body>
 </html>

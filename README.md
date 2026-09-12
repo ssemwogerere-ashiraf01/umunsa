@@ -1,6 +1,6 @@
 # Uganda Martyrs University Nkobazambogo Students' Association
 
-A membership website for the Nkobazambogo Students' Association (NSA) at
+A membership website for the Nkobazambogo Students' Association (UMUNSA) at
 Uganda Martyrs University, Nkozi: built as a static site (HTML/CSS/vanilla
 JS) backed by Supabase (Postgres + Auth + Storage + Edge Functions).
 
@@ -93,6 +93,21 @@ trigger the first time a member becomes active
 (`sql/007_membership_card.sql`). If you already had active members before
 running that migration, also run `sql/024_membership_card_backfill.sql` once
 so they get a card number too — otherwise "Generate" stays disabled for them
+
+## Faculty/Hall representative seats — one important migration to re-run
+
+`sql/039_fix_scoped_positions_and_promotion.sql` corrects three issues found
+during a review: the two generic "Faculty Representative / Coordinator" and
+"Hall / Hostel Representative" seats being accidentally re-created (because
+`021_seed_positions.sql` and `022_rename_positions_secretaries.sql` are
+numbered to run after `009_scoped_faculty_hostel_positions.sql` already
+retired them), several faculties never getting their own seat because `009`
+ran before `027_academic_structure.sql` created the real faculty list, and
+`promote_election_winners()` never deactivating the outgoing leader of a seat
+before installing the new winner (the reason `029`/`030` had to exist as
+manual cleanups). **Run `039` even if you already ran everything through
+`038`** — it's safe to run more than once.
+
 (and members would see "Not issued yet" on the dashboard).
 
 The QR library loads from a CDN at runtime — `assets/js/membership-card.js`
@@ -128,3 +143,29 @@ noted, none of them a hard security guarantee (`assets/js/geo.js`):
   `login_attempts_super_admin_read` (Super Admin only, from
   `sql/002_rls_policies.sql`); there's no dedicated viewer page yet, so query
   the table directly in the Supabase dashboard for now.
+
+
+## UMUNSA AI (Groq recommended)
+
+Server-side only — never put API keys in HTML/JS.
+
+### Recommended: Groq (free tier, reliable)
+1. Create an account at https://console.groq.com and create an API key.
+2. Deploy:
+   ```bash
+   supabase secrets set GROQ_API_KEY=gsk_your_key_here
+   supabase functions deploy ai-assist --no-verify-jwt
+   ```
+Optional (if default fails): `supabase secrets set GROQ_MODEL=openai/gpt-oss-20b`
+
+### Optional fallback: Gemini
+```bash
+supabase secrets set GEMINI_API_KEY=your_gemini_key
+supabase secrets set GEMINI_MODEL=gemini-3.0-flash
+supabase functions deploy ai-assist --no-verify-jwt
+```
+
+Features: Contact FAQ, Dashboard panel, floating **AI** button, forum summarize, admin draft/improve.
+
+Streaming: WebSocket (primary) with SSE/HTTP fallback — replies appear token-by-token.
+

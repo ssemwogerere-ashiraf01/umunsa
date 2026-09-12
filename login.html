@@ -38,11 +38,35 @@
 
       <div id="alert-box"></div>
 
-      <p class="login-section-label">Log in using your account on:</p>
+      <p class="login-section-label">University email (Google)</p>
       <button type="button" class="btn btn-google login-google-btn" id="google-login-btn">
         <span class="google-g" aria-hidden="true">G</span>
         Login with your UMU email
       </button>
+
+      <div class="login-divider" style="display:flex;align-items:center;gap:0.75rem;margin:1.25rem 0;color:rgba(255,255,255,0.75);font-size:0.8rem;">
+        <span style="flex:1;height:1px;background:rgba(255,255,255,0.25);"></span>
+        <span>or email &amp; password</span>
+        <span style="flex:1;height:1px;background:rgba(255,255,255,0.25);"></span>
+      </div>
+
+      <form id="email-login-form" class="login-email-form" style="text-align:left;">
+        <p class="login-section-label" style="margin-top:0;">Added by Super Admin / password account</p>
+        <div class="form-group">
+          <label for="login-email" style="color:#fff;">Email</label>
+          <input type="email" id="login-email" required autocomplete="username" placeholder="you@example.com" style="width:100%;" />
+        </div>
+        <div class="form-group">
+          <label for="login-password" style="color:#fff;">Password</label>
+          <input type="password" id="login-password" required autocomplete="current-password" minlength="8" style="width:100%;" />
+        </div>
+        <div id="login-captcha"></div>
+        <button type="submit" class="btn btn-gold" id="email-login-btn" style="width:100%;margin-top:0.5rem;">Sign in with email</button>
+        <p style="font-size:0.78rem;color:rgba(255,255,255,0.8);margin:0.6rem 0 0;">
+          <a href="reset-password.html" style="color:#fff;text-decoration:underline;">Forgot password?</a>
+          · Use the temporary password from the Super Admin the first time, then change it under Profile. Non-@umu.ac.ug accounts must use this form (not Google).
+        </p>
+      </form>
 
       <p class="login-panel-foot">
         Don't have an account? <a href="register.html">Apply for membership</a>
@@ -79,7 +103,8 @@
 <div id="app-footer"></div>
 
 <script type="module">
-  import { completeGoogleLoginFromUrl, loginWithGoogle, redirectIfAlreadyLoggedIn } from './assets/js/auth.js';
+  import { completeGoogleLoginFromUrl, loginWithEmail, loginWithGoogle, redirectIfAlreadyLoggedIn } from './assets/js/auth.js';
+  import { mountCaptcha } from './assets/js/captcha.js';
   import { mountNav, mountFooter } from './assets/js/nav.js';
 
   const params = new URLSearchParams(window.location.search);
@@ -116,6 +141,39 @@
       slides[i].classList.add('is-active');
     }, 6000);
   }
+
+  
+  let captchaApi = null;
+  try {
+    captchaApi = await mountCaptcha(document.getElementById('login-captcha'), { label: 'Security check' });
+  } catch (err) {
+    console.warn('CAPTCHA unavailable', err);
+    const box = document.getElementById('login-captcha');
+    if (box) box.innerHTML = '<p style="font-size:0.8rem;color:rgba(255,255,255,0.75);">Security check unavailable — you can still sign in with email.</p>';
+  }
+
+  document.getElementById('email-login-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('email-login-btn');
+    btn.disabled = true;
+    const original = btn.textContent;
+    btn.textContent = 'Signing in...';
+    const captcha = captchaApi?.getPayload?.() || {};
+    const result = await loginWithEmail({
+      email: document.getElementById('login-email').value,
+      password: document.getElementById('login-password').value,
+      captcha_token: captcha.captcha_token || 'dev',
+      captcha_answer: captcha.captcha_answer || '0',
+    });
+    if (result.error) {
+      showAlert(result.error, 'error');
+      btn.disabled = false;
+      btn.textContent = original;
+      captchaApi?.refresh?.();
+      return;
+    }
+    // routeAfterLogin handles redirect
+  });
 
   document.getElementById('google-login-btn').addEventListener('click', async () => {
     const btn = document.getElementById('google-login-btn');

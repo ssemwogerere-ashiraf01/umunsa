@@ -39,10 +39,12 @@
   <a class="back-link" href="news.html">← All news</a>
   <div id="detail" class="detail-card"><div class="detail-body"><p style="color:var(--text-muted);">Loading...</p></div></div>
 </div>
+<div id="news-social" class="detail-body" style="max-width:820px;margin:0 auto 2rem;padding:0 1rem;"></div>
 <div id="app-footer"></div>
 <script type="module">
   import { supabase } from './assets/js/supabase-client.js';
   import { mountNav, mountFooter } from './assets/js/nav.js';
+  import { mountPostSocial } from './assets/js/social.js';
   mountNav('news');
   mountFooter();
 
@@ -52,7 +54,7 @@
     const d = document.createElement('div'); d.textContent = str ?? ''; return d.innerHTML;
   }
   function setMeta(title, desc, url, image) {
-    document.title = title + ' · NSA';
+    document.title = title + ' · UMUNSA';
     const pairs = [
       ['og-title', title], ['tw-title', title],
       ['og-desc', desc], ['tw-desc', desc],
@@ -102,6 +104,20 @@
       });
     }
   }
+
+  // Social: likes + comments
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    const params = new URLSearchParams(location.search);
+    const nid = params.get('id');
+    if (nid) {
+      await mountPostSocial(document.getElementById('news-social'), {
+        targetType: 'news',
+        targetId: nid,
+        currentUserId: session?.user?.id || null,
+      });
+    }
+  } catch (e) { console.warn('news social', e); }
 </script>
 </body>
 </html>

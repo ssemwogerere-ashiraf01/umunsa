@@ -71,7 +71,9 @@
       <h3 style="margin-top:0;">Quick answers</h3>
       <div id="faq-search-wrap" style="margin-bottom:1rem;">
         <input type="text" id="faq-search" placeholder="Type a question... e.g. how do I join?" style="width:100%;padding:0.7rem 0.9rem;border:1px solid var(--border);border-radius:var(--radius);font-family:inherit;" />
+        <button type="button" class="btn btn-gold" id="faq-ai-btn" style="margin-top:0.5rem;width:100%;">UMUNSA Quick Chat</button>
       </div>
+      <div id="faq-ai-answer" class="alert" style="display:none;margin-bottom:0.75rem;white-space:pre-wrap;"></div>
       <div id="faq-results"></div>
       <p style="font-size:0.85rem;color:var(--text-muted);margin-top:1rem;">Association email: <a href="mailto:nkobazambogo.umu@gmail.com">nkobazambogo.umu@gmail.com</a><br />Campus: Uganda Martyrs University, Nkozi, Mpigi District, Uganda</p>
     </div>
@@ -83,6 +85,7 @@
 <script type="module">
   import { supabase } from './assets/js/supabase-client.js';
   import { mountNav, mountFooter } from './assets/js/nav.js';
+  import { askAI } from './assets/js/ai.js';
 
   mountNav('contact');
   mountFooter();
@@ -141,6 +144,31 @@
     const q = searchInput.value.trim().toLowerCase();
     if (!q) { renderFaqs(faqs); return; }
     renderFaqs(faqs.filter(f => f.keys.some(k => k.includes(q)) || f.a.toLowerCase().includes(q)));
+  });
+
+  document.getElementById('faq-ai-btn')?.addEventListener('click', async () => {
+    const q = document.getElementById('faq-search')?.value?.trim();
+    const box = document.getElementById('faq-ai-answer');
+    if (!box) return;
+    if (!q) {
+      box.style.display = 'block';
+      box.className = 'alert alert-error';
+      box.textContent = 'Type a question first.';
+      return;
+    }
+    box.style.display = 'block';
+    box.className = 'alert';
+    box.textContent = 'Thinking…';
+    const localFaqs = (typeof faqs !== 'undefined' ? faqs : []);
+    const context = localFaqs.map(f => f.a).join('\n') || '';
+    const result = await askAI({ task: 'faq', prompt: q, context });
+    if (result.error) {
+      box.className = 'alert alert-error';
+      box.textContent = result.error;
+    } else {
+      box.className = 'alert alert-success';
+      box.textContent = result.text;
+    }
   });
 </script>
 </body>

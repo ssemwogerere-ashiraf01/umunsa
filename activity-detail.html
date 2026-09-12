@@ -46,7 +46,7 @@
   const root = document.getElementById('detail');
   function escapeHtml(str) { const d = document.createElement('div'); d.textContent = str ?? ''; return d.innerHTML; }
   function setMeta(title, desc, url, image) {
-    document.title = title + ' · NSA';
+    document.title = title + ' · UMUNSA';
     [['og-title', title], ['tw-title', title], ['og-desc', desc], ['tw-desc', desc], ['og-url', url], ['og-image', image], ['tw-image', image]]
       .forEach(([eid, val]) => { const el = document.getElementById(eid); if (el) el.setAttribute('content', val); });
   }

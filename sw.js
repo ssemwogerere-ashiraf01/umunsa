@@ -1,5 +1,11 @@
-/* NSA site service worker — offline shell + local push-style notifications */
-const CACHE = 'nsa-shell-v1';
+/* UMUNSA site service worker — offline shell + local push-style notifications */
+// Bump this on every deploy that changes anything in PRECACHE (or really any
+// static asset) — the old value ('nsa-shell-v1') never changed across
+// deploys, so once a browser installed it, style.css and friends were cached
+// forever and cache-first for every reload, no matter how many times the
+// files changed on disk. That's why the site only ever looked right after a
+// hard refresh: a normal reload never had a chance to see anything new.
+const CACHE = 'nsa-shell-v2';
 const PRECACHE = [
   '/',
   '/index.html',
@@ -40,12 +46,20 @@ self.addEventListener('fetch', (event) => {
     );
     return;
   }
+  // Stale-while-revalidate for CSS/JS/images: respond instantly from cache
+  // if we have it (fast), but always fetch the network copy in the
+  // background and overwrite the cache with it. This means a plain reload
+  // (not a hard refresh) after any CSS/JS edit picks up the change on the
+  // very next load, instead of being stuck with whatever got cached first.
   event.respondWith(
-    caches.match(req).then((cached) => cached || fetch(req).then((res) => {
-      const copy = res.clone();
-      caches.open(CACHE).then((c) => c.put(req, copy)).catch(() => {});
-      return res;
-    }).catch(() => cached))
+    caches.match(req).then((cached) => {
+      const network = fetch(req).then((res) => {
+        const copy = res.clone();
+        caches.open(CACHE).then((c) => c.put(req, copy)).catch(() => {});
+        return res;
+      }).catch(() => cached);
+      return cached || network;
+    })
   );
 });
 
@@ -94,7 +108,7 @@ self.addEventListener('message', (event) => {
   const msg = event.data || {};
   if (msg.type === 'SHOW_NOTIFICATION') {
     event.waitUntil(
-      self.registration.showNotification(msg.title || 'NSA', {
+      self.registration.showNotification(msg.title || 'UMUNSA', {
         body: msg.body || '',
         icon: '/assets/img/favicon-64.png',
         tag: msg.tag || 'nsa-local',
