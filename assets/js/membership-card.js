@@ -11,7 +11,7 @@
 // node-qrcode) and expose a global `QRCode` with
 // `QRCode.toCanvas(canvas, text, opts)`.
 // =========================================================================
-import { BASE_URL, SITE_SHORT_SEAL } from './site-config.js';
+import { BASE_URL, SITE_SHORT_SEAL, SITE_LOGO_PATH } from './site-config.js';
 
 // ---- brand palette (mirrors :root in assets/css/style.css) ----
 export const CARD_COLORS = {
@@ -120,18 +120,33 @@ async function loadImage(src) {
   });
 }
 
-function drawSeal(ctx, cx, cy, r) {
+async function drawSeal(ctx, cx, cy, r) {
   ctx.save();
+  // Gold ring
   ctx.strokeStyle = CARD_COLORS.gold;
-  ctx.lineWidth = 4;
+  ctx.lineWidth = 3;
   ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke();
-  ctx.lineWidth = 2;
-  ctx.beginPath(); ctx.arc(cx, cy, r - 8, 0, Math.PI * 2); ctx.stroke();
-  ctx.fillStyle = CARD_COLORS.gold;
-  ctx.font = `700 ${Math.round(r * 1.05)}px Inter, Arial, sans-serif`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(SITE_SHORT_SEAL, cx, cy + 1);
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath(); ctx.arc(cx, cy, r - 2, 0, Math.PI * 2); ctx.fill();
+
+  const logoSrc = `${BASE_URL}${SITE_LOGO_PATH || '/assets/img/umunsa_logo.png'}`;
+  const logo = await loadImage(logoSrc);
+  if (logo) {
+    const size = (r - 4) * 2;
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(cx, cy, r - 3, 0, Math.PI * 2);
+    ctx.clip();
+    ctx.drawImage(logo, cx - size / 2, cy - size / 2, size, size);
+    ctx.restore();
+  } else {
+    // Fallback text if logo fails to load
+    ctx.fillStyle = CARD_COLORS.forest;
+    ctx.font = `700 ${Math.round(r * 0.55)}px Inter, Arial, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('UMUNSA', cx, cy + 1);
+  }
   ctx.restore();
 }
 
@@ -169,6 +184,16 @@ const STATUS_LABEL = { active: 'ACTIVE MEMBER', pending: 'PENDING', suspended: '
  *                             student_id, registration_number, avatar_url, membership_status }
  */
 export async function drawCardFront(canvas, member) {
+  const memberCategory = (member.member_category || (member.is_alum ? 'graduate' : 'student') || 'student').toLowerCase();
+  const isStudentCard = memberCategory === 'student';
+  const categoryLabel = ({
+    student: 'STUDENT MEMBER',
+    graduate: 'ALUMNI MEMBER',
+    lecturer: 'LECTURER',
+    patron: 'PATRON',
+    staff: 'STAFF MEMBER',
+  })[memberCategory] || 'MEMBER';
+
   canvas.width = CARD_W;
   canvas.height = CARD_H;
   const ctx = canvas.getContext('2d');
@@ -187,16 +212,19 @@ export async function drawCardFront(canvas, member) {
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, CARD_W, bandH);
 
-  drawSeal(ctx, 70, 64, 40);
+  await drawSeal(ctx, 70, 64, 40);
 
   ctx.fillStyle = CARD_COLORS.paper;
   ctx.font = "700 21px Inter, Arial, sans-serif";
   ctx.textAlign = 'left';
   ctx.textBaseline = 'alphabetic';
-  ctx.fillText("NKOBAZAMBOGO STUDENTS' ASSOCIATION", 128, 44);
+  ctx.fillText("UMUNSA", 128, 42);
+  ctx.fillStyle = CARD_COLORS.paper;
+  ctx.font = "600 13px Inter, Arial, sans-serif";
+  ctx.fillText(isStudentCard ? "Nkobazambogo Students' Association" : categoryLabel, 128, 62);
   ctx.fillStyle = CARD_COLORS.goldSoft;
   ctx.font = '14px Inter, Arial, sans-serif';
-  ctx.fillText('Uganda Martyrs University — Nkozi', 128, 68);
+  ctx.fillText('Uganda Martyrs University — Nkozi', 128, 82);
 
   ctx.fillStyle = CARD_COLORS.gold;
   ctx.font = '700 13px Inter, Arial, sans-serif';
@@ -223,7 +251,9 @@ export async function drawCardFront(canvas, member) {
     // cover-fit
     const scale = Math.max(photoW / img.width, photoH / img.height);
     const dw = img.width * scale, dh = img.height * scale;
-    ctx.drawImage(img, px0 + (photoW - dw) / 2, py0 + (photoH - dh) / 2, dw, dh);
+    // Prefer heads: bias crop upward when image is taller than frame
+    const dy = dh > photoH ? py0 - (dh - photoH) * 0.15 : py0 + (photoH - dh) / 2;
+    ctx.drawImage(img, px0 + (photoW - dw) / 2, dy, dw, dh);
     ctx.restore();
   } else {
     drawPlaceholderAvatar(ctx, px0, py0, photoW, photoH);
@@ -243,44 +273,46 @@ export async function drawCardFront(canvas, member) {
   }
 
   ctx.fillStyle = CARD_COLORS.inkNavy;
-  ctx.font = "700 28px Fraunces, Georgia, serif";
+  ctx.font = "700 30px Fraunces, Georgia, serif";
   ctx.textAlign = 'left';
-  ctx.fillText(fitText(member.full_name || 'Member', "700 28px Fraunces, Georgia, serif", maxTextW), tx, ty + 26);
+  ctx.fillText(fitText(member.full_name || 'Member', "700 30px Fraunces, Georgia, serif", maxTextW), tx, ty + 28);
 
-  // Programme line
-  ctx.fillStyle = CARD_COLORS.gold;
-  ctx.font = '700 11px Inter, Arial, sans-serif';
-  ctx.fillText('PROGRAMME', tx, ty + 52);
-  ctx.fillStyle = CARD_COLORS.inkNavy;
-  ctx.font = '16px Inter, Arial, sans-serif';
-  ctx.fillText(fitText(member.programme || '—', '16px Inter, Arial, sans-serif', maxTextW), tx, ty + 72);
+  // Detail rows — dark labels + bold values (readable on white)
+  function drawDetailRow(label, value, yLabel) {
+    ctx.fillStyle = CARD_COLORS.labelStrong;
+    ctx.font = '700 12px Inter, Arial, sans-serif';
+    ctx.fillText(String(label).toUpperCase(), tx, yLabel);
+    ctx.fillStyle = CARD_COLORS.inkNavy;
+    ctx.font = '700 17px Inter, Arial, sans-serif';
+    ctx.fillText(fitText(value || '—', '700 17px Inter, Arial, sans-serif', maxTextW), tx, yLabel + 22);
+  }
 
-  // Tribe + Clan on separate clear lines
-  ctx.fillStyle = CARD_COLORS.gold;
-  ctx.font = '700 11px Inter, Arial, sans-serif';
-  ctx.fillText('TRIBE', tx, ty + 96);
-  ctx.fillStyle = CARD_COLORS.inkNavy;
-  ctx.font = '16px Inter, Arial, sans-serif';
-  ctx.fillText(fitText(member.tribe || '—', '16px Inter, Arial, sans-serif', maxTextW), tx, ty + 116);
+  const row1Label = isStudentCard ? 'Programme' : (memberCategory === 'patron' ? 'Organization' : 'Designation');
+  const row1Value = isStudentCard
+    ? (member.programme || '—')
+    : (member.designation || member.organization || member.department || member.programme || '—');
+  drawDetailRow(row1Label, row1Value, ty + 52);
 
-  ctx.fillStyle = CARD_COLORS.gold;
-  ctx.font = '700 11px Inter, Arial, sans-serif';
-  ctx.fillText('CLAN', tx, ty + 140);
-  ctx.fillStyle = CARD_COLORS.inkNavy;
-  ctx.font = '16px Inter, Arial, sans-serif';
-  ctx.fillText(fitText(member.clan || '—', '16px Inter, Arial, sans-serif', maxTextW), tx, ty + 160);
+  const row2Label = isStudentCard ? 'Tribe' : (memberCategory === 'graduate' ? 'Graduation year' : 'Department');
+  const row2Value = isStudentCard
+    ? (member.tribe || '—')
+    : (memberCategory === 'graduate' ? String(member.graduation_year || '—') : (member.department || member.faculty || '—'));
+  drawDetailRow(row2Label, row2Value, ty + 100);
+
+  const row3Label = isStudentCard ? 'Clan' : 'Category';
+  const row3Value = isStudentCard ? (member.clan || '—') : categoryLabel;
+  drawDetailRow(row3Label, row3Value, ty + 148);
 
   function field(label, value, yy) {
-    ctx.fillStyle = CARD_COLORS.gold;
-    ctx.font = '700 11px Inter, Arial, sans-serif';
-    ctx.fillText(label.toUpperCase(), tx, yy);
+    ctx.fillStyle = CARD_COLORS.labelStrong;
+    ctx.font = '700 12px Inter, Arial, sans-serif';
+    ctx.fillText(String(label).toUpperCase(), tx, yy);
     ctx.fillStyle = CARD_COLORS.inkNavy;
     ctx.font = '700 18px Inter, Arial, sans-serif';
-    ctx.fillText(fitText(value || '—', '700 18px Inter, Arial, sans-serif', maxTextW), tx, yy + 22);
+    ctx.fillText(fitText(value || '—', '700 18px Inter, Arial, sans-serif', maxTextW), tx, yy + 24);
   }
-  // Shift membership fields down so they don't overlap tribe/clan
-  field('Membership No.', member.membership_card_number, ty + 188);
-  field('Student ID', member.student_id, ty + 238);
+  field('Membership No.', member.membership_card_number, ty + 200);
+  field(isStudentCard ? 'Student ID' : 'Member ID', isStudentCard ? member.student_id : (member.membership_card_number || member.registration_number || '—'), ty + 252);
 
   // small QR bottom-right
   const qrSize = 118;
@@ -303,18 +335,18 @@ export async function drawCardFront(canvas, member) {
     ctx.fillText('QR unavailable', qx + qrSize / 2, qy + qrSize / 2);
   }
 
-  ctx.fillStyle = CARD_COLORS.textMuted;
-  ctx.font = '700 10px Inter, Arial, sans-serif';
+  ctx.fillStyle = CARD_COLORS.inkNavy;
+  ctx.font = '700 12px Inter, Arial, sans-serif';
   ctx.textAlign = 'center';
   ctx.fillText('SCAN TO VERIFY', qx + qrSize / 2, qy + qrSize + 26);
 
   ctx.textAlign = 'left';
-  ctx.fillStyle = CARD_COLORS.gold;
-  ctx.font = '700 10px Inter, Arial, sans-serif';
-  ctx.fillText('REGISTRATION NO.', 56, CARD_H - 34);
+  ctx.fillStyle = CARD_COLORS.labelStrong;
+  ctx.font = '700 11px Inter, Arial, sans-serif';
+  ctx.fillText(isStudentCard ? 'REGISTRATION NO.' : 'REF. / REG. NO.', 56, CARD_H - 36);
   ctx.fillStyle = CARD_COLORS.inkNavy;
-  ctx.font = '700 13px Inter, Arial, sans-serif';
-  ctx.fillText(member.registration_number || '—', 56, CARD_H - 18);
+  ctx.font = '700 15px Inter, Arial, sans-serif';
+  ctx.fillText(member.registration_number || '—', 56, CARD_H - 16);
 
   ctx.restore(); // clip
 }
@@ -338,7 +370,7 @@ export async function drawCardBack(canvas, member) {
   ctx.font = '700 17px Inter, Arial, sans-serif';
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
-  ctx.fillText('NSA MEMBERSHIP CARD', 30, bandH / 2);
+  ctx.fillText('UMUNSA MEMBERSHIP CARD', 30, bandH / 2);
   ctx.fillStyle = CARD_COLORS.paper;
   ctx.font = '700 15px Inter, Arial, sans-serif';
   ctx.textAlign = 'right';
@@ -375,33 +407,34 @@ export async function drawCardBack(canvas, member) {
 
   const body = [
     'Scan this QR code to open the official',
-    'NSA verification page for this member.',
-    'It shows their name, programme, tribe,',
-    'clan, student ID, and membership status',
-    'from the Association register.',
+    'UMUNSA verification page for this member.',
+    'It shows their name, category, and',
+    'membership status from the register.',
   ];
-  ctx.fillStyle = CARD_COLORS.textMuted;
-  ctx.font = '15px Inter, Arial, sans-serif';
-  body.forEach((line, i) => ctx.fillText(line, tx, ty + 64 + i * 22));
-
-  ctx.fillStyle = CARD_COLORS.gold;
-  ctx.font = '700 11px Inter, Arial, sans-serif';
-  ctx.fillText('STUDENT ID', tx, ty + 210);
   ctx.fillStyle = CARD_COLORS.inkNavy;
-  ctx.font = '700 20px Inter, Arial, sans-serif';
-  ctx.fillText(member.student_id || '—', tx, ty + 234);
+  ctx.font = '600 16px Inter, Arial, sans-serif';
+  body.forEach((line, i) => ctx.fillText(line, tx, ty + 64 + i * 24));
+
+  const idLabel = (member.member_category || 'student') === 'student' ? 'STUDENT ID' : 'MEMBER ID';
+  const idValue = member.student_id || member.membership_card_number || '—';
+  ctx.fillStyle = CARD_COLORS.labelStrong;
+  ctx.font = '700 13px Inter, Arial, sans-serif';
+  ctx.fillText(idLabel, tx, ty + 200);
+  ctx.fillStyle = CARD_COLORS.inkNavy;
+  ctx.font = '700 22px Inter, Arial, sans-serif';
+  ctx.fillText(idValue, tx, ty + 228);
 
   ctx.strokeStyle = CARD_COLORS.border;
   ctx.lineWidth = 2;
   ctx.beginPath(); ctx.moveTo(56, CARD_H - 150); ctx.lineTo(CARD_W - 56, CARD_H - 150); ctx.stroke();
 
   const terms = [
-    "This card is property of the Nkobazambogo Students' Association and is",
+    "This card is property of UMUNSA (Nkobazambogo Students' Association) and is",
     'non-transferable. If found, please return to the Association Office,',
-    'Uganda Martyrs University, Nkozi, or email nsa@umu.ac.ug.',
+    'Uganda Martyrs University, Nkozi, or email nkobazambogo.umu@gmail.com.',
   ];
-  ctx.fillStyle = CARD_COLORS.textMuted;
-  ctx.font = '12px Inter, Arial, sans-serif';
+  ctx.fillStyle = CARD_COLORS.inkNavy;
+  ctx.font = '600 13px Inter, Arial, sans-serif';
   terms.forEach((line, i) => ctx.fillText(line, 56, CARD_H - 132 + i * 18));
 
   ctx.strokeStyle = CARD_COLORS.inkNavy;

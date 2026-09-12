@@ -152,8 +152,13 @@ export function createNsSelect({
       if (root.classList.contains('open')) renderList(search?.value || '');
     },
     setOptions(next) {
-      items = next || [];
+      items = Array.isArray(next) ? next.slice() : [];
+      // Ensure the active value still has a label in the list
+      if (current && !items.some((o) => String(o.value) === String(current))) {
+        items.unshift({ value: current, label: String(current) });
+      }
       renderValue();
+      if (root.classList.contains('open')) renderList(search?.value || '');
     },
     el: root,
     hidden,
@@ -166,34 +171,49 @@ export function createNsSelect({
  * Keeps the original <select> in the DOM (hidden) so forms & change handlers still work.
  * Skip: [data-native], [data-ns-enhanced], multiple, size>1, already inside .ns-select
  */
+function optionsFromSelect(sel) {
+  return Array.from(sel.options).map((opt) => ({
+    value: opt.value,
+    label: (opt.textContent || '').trim() || opt.value || '—',
+    sub: opt.dataset.sub || '',
+    order: opt.dataset.order != null ? Number(opt.dataset.order) : undefined,
+    disabled: !!opt.disabled,
+  }));
+}
+
+/** Push native <select> options + selected value into its custom UI */
+export function syncSelectDisplay(sel) {
+  if (!sel || sel.tagName !== 'SELECT') return;
+  const instance = sel.__nsSelect;
+  if (!instance) return;
+  const next = optionsFromSelect(sel);
+  // Keep a non-empty selected value even if options temporarily lack it
+  const val = sel.value || '';
+  instance.setOptions(next.filter((o, i) => !(i === 0 && o.value === '')));
+  instance.value = val;
+}
+
 export function enhanceAllSelects(root = document) {
-  const selects = root.querySelectorAll('select:not([data-native]):not([data-ns-enhanced]):not([multiple])');
+  const scope = root || document;
+  const selects = scope.querySelectorAll('select:not([data-native]):not([multiple])');
   selects.forEach((sel) => {
     if (sel.closest('.ns-select')) return;
     if (sel.size && sel.size > 1) return;
-    if (sel.offsetParent === null && sel.type === 'hidden') return;
 
-    // Build options from native select
-    const options = [];
-    const groups = sel.querySelectorAll(':scope > optgroup, :scope > option');
-    // Flatten options only (skip empty placeholder for list but keep value)
-    Array.from(sel.options).forEach((opt) => {
-      options.push({
-        value: opt.value,
-        label: (opt.textContent || '').trim() || opt.value || '—',
-        sub: opt.dataset.sub || '',
-        order: opt.dataset.order != null ? Number(opt.dataset.order) : undefined,
-        disabled: opt.disabled,
-      });
-    });
+    // Already enhanced — only resync display from current options/value
+    if (sel.dataset.nsEnhanced === '1' && sel.__nsSelect) {
+      syncSelectDisplay(sel);
+      return;
+    }
+    if (sel.dataset.nsEnhanced === '1') return;
 
-    // Mount wrapper before select
+    const options = optionsFromSelect(sel);
+
     const wrap = document.createElement('div');
     wrap.className = 'ns-select-host';
     sel.parentNode.insertBefore(wrap, sel);
     sel.setAttribute('data-ns-enhanced', '1');
     sel.classList.add('ns-select-native-hidden');
-    // keep select for form submit — visually hide
     sel.style.position = 'absolute';
     sel.style.opacity = '0';
     sel.style.pointerEvents = 'none';
@@ -205,45 +225,72 @@ export function enhanceAllSelects(root = document) {
       sel.getAttribute('data-placeholder') ||
       (sel.options[0] && !sel.options[0].value ? (sel.options[0].textContent || '').trim() : 'Select…');
 
-    // Don't list the empty placeholder option twice as a choosable empty if it's the first blank
-    const listOpts = options.filter((o, i) => !(i === 0 && o.value === '' && !sel.value));
+    let listOpts = options.filter((o, i) => !(i === 0 && o.value === ''));
+    const cur = sel.value || '';
+    if (cur && !listOpts.some((o) => String(o.value) === String(cur))) {
+      const match = options.find((o) => String(o.value) === String(cur));
+      listOpts = [match || { value: cur, label: cur }, ...listOpts];
+    }
 
     const instance = createNsSelect({
       mount: wrap,
       options: listOpts.length ? listOpts : options,
-      value: sel.value || '',
+      value: cur,
       placeholder,
       searchable: options.length > 8,
       onChange: (val) => {
         sel.value = val;
+        // Mark selected attribute for consistency
+        Array.from(sel.options).forEach((o) => { o.selected = o.value === val; });
         sel.dispatchEvent(new Event('change', { bubbles: true }));
         sel.dispatchEvent(new Event('input', { bubbles: true }));
       },
     });
+    wrap.__nsSelect = instance;
+    sel.__nsSelect = instance;
 
-    // Sync if something else changes the native select
     sel.addEventListener('change', () => {
-      if (instance && instance.value !== sel.value) instance.value = sel.value;
+      if (instance && String(instance.value) !== String(sel.value)) {
+        instance.value = sel.value || '';
+      }
     });
 
-    // Observe option list changes (dynamic filters)
     const mo = new MutationObserver(() => {
-      const next = Array.from(sel.options).map((opt) => ({
-        value: opt.value,
-        label: (opt.textContent || '').trim() || opt.value || '—',
-        sub: opt.dataset.sub || '',
-        order: opt.dataset.order != null ? Number(opt.dataset.order) : undefined,
-      }));
-      instance.setOptions(next.filter((o, i) => !(i === 0 && o.value === '')));
-      instance.value = sel.value;
+      // Defer so browsers finish applying selectedIndex after innerHTML
+      requestAnimationFrame(() => syncSelectDisplay(sel));
     });
-    mo.observe(sel, { childList: true, subtree: true, characterData: true });
+    mo.observe(sel, { childList: true, subtree: true, characterData: true, attributes: true });
   });
 }
 
-/** Call after dynamic HTML injects new selects */
+/** Call after dynamic HTML injects or repopulates selects */
 export function refreshSelects(root = document) {
   enhanceAllSelects(root);
+  // Second pass: force every enhanced select to show its native value
+  const scope = root || document;
+  scope.querySelectorAll('select[data-ns-enhanced="1"]').forEach((sel) => {
+    syncSelectDisplay(sel);
+  });
+}
+
+/** Set a select value and update custom UI (use this instead of el.value = alone) */
+export function setSelectValue(selOrId, value) {
+  const sel = typeof selOrId === 'string' ? document.getElementById(selOrId) : selOrId;
+  if (!sel) return;
+  const v = value == null ? '' : String(value);
+  if (v && ![...sel.options].some((o) => o.value === v)) {
+    const opt = document.createElement('option');
+    opt.value = v;
+    opt.textContent = v;
+    sel.appendChild(opt);
+  }
+  sel.value = v;
+  Array.from(sel.options).forEach((o) => { o.selected = o.value === v; });
+  if (sel.__nsSelect) {
+    syncSelectDisplay(sel);
+  } else {
+    sel.dispatchEvent(new Event('change', { bubbles: true }));
+  }
 }
 
 // Auto-run when loaded as module on pages that import it

@@ -2,12 +2,10 @@
 export const BASE_URL = window.location.origin;
 
 export const SOCIAL_LINKS = {
-  facebook: 'https://facebook.com/',
-  instagram: 'https://www.instagram.com/bugandankobazambogoumu?utm_source=qr&igsh=MTRwMzEyaG94dWJ0dw==',
-  tiktok: 'https://www.tiktok.com/@bankosa.umu7?_r=1&_t=ZS-98nIAB9e3hY',
+  instagram: 'https://instagram.com/',
+  tiktok: 'https://www.tiktok.com/',
   x: 'https://x.com/',
-  whatsapp: 'https://chat.whatsapp.com/FK4ccQlPHS8ApwEBj8F0cq?s=cl&p=a&ilr=4',
-  telegram: 'https://t.me/',
+  whatsapp: 'https://wa.me/',
   email: 'mailto:nkobazambogo.umu@gmail.com',
 };
 

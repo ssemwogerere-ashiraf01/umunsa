@@ -161,46 +161,72 @@
           </div>
           <div class="form-row-2">
             <div class="form-group"><label>Temporary password</label><input type="text" id="am-password" required minlength="8" /></div>
-            <div class="form-group"><label>Role</label>
+            <div class="form-group"><label>System role</label>
               <select id="am-role"><option value="member">Member</option><option value="admin">Admin</option></select>
             </div>
           </div>
           <div class="form-row-2">
-            <div class="form-group"><label>Phone (optional)</label><input type="tel" id="am-phone" data-phone-intl autocomplete="tel" placeholder="Phone number" /></div>
-            <div class="form-group"><label>Programme (optional)</label><input type="text" id="am-programme" /></div>
-          </div>
-          <div class="form-row-2">
-            <div class="form-group"><label>Hostel (optional)</label>
-                            <select id="am-hostel">
-                <option value="">—</option>
-                <option value="Katonga hostel">Katonga hostel</option>
-                <option value="Bbosa hostel">Bbosa hostel</option>
-                <option value="Kavuma hostel">Kavuma hostel</option>
-                <option value="Lwanga hostel">Lwanga hostel</option>
-                <option value="Byaben hostel">Byaben hostel</option>
-                <option value="Kololo hostel">Kololo hostel</option>
-                <option value="Ivis hostel">Ivis hostel</option>
-                <option value="Canan hostel">Canan hostel</option>
-                <option value="Fountain hostel">Fountain hostel</option>
-                <option value="Angels hostel">Angels hostel</option>
-                <option value="Wamala hostel">Wamala hostel</option>
-                <option value="Mugagga hostel">Mugagga hostel</option>
-                <option value="Micheal hall">Micheal hall</option>
-                <option value="Onyango hall">Onyango hall</option>
-                <option value="Campbell hall">Campbell hall</option>
-                <option value="Mukasa hall">Mukasa hall</option>
-                <option value="Martyrs hall">Martyrs hall</option>
-                <option value="Haflet hall">Haflet hall</option>
-                <option value="Carabine hall">Carabine hall</option>
-                <option value="Other">Other (specify)</option>
+            <div class="form-group"><label>Member type</label>
+              <select id="am-category">
+                <option value="student">Student (current)</option>
+                <option value="graduate">Graduate / Alumni</option>
+                <option value="lecturer">Lecturer / Academic staff</option>
+                <option value="patron">Patron</option>
+                <option value="staff">University / Association staff</option>
               </select>
             </div>
-            <div class="form-group" id="am-hostel-other-wrap" style="display:none;">
-              <label for="am-hostel-other">Enter hostel name</label>
-              <input type="text" id="am-hostel-other" placeholder="Enter hostel name" />
-            </div>
-            <div class="form-group"><label>Faculty (optional)</label><input type="text" id="am-faculty" placeholder="e.g. Faculty of Science" /></div>
+            <div class="form-group"><label>Phone (optional)</label><input type="tel" id="am-phone" data-phone-intl autocomplete="tel" placeholder="Phone number" /></div>
           </div>
+
+          <div id="am-fields-student">
+            <div class="form-row-2">
+              <div class="form-group"><label>Programme (optional)</label><input type="text" id="am-programme" /></div>
+              <div class="form-group"><label>Faculty (optional)</label><input type="text" id="am-faculty" placeholder="e.g. Faculty of Science" /></div>
+            </div>
+            <div class="form-row-2">
+              <div class="form-group"><label>Hostel (optional)</label>
+                <select id="am-hostel">
+                  <option value="">—</option>
+                  <option value="Katonga hostel">Katonga hostel</option>
+                  <option value="Bbosa hostel">Bbosa hostel</option>
+                  <option value="Kavuma hostel">Kavuma hostel</option>
+                  <option value="Lwanga hostel">Lwanga hostel</option>
+                  <option value="Byaben hostel">Byaben hostel</option>
+                  <option value="Kololo hostel">Kololo hostel</option>
+                  <option value="Ivis hostel">Ivis hostel</option>
+                  <option value="Canan hostel">Canan hostel</option>
+                  <option value="Fountain hostel">Fountain hostel</option>
+                  <option value="Angels hostel">Angels hostel</option>
+                  <option value="Wamala hostel">Wamala hostel</option>
+                  <option value="Mugagga hostel">Mugagga hostel</option>
+                  <option value="Micheal hall">Micheal hall</option>
+                  <option value="Onyango hall">Onyango hall</option>
+                  <option value="Campbell hall">Campbell hall</option>
+                  <option value="Mukasa hall">Mukasa hall</option>
+                  <option value="Martyrs hall">Martyrs hall</option>
+                  <option value="Haflet hall">Haflet hall</option>
+                  <option value="Carabine hall">Carabine hall</option>
+                  <option value="Other">Other (specify)</option>
+                </select>
+              </div>
+              <div class="form-group" id="am-hostel-other-wrap" style="display:none;">
+                <label for="am-hostel-other">Enter hostel name</label>
+                <input type="text" id="am-hostel-other" placeholder="Enter hostel name" />
+              </div>
+            </div>
+          </div>
+
+          <div id="am-fields-nonstudent" style="display:none;">
+            <div class="form-row-2">
+              <div class="form-group"><label>Designation / title</label><input type="text" id="am-designation" placeholder="e.g. Senior Lecturer, Patron" /></div>
+              <div class="form-group"><label>Department / unit</label><input type="text" id="am-department" placeholder="e.g. Faculty of Science" /></div>
+            </div>
+            <div class="form-row-2">
+              <div class="form-group"><label>Organization (patrons)</label><input type="text" id="am-organization" placeholder="External organization if any" /></div>
+              <div class="form-group"><label>Graduation year (alumni)</label><input type="number" id="am-grad-year" min="1970" max="2100" placeholder="e.g. 2019" /></div>
+            </div>
+          </div>
+
           <button type="submit" class="mini-btn good" id="am-submit">Create Account</button>
         </form>
       </div>
@@ -375,6 +401,17 @@
     });
 
     // ---------- Add member (any domain) ----------
+    
+    function syncAmCategoryFields() {
+      const cat = document.getElementById('am-category')?.value || 'student';
+      const studentBox = document.getElementById('am-fields-student');
+      const nonBox = document.getElementById('am-fields-nonstudent');
+      if (studentBox) studentBox.style.display = cat === 'student' ? 'block' : 'none';
+      if (nonBox) nonBox.style.display = cat === 'student' ? 'none' : 'block';
+    }
+    document.getElementById('am-category')?.addEventListener('change', syncAmCategoryFields);
+    syncAmCategoryFields();
+
     document.getElementById('am-hostel')?.addEventListener('change', () => {
       const wrap = document.getElementById('am-hostel-other-wrap');
       const isOther = document.getElementById('am-hostel').value === 'Other';
@@ -405,15 +442,22 @@
           }
         }
 
+        const category = document.getElementById('am-category')?.value || 'student';
+        const isStudent = category === 'student';
         const payload = {
           fullName: document.getElementById('am-name').value.trim(),
           email: document.getElementById('am-email').value.trim(),
           password: document.getElementById('am-password').value,
           role: document.getElementById('am-role').value,
+          member_category: category,
           phone: document.getElementById('am-phone').value.trim(),
-          hostel: (function(){ const h=document.getElementById('am-hostel')?.value.trim()||''; if(h!=='Other') return h||null; return (document.getElementById('am-hostel-other')?.value||'').trim()||null; })(),
-          faculty: document.getElementById('am-faculty')?.value.trim() || null,
-          programme: document.getElementById('am-programme').value.trim() || null,
+          hostel: isStudent ? (function(){ const h=document.getElementById('am-hostel')?.value.trim()||''; if(h!=='Other') return h||null; return (document.getElementById('am-hostel-other')?.value||'').trim()||null; })() : null,
+          faculty: isStudent ? (document.getElementById('am-faculty')?.value.trim() || null) : null,
+          programme: isStudent ? (document.getElementById('am-programme')?.value.trim() || null) : null,
+          designation: !isStudent ? (document.getElementById('am-designation')?.value.trim() || null) : null,
+          department: !isStudent ? (document.getElementById('am-department')?.value.trim() || null) : null,
+          organization: category === 'patron' ? (document.getElementById('am-organization')?.value.trim() || null) : null,
+          graduation_year: category === 'graduate' ? (document.getElementById('am-grad-year')?.value || null) : null,
         };
 
         // Prefer functions.invoke (attaches Authorization from the current session)
@@ -452,13 +496,13 @@
 
         if (result?.error) throw new Error(result.error);
 
-        alertBox.innerHTML = `<div class="alert alert-success">Account created for ${escapeHtml(payload.email)} as <strong>${escapeHtml(payload.role)}</strong>. They can sign in with the temporary password.</div>`;
+        alertBox.innerHTML = `<div class="alert alert-success">Account created for ${escapeHtml(payload.email)} as <strong>${escapeHtml(payload.role)}</strong> (${escapeHtml(payload.member_category || 'member')}). They sign in on Login → Email &amp; password with this temporary password, then change it under Profile.</div>`;
         e.target.reset();
         await loadAccess();
       } catch (err) {
         let msg = err.message || String(err);
         if (/database error creating new user/i.test(msg)) {
-          msg += ' — Run sql/011_admin_create_user_fix.sql in Supabase, redeploy the admin-create-user function, and confirm this email is not already registered under Authentication → Users.';
+          msg += ' — Run sql/012_member_categories_and_create_user_harden.sql in Supabase, redeploy the admin-create-user function, and confirm this email is not already registered under Authentication → Users.';
         }
         if (/already exists|already been registered/i.test(msg)) {
           msg += ' Open Supabase → Authentication → Users, find that email, or pick a different address.';

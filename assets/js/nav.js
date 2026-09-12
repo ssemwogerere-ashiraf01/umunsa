@@ -2,7 +2,7 @@ import { supabase } from './supabase-client.js';
 import { BASE_URL, SOCIAL_LINKS, SITE_NAME, SITE_SHORT_SEAL, SITE_LOGO_PATH } from './site-config.js';
 import { logout } from './auth.js';
 import { applyTheme, cycleTheme, getStoredTheme, themeLabel } from './theme.js';
-import { initUiChrome } from './ui-chrome.js';
+import { initUiChrome, ensureAiAssistant } from './ui-chrome.js';
 import { enhanceAllSelects } from './ns-select.js';
 import { enhancePhoneFields } from './phone-input.js';
 
@@ -78,6 +78,7 @@ function afterNavMount() {
     marqueeEl: document.getElementById('live-marquee'),
     supabase,
   });
+  try { wireNotifications(); } catch (e) { console.warn('notify', e); }
 }
 
 export async function mountNav(activeKey = '') {
@@ -177,6 +178,13 @@ async function renderNav(mount, activeKey = '') {
       <a href="${BASE_URL}/index.html" class="brand" title="${SITE_NAME}"><img class="seal-img" src="${BASE_URL}${SITE_LOGO_PATH}" alt="UMUNSA logo" width="40" height="40" /> <span class="brand-text">${SITE_NAME}</span></a>
       <div class="nav-header-actions">
         ${mobileToggle}
+        <div class="nav-notify-wrap" style="position:relative;margin-right:0.35rem;">
+          <button type="button" class="nav-notify-btn" id="nav-notify-btn" aria-label="Notifications" title="Notifications">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 22a2.5 2.5 0 0 0 2.45-2h-4.9A2.5 2.5 0 0 0 12 22zm6-6V11a6 6 0 1 0-12 0v5l-2 2v1h16v-1l-2-2z"/></svg>
+            <span class="nav-notify-badge" id="nav-notify-badge" hidden>0</span>
+          </button>
+          <div class="nav-notify-panel" id="nav-notify-panel" hidden></div>
+        </div>
         <div class="nav-avatar-wrap" id="nav-avatar-wrap">
           <button type="button" class="nav-avatar-btn" id="nav-avatar-btn" aria-haspopup="true" aria-expanded="false">
             ${avatarHtml(profile)}
@@ -266,12 +274,10 @@ function wireMobileNav(mount) {
 
 function socialRowHtml() {
   const items = [
-    { key: 'facebook', label: 'Facebook', href: SOCIAL_LINKS.facebook },
     { key: 'instagram', label: 'Instagram', href: SOCIAL_LINKS.instagram },
     { key: 'tiktok', label: 'TikTok', href: SOCIAL_LINKS.tiktok },
     { key: 'x', label: 'X', href: SOCIAL_LINKS.x },
     { key: 'whatsapp', label: 'WhatsApp', href: SOCIAL_LINKS.whatsapp },
-    { key: 'telegram', label: 'Telegram', href: SOCIAL_LINKS.telegram },
     { key: 'email', label: 'Email', href: SOCIAL_LINKS.email },
   ];
   return `<div class="footer-social" role="list" aria-label="Social media">
@@ -340,3 +346,63 @@ setTimeout(() => { try { enhanceAllSelects(document); } catch (e) { console.warn
 setTimeout(() => { try { enhanceAllSelects(document); } catch (e) {} }, 800);
 setTimeout(() => { try { enhancePhoneFields(document); } catch (e) {} }, 120);
 setTimeout(() => { try { enhancePhoneFields(document); } catch (e) {} }, 900);
+try {
+  if (typeof document !== 'undefined') {
+    queueMicrotask(() => { try { ensureAiAssistant(); } catch (_) {} });
+  }
+} catch (_) {}
+
+
+async function wireNotifications() {
+  const btn = document.getElementById('nav-notify-btn');
+  const badge = document.getElementById('nav-notify-badge');
+  const panel = document.getElementById('nav-notify-panel');
+  if (!btn || !panel) return;
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.user) return;
+
+  const load = async () => {
+    const { data } = await supabase
+      .from('user_notifications')
+      .select('id, title, body, link, read_at, created_at')
+      .eq('user_id', session.user.id)
+      .order('created_at', { ascending: false })
+      .limit(20);
+    const items = data || [];
+    const unread = items.filter((n) => !n.read_at).length;
+    if (badge) {
+      if (unread > 0) {
+        badge.hidden = false;
+        badge.textContent = unread > 9 ? '9+' : String(unread);
+      } else {
+        badge.hidden = true;
+      }
+    }
+    panel.innerHTML = items.length
+      ? items.map((n) => {
+          const href = n.link || '#';
+          return `<div class="nav-notify-item">${n.link ? `<a href="${href}">${n.title}</a>` : `<strong>${n.title}</strong>`}
+            ${n.body ? `<div style="font-size:0.8rem;color:var(--text-muted);margin-top:0.2rem;">${n.body}</div>` : ''}
+            <div style="font-size:0.72rem;color:var(--text-muted);margin-top:0.25rem;">${new Date(n.created_at).toLocaleString()}</div>
+          </div>`;
+        }).join('')
+      : `<div class="nav-notify-item" style="color:var(--text-muted);">No notifications yet. Likes, tags, elections and activities will appear here.</div>`;
+  };
+
+  btn.addEventListener('click', async (e) => {
+    e.stopPropagation();
+    panel.hidden = !panel.hidden;
+    if (!panel.hidden) {
+      await load();
+      await supabase.from('user_notifications').update({ read_at: new Date().toISOString() }).eq('user_id', session.user.id).is('read_at', null);
+      if (badge) badge.hidden = true;
+    }
+  });
+  document.addEventListener('click', (e) => {
+    if (!panel.hidden && !btn.contains(e.target) && !panel.contains(e.target)) panel.hidden = true;
+  });
+  await load();
+}
+
+// Hook notifications after nav render when possible
+const _origAfter = typeof afterNavMount === 'function' ? afterNavMount : null;

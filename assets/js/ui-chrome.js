@@ -21,21 +21,25 @@ export function startDigitalClock(el) {
 }
 
 export function ensureScrollTopButton() {
-  if (document.getElementById('scroll-top-btn')) return;
-  const btn = document.createElement('button');
-  btn.id = 'scroll-top-btn';
-  btn.type = 'button';
-  btn.className = 'scroll-top-btn';
-  btn.setAttribute('aria-label', 'Scroll to top');
-  btn.innerHTML = `<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M7.41 15.41 12 10.83l4.59 4.58L18 14l-6-6-6 6z"/></svg>`;
+  if (document.getElementById('scroll-top-wrap')) return;
+  // New Vision style: bottom-center button with a horizontal line through it
+  const wrap = document.createElement('div');
+  wrap.id = 'scroll-top-wrap';
+  wrap.className = 'scroll-top-wrap';
+  wrap.innerHTML = `
+    <div class="scroll-top-line" aria-hidden="true"></div>
+    <button type="button" id="scroll-top-btn" class="scroll-top-btn" aria-label="Scroll to top" title="Back to top">
+      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M7.41 15.41 12 10.83l4.59 4.58L18 14l-6-6-6 6z"/></svg>
+    </button>
+  `;
+  document.body.appendChild(wrap);
+  const btn = wrap.querySelector('#scroll-top-btn');
   btn.addEventListener('click', () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
-  document.body.appendChild(btn);
-
   const onScroll = () => {
-    if (window.scrollY > 320) btn.classList.add('visible');
-    else btn.classList.remove('visible');
+    if (window.scrollY > 280) wrap.classList.add('visible');
+    else wrap.classList.remove('visible');
   };
   window.addEventListener('scroll', onScroll, { passive: true });
   onScroll();
@@ -232,4 +236,226 @@ export function initUiChrome({ clockEl, marqueeEl, supabase } = {}) {
   if (marqueeEl) {
     loadMarqueeItems(supabase).then((items) => renderMarquee(marqueeEl, items));
   }
+  // Always mount floating AI on chrome init
+  try { ensureAiAssistant(); } catch (e) { console.warn('AI float', e); }
+  setTimeout(() => { try { ensureAiAssistant(); } catch (_) {} }, 500);
 }
+
+
+/** Floating UMUNSA Quick Chat (member pages). */
+export function ensureAiAssistant() {
+  if (document.getElementById('ai-float-btn')) return;
+  const path = (location.pathname || '').toLowerCase();
+  if (/login|register|apply\.html|reset-password/.test(path)) return;
+
+  let isOpen = false;
+
+  const btn = document.createElement('button');
+  btn.id = 'ai-float-btn';
+  btn.type = 'button';
+  btn.className = 'ai-float-btn ai-float-btn-live';
+  btn.setAttribute('aria-label', 'UMUNSA Quick Chat');
+  btn.setAttribute('aria-expanded', 'false');
+  btn.innerHTML = `<span class="ai-float-pulse" aria-hidden="true"></span><span class="ai-float-label">Chat</span>`;
+
+  const panel = document.createElement('div');
+  panel.id = 'ai-float-panel';
+  panel.hidden = true;
+  panel.className = 'ai-float-panel';
+  panel.setAttribute('role', 'dialog');
+  panel.setAttribute('aria-label', 'UMUNSA Quick Chat');
+  panel.innerHTML = `
+    <div class="ai-float-head">
+      <div>
+        <strong>UMUNSA Quick Chat</strong>
+        <div class="ai-float-sub"><span class="ai-live-dot"></span> Live · guidance only</div>
+      </div>
+      <div class="ai-float-head-actions">
+        <button type="button" id="ai-float-new" class="mini-btn good" title="New chat">New chat</button>
+        <button type="button" id="ai-float-close" aria-label="Close">×</button>
+      </div>
+    </div>
+    <div class="ai-float-body">
+      <aside id="ai-float-sidebar" class="ai-float-sidebar" aria-label="Chat history">
+        <div style="font-size:0.72rem;font-weight:700;opacity:0.75;padding:0.2rem 0.35rem 0.45rem;">History</div>
+        <div id="ai-float-history-list"></div>
+      </aside>
+      <div class="ai-float-main">
+        <div id="ai-float-log" class="ai-float-log"></div>
+        <div class="ai-float-compose">
+          <textarea id="ai-float-input" rows="2" placeholder="Message UMUNSA Quick Chat…"></textarea>
+          <button type="button" class="btn btn-gold" id="ai-float-ask">Send</button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(btn);
+  document.body.appendChild(panel);
+
+  const logEl = panel.querySelector('#ai-float-log');
+  const input = panel.querySelector('#ai-float-input');
+  const sendBtn = panel.querySelector('#ai-float-ask');
+  const histList = panel.querySelector('#ai-float-history-list');
+  const esc = (s) => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+  function setOpen(open) {
+    isOpen = !!open;
+    panel.hidden = !isOpen;
+    btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    btn.classList.toggle('ai-float-open', isOpen);
+    if (isOpen) setTimeout(() => input?.focus(), 40);
+  }
+
+  btn.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setOpen(!isOpen);
+  });
+
+  panel.addEventListener('mousedown', (e) => e.stopPropagation());
+  panel.addEventListener('click', (e) => e.stopPropagation());
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && isOpen) setOpen(false);
+  });
+
+  import('./ai.js').then(async (ai) => {
+    const {
+      askAI,
+      createNewChatSession,
+      upsertChatSession,
+      loadChatSessions,
+      loadChatSessionsAsync,
+      getChatSession,
+      deleteChatSession,
+    } = ai;
+
+    let session = createNewChatSession();
+    let messages = session.messages || [];
+    try { await loadChatSessionsAsync(); } catch (_) {}
+
+    const render = () => {
+      logEl.innerHTML = messages.map((m) => {
+        const user = m.role === 'user';
+        return `<div style="display:flex;justify-content:${user ? 'flex-end' : 'flex-start'};">
+          <div style="max-width:92%;padding:0.5rem 0.75rem;border-radius:${user ? '14px 14px 4px 14px' : '14px 14px 14px 4px'};font-size:0.88rem;line-height:1.4;white-space:pre-wrap;background:${user ? '#16a34a' : '#6d28d9'};color:#fff;">${esc(m.content)}</div>
+        </div>`;
+      }).join('');
+      logEl.scrollTop = logEl.scrollHeight;
+    };
+
+    const renderHistory = async () => {
+      let sessions = loadChatSessions();
+      try { sessions = await loadChatSessionsAsync(); } catch (_) {}
+      sessions = [...sessions].sort(
+        (a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0)
+      );
+      if (!histList) return;
+      histList.innerHTML = sessions.length
+        ? sessions.map((s) => {
+            const active = s.id === session.id ? ' active' : '';
+            const when = s.updatedAt
+              ? new Date(s.updatedAt).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+              : '';
+            return `<div class="ai-hist-row${active}">
+              <button type="button" data-load="${esc(s.id)}">${esc((s.title || 'Chat').slice(0, 48))}<br><span class="ai-hist-time">${esc(when)}</span></button>
+              <button type="button" class="mini-btn bad" data-del="${esc(s.id)}" title="Delete">×</button>
+            </div>`;
+          }).join('')
+        : '<p style="color:var(--text-muted);font-size:0.78rem;margin:0.35rem;">No chats yet.</p>';
+
+      histList.querySelectorAll('[data-load]').forEach((b) => {
+        b.addEventListener('click', (ev) => {
+          ev.preventDefault();
+          ev.stopPropagation();
+          const s = getChatSession(b.getAttribute('data-load'));
+          if (!s) return;
+          session = s;
+          messages = s.messages?.length ? s.messages : messages;
+          render();
+          renderHistory();
+        });
+      });
+      histList.querySelectorAll('[data-del]').forEach((b) => {
+        b.addEventListener('click', async (ev) => {
+          ev.preventDefault();
+          ev.stopPropagation();
+          const id = b.getAttribute('data-del');
+          deleteChatSession(id);
+          if (session.id === id) {
+            session = createNewChatSession();
+            messages = session.messages;
+            render();
+          }
+          await renderHistory();
+        });
+      });
+    };
+
+    const send = async () => {
+      const text = (input.value || '').trim();
+      if (!text) return;
+      input.value = '';
+      messages.push({ role: 'user', content: text });
+      const aIdx = messages.length;
+      messages.push({ role: 'assistant', content: '' });
+      render();
+      session = upsertChatSession({ ...session, messages });
+      renderHistory();
+      sendBtn.disabled = true;
+      btn.classList.add('ai-float-busy');
+      const history = messages.slice(0, aIdx).filter((m) => m.content);
+      const result = await askAI({
+        task: 'faq',
+        prompt: text,
+        history: history.slice(0, -1),
+        onToken: (_piece, full) => {
+          messages[aIdx] = { role: 'assistant', content: full };
+          render();
+        },
+      });
+      messages[aIdx] = {
+        role: 'assistant',
+        content: result.error || result.text || messages[aIdx].content || '(No reply)',
+      };
+      session = upsertChatSession({ ...session, messages });
+      render();
+      renderHistory();
+      sendBtn.disabled = false;
+      btn.classList.remove('ai-float-busy');
+      input.focus();
+    };
+
+    sendBtn.addEventListener('click', (e) => { e.stopPropagation(); send(); });
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+    });
+    panel.querySelector('#ai-float-new')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (messages.some((m) => m.role === 'user')) upsertChatSession({ ...session, messages });
+      session = createNewChatSession();
+      messages = session.messages;
+      render();
+      renderHistory();
+    });
+    panel.querySelector('#ai-float-close')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setOpen(false);
+    });
+
+    render();
+    await renderHistory();
+  }).catch((err) => {
+    logEl.innerHTML = `<p style="color:#f87171;padding:0.75rem;">Chat failed to load: ${esc(err?.message || err)}</p>`;
+  });
+}
+
+
+try {
+  if (typeof document !== 'undefined') {
+    document.addEventListener('DOMContentLoaded', () => {
+      try { ensureAiAssistant(); } catch (_) {}
+    });
+  }
+} catch (_) {}

@@ -129,27 +129,56 @@ export async function loginWithEmail({ email, password, captcha_token, captcha_a
   if (!cleanEmail || !password) {
     return { error: 'Email and password are required.' };
   }
-  if (!captcha_token || !captcha_answer) {
-    return { error: 'Please complete the CAPTCHA.' };
+
+  // Super-Admin–provisioned accounts (any domain) and password accounts sign in
+  // with the temporary password directly via Auth. Do NOT hard-block on
+  // login-guard — that function historically returned "Incorrect email or
+  // password" and prevented signInWithPassword from ever running.
+  const umu = isUmuEmail(cleanEmail);
+  if (umu && captcha_token && captcha_answer && captcha_token !== 'dev') {
+    try {
+      const res = await fetch(LOGIN_GUARD_URL, {
+        method: 'POST',
+        headers: functionHeaders(),
+        body: JSON.stringify({ email: cleanEmail, password, captcha_token, captcha_answer }),
+      });
+      // Soft check only: captcha / lockout hints. Never abort before Auth.
+      if (!res.ok) {
+        const result = await res.json().catch(() => ({}));
+        const guardMsg = String(result.error || '');
+        // Real lockouts still block
+        if (/locked|too many|rate.?limit|captcha/i.test(guardMsg) && !/incorrect|invalid|password/i.test(guardMsg)) {
+          return { error: guardMsg || 'Login temporarily blocked.' };
+        }
+      }
+    } catch (_) {
+      /* guard unreachable — continue */
+    }
   }
-  const res = await fetch(LOGIN_GUARD_URL, {
-    method: 'POST',
-    headers: functionHeaders(),
-    body: JSON.stringify({ email: cleanEmail, password, captcha_token, captcha_answer }),
-  });
-  const result = await res.json();
-  if (!res.ok) return { error: result.error || 'Login failed.' };
 
-  // Password is correct and the account isn't locked/pending: but no
-  // session exists yet. Send a one-time code and require it before this
-  // person is actually considered logged in.
-  const { error: otpErr } = await supabase.auth.signInWithOtp({
+  const { data, error } = await supabase.auth.signInWithPassword({
     email: cleanEmail,
-    options: { shouldCreateUser: false },
+    password,
   });
-  if (otpErr) return { error: otpErr.message };
+  if (error) {
+    const msg = error.message || '';
+    if (/email not confirmed|not confirmed/i.test(msg)) {
+      return {
+        error:
+          'This email is not confirmed yet. Ask a Super Admin to open Authentication → Users and set "Confirm email", or recreate the account.',
+      };
+    }
+    if (/invalid login credentials|invalid_credentials/i.test(msg)) {
+      return {
+        error:
+          'Incorrect email or password. Use the temporary password set by the Super Admin (copy it carefully). After you sign in, change it under Profile.',
+      };
+    }
+    return { error: msg };
+  }
 
-  return { requireOtp: true, email: cleanEmail };
+  await routeAfterLogin();
+  return { data, message: 'Signed in successfully.' };
 }
 
 export async function loginWithGoogle(options = {}) {
@@ -214,10 +243,21 @@ export async function completeGoogleLoginFromUrl() {
   }
 
   if (!isUmuEmail(user.email)) {
-    await supabase.auth.signOut();
-    return {
-      error: `Google sign-in is only allowed for ${REQUIRED_EMAIL_DOMAIN} email addresses. If you don't have a ${REQUIRED_EMAIL_DOMAIN} email, ask a Super Admin to add you or register with a university email.`,
-    };
+    // Allow Google only for university emails. Non-umu accounts must use
+    // email + password (created by Super Admin).
+    const { data: existing } = await supabase
+      .from('profiles')
+      .select('id, added_by_super_admin, membership_status')
+      .eq('id', user.id)
+      .maybeSingle();
+    if (existing?.added_by_super_admin) {
+      // Rare: Google account matches an admin-provisioned profile id — allow
+    } else {
+      await supabase.auth.signOut();
+      return {
+        error: `Google sign-in is only allowed for ${REQUIRED_EMAIL_DOMAIN} email addresses. If a Super Admin added you with a different email (e.g. Gmail), use Email & password sign-in on this page with the temporary password you were given.`,
+      };
+    }
   }
 
   const { data: profile, error: profileErr } = await supabase
@@ -363,6 +403,17 @@ export function isProfileComplete(profile) {
   const str = (v) => typeof v === 'string' && v.trim().length > 0;
   if (!str(profile.full_name)) return false;
   if (!str(profile.phone)) return false;
+
+  const category = (profile.member_category || (profile.is_alum ? 'graduate' : 'student') || 'student').toLowerCase();
+  // Super-Admin–provisioned accounts (any domain) may skip student-only fields
+  if (profile.added_by_super_admin === true && category !== 'student') {
+    return true;
+  }
+  if (category !== 'student') {
+    // Graduates / lecturers / patrons / staff: name + phone + onboarding flag is enough
+    return true;
+  }
+
   if (!str(profile.registration_number)) return false;
   if (!str(profile.campus)) return false;
   if (!str(profile.faculty)) return false;
@@ -372,7 +423,6 @@ export function isProfileComplete(profile) {
   if (profile.year_of_study == null || Number(profile.year_of_study) < 1) return false;
   if (profile.semester == null || ![1, 2].includes(Number(profile.semester))) return false;
   if (!str(profile.avatar_url)) return false;
-  // Tribe / clan required once those columns exist (ignore if column never selected)
   if ('tribe' in profile && !str(profile.tribe)) return false;
   if ('clan' in profile && !str(profile.clan)) return false;
   return true;
@@ -389,9 +439,18 @@ export async function routeAfterLogin() {
     await supabase.rpc('maybe_auto_approve_member', { p_user_id: user.id });
   } catch (_) {}
 
+  // Temporary password from Super Admin → force change on first login
+  const mustChange =
+    user.user_metadata?.must_change_password === true ||
+    user.user_metadata?.must_change_password === 'true';
+  if (mustChange) {
+    window.location.href = `${BASE_URL}/profile.html?change_password=1`;
+    return {};
+  }
+
   const { data: profile } = await supabase
     .from('profiles')
-    .select('membership_status, onboarding_completed, full_name, phone, registration_number, campus, faculty, programme, hostel, academic_year, year_of_study, semester, avatar_url, tribe, clan')
+    .select('membership_status, onboarding_completed, full_name, phone, registration_number, campus, faculty, programme, hostel, academic_year, year_of_study, semester, avatar_url, tribe, clan, member_category, added_by_super_admin, is_alum, designation')
     .eq('id', user.id)
     .maybeSingle();
 

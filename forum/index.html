@@ -196,6 +196,7 @@
   import { supabase } from '../assets/js/supabase-client.js';
   import { mountNav, mountFooter } from '../assets/js/nav.js';
   import { requireApprovedMember } from '../assets/js/session-guard.js';
+  import { wireAdminPostGenerator } from '../assets/js/ai.js?v=2';
 
   mountNav('forum');
   mountFooter();
@@ -489,6 +490,15 @@
     if (!name) return '?';
     return name.trim().split(/\s+/).slice(0, 2).map(word => word[0]?.toUpperCase()).join('');
   }
+
+  try {
+    wireAdminPostGenerator({
+      kind: 'forum',
+      titleEl: document.getElementById('topic-title'),
+      bodyEl: document.getElementById('topic-content'),
+      hint: 'e.g. Should we host a mid-semester sports gala? Pros, cons, and volunteer ideas',
+    });
+  } catch (e) { console.warn('forum AI', e); }
 </script>
 </body>
 </html>

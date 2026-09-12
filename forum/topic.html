@@ -44,10 +44,15 @@
     <button type="button" class="btn btn-gold" id="reply-btn" style="margin-top:0.5rem;">Post reply</button>
   </div>
 </div>
+<div class="card" id="ai-topic-summary-card" style="max-width:820px;margin:1rem auto;padding:1rem;">
+  <button type="button" class="btn btn-outline" id="ai-summarize-topic">Summarize this discussion (AI)</button>
+  <div id="ai-topic-summary" style="margin-top:0.75rem;white-space:pre-wrap;font-size:0.92rem;line-height:1.45;"></div>
+</div>
 <div id="app-footer"></div>
 <script type="module">
   import { supabase } from '../assets/js/supabase-client.js';
   import { mountNav, mountFooter } from '../assets/js/nav.js';
+  import { askAI } from '../assets/js/ai.js';
   import { requireApprovedMember } from '../assets/js/session-guard.js';
   mountNav('forum');
   mountFooter();
@@ -72,7 +77,7 @@
     } else {
       const pageUrl = `${location.origin}/forum/topic.html?id=${encodeURIComponent(topic.id)}`;
       const url = `${location.origin}/s/topic/${encodeURIComponent(topic.id)}`;
-      document.title = topic.title + ' · NSA';
+      document.title = topic.title + ' · UMUNSA';
       document.getElementById('og-title')?.setAttribute('content', topic.title);
       document.getElementById('tw-title')?.setAttribute('content', topic.title);
       document.getElementById('og-desc')?.setAttribute('content', (topic.content || '').slice(0, 160));
@@ -115,6 +120,29 @@
       });
     }
   }
+
+  document.getElementById('ai-summarize-topic')?.addEventListener('click', async () => {
+    const btn = document.getElementById('ai-summarize-topic');
+    const out = document.getElementById('ai-topic-summary');
+    if (!out) return;
+    btn.disabled = true;
+    out.textContent = 'Summarizing…';
+    // Collect visible post text
+    const bits = [];
+    document.querySelectorAll('[data-post-body], .post-body, .forum-post, article').forEach((el) => {
+      const txt = (el.innerText || el.textContent || '').trim();
+      if (txt.length > 20) bits.push(txt.slice(0, 1500));
+    });
+    const title = document.querySelector('h1,h2')?.textContent || 'Forum topic';
+    const context = bits.slice(0, 25).join('\n---\n');
+    const result = await askAI({
+      task: 'summarize',
+      prompt: `Summarize this forum topic: ${title}`,
+      context: context || title,
+    });
+    out.textContent = result.error || result.text || 'No summary.';
+    btn.disabled = false;
+  });
 </script>
 </body>
 </html>

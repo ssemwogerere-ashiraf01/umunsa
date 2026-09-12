@@ -161,10 +161,10 @@
 
   <main class="admin-container">
     <h2>Admin Dashboard</h2>
-    <p style="color:var(--text-muted);margin-top:-0.5rem;margin-bottom:1.25rem;font-size:0.92rem;">Manage members, content, activities, projects, elections, and feedback. Role changes, club settings, and closing elections require the Super Admin.</p>
+    <p style="color:var(--text-muted);margin-top:-0.5rem;margin-bottom:1.25rem;font-size:0.92rem;">Manage members, content, activities, projects, elections, and feedback. <strong>AI can draft news, activities, projects, and feedback forms</strong> from a short outline on each form. Role changes, club settings, and closing elections require the Super Admin.</p>
 
     <div class="stat-grid" id="stat-grid">
-      <div class="stat-box"><strong>…</strong><span>Loading stats…</span></div>
+      <div class="stat-box"><strong>...</strong><span>Loading stats...</span></div>
     </div>
 
     <div class="tab-nav">
@@ -187,7 +187,7 @@
       <div class="card">
         <h3 style="margin-top:0;">Members</h3>
         <div class="member-filters" id="member-filters">
-          <input type="search" id="member-search" placeholder="Search name or email…" class="member-filter-input" />
+          <input type="search" id="member-search" placeholder="Search name or email..." class="member-filter-input" />
           <select id="filter-hostel" class="member-filter-select"><option value="">All hostels</option></select>
           <select id="filter-faculty" class="member-filter-select"><option value="">All faculties</option></select>
           <select id="filter-status" class="member-filter-select">
@@ -199,11 +199,11 @@
           </select>
         </div>
         <p id="members-count" style="font-size:0.85rem;color:var(--text-muted);margin:0.5rem 0 0.75rem;"></p>
-        <div id="members-list" class="members-list"><p style="color:var(--text-muted);font-size:0.9rem;">Loading members…</p></div>
+        <div id="members-list" class="members-list"><p style="color:var(--text-muted);font-size:0.9rem;">Loading members...</p></div>
         <div class="data-table-wrap table-scroll members-table-desktop">
           <table class="admin-table">
             <thead><tr><th></th><th>Name</th><th>Email</th><th>Hostel</th><th>Faculty</th><th>Phone</th><th>Programme</th><th>Tribe</th><th>Status</th><th>Role</th><th>Actions</th></tr></thead>
-            <tbody id="members-tbody"><tr><td colspan="9" style="color:var(--text-muted);">Loading members…</td></tr></tbody>
+            <tbody id="members-tbody"><tr><td colspan="9" style="color:var(--text-muted);">Loading members...</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -214,6 +214,7 @@
       <div class="card">
         <h3 style="margin-top:0;">Post News</h3>
         <form id="news-form">
+          <input type="hidden" id="news-edit-id" value="" />
           <div class="form-group"><label>Title</label><input type="text" id="news-title" required /></div>
           <div class="form-group"><label>Content</label><textarea id="news-content" rows="4" required></textarea></div>
           <div class="form-group"><label>Image URL (optional)</label><input type="text" id="news-image" placeholder="https://..." /></div>
@@ -221,8 +222,12 @@
           <div class="form-group"><label>Document URL (optional)</label><input type="text" id="news-document" placeholder="https://... PDF or file link" /></div>
           <div class="form-group"><label>Or upload document (optional)</label><input type="file" id="news-document-file" accept=".pdf,.doc,.docx,image/*" /></div>
           <div class="form-group"><label>External link (optional)</label><input type="text" id="news-external" placeholder="https://..." /></div>
+          <div class="form-group"><label>Calendar start (optional)</label><input type="datetime-local" id="news-starts-at" /></div>
+          <div class="form-group"><label>Deadline / end on calendar (optional)</label><input type="datetime-local" id="news-ends-at" /></div>
+          <div class="form-group"><label><input type="checkbox" id="news-on-calendar" checked style="width:auto;display:inline;" /> Show on member calendar</label></div>
           <div class="form-group"><label><input type="checkbox" id="news-featured" style="width:auto;display:inline;" /> Featured</label></div>
-          <button type="submit" class="mini-btn good">Publish News</button>
+          <button type="submit" class="mini-btn good" id="news-submit-btn">Publish News</button>
+          <button type="button" class="mini-btn" id="news-cancel-edit" hidden>Cancel edit</button>
         </form>
       </div>
       <div class="card">
@@ -236,9 +241,11 @@
       <div class="card">
         <h3 style="margin-top:0;">Create Activity</h3>
         <form id="activity-form">
+          <input type="hidden" id="activity-edit-id" value="" />
           <div class="form-group"><label>Title</label><input type="text" id="activity-title" required /></div>
           <div class="form-group"><label>Description</label><textarea id="activity-description" rows="3"></textarea></div>
           <div class="form-group"><label>Date &amp; time</label><input type="datetime-local" id="activity-date" required /></div>
+          <div class="form-group"><label>Ends at (optional)</label><input type="datetime-local" id="activity-ends-at" /></div>
           <div class="form-group"><label>Location</label><input type="text" id="activity-location" /></div>
           <div class="form-group"><label>Max participants (optional)</label><input type="number" id="activity-max" /></div>
           <div class="form-group"><label>Image URL (optional)</label><input type="text" id="activity-image" placeholder="https://..." /></div>
@@ -246,7 +253,8 @@
           <div class="form-group"><label>Document URL (optional)</label><input type="text" id="activity-document" placeholder="https://..." /></div>
           <div class="form-group"><label>Or upload document (optional)</label><input type="file" id="activity-document-file" accept=".pdf,.doc,.docx,image/*" /></div>
           <div class="form-group"><label>External link (optional)</label><input type="text" id="activity-external" placeholder="https://..." /></div>
-          <button type="submit" class="mini-btn good">Create Activity</button>
+          <button type="submit" class="mini-btn good" id="activity-submit-btn">Create Activity</button>
+          <button type="button" class="mini-btn" id="activity-cancel-edit" hidden>Cancel edit</button>
         </form>
       </div>
       <div class="card">
@@ -260,17 +268,21 @@
       <div class="card">
         <h3 style="margin-top:0;">Create Project</h3>
         <form id="project-form">
+          <input type="hidden" id="project-edit-id" value="" />
           <div class="form-group"><label>Title</label><input type="text" id="project-title" required /></div>
           <div class="form-group"><label>Description</label><textarea id="project-description" rows="3"></textarea></div>
           <div class="form-group"><label>Status</label>
             <select id="project-status"><option value="planned">Planned</option><option value="ongoing">Ongoing</option><option value="completed">Completed</option></select>
           </div>
+          <div class="form-group"><label>Deadline (optional)</label><input type="datetime-local" id="project-ends-at" /></div>
+          <div class="form-group"><label><input type="checkbox" id="project-on-calendar" checked style="width:auto;display:inline;" /> Show on member calendar</label></div>
           <div class="form-group"><label>Image URL (optional)</label><input type="text" id="project-image" placeholder="https://..." /></div>
           <div class="form-group"><label>Or upload image / media (optional)</label><input type="file" id="project-image-file" accept="image/*,video/*" /></div>
           <div class="form-group"><label>Document URL (optional)</label><input type="text" id="project-document" placeholder="https://..." /></div>
           <div class="form-group"><label>Or upload document (optional)</label><input type="file" id="project-document-file" accept=".pdf,.doc,.docx,image/*" /></div>
           <div class="form-group"><label>External link (optional)</label><input type="text" id="project-external" placeholder="https://..." /></div>
-          <button type="submit" class="mini-btn good">Create Project</button>
+          <button type="submit" class="mini-btn good" id="project-submit-btn">Create Project</button>
+          <button type="button" class="mini-btn" id="project-cancel-edit" hidden>Cancel edit</button>
         </form>
       </div>
       <div class="card">
@@ -420,6 +432,7 @@ Preferred meeting day (multiple_choice: Monday, Wednesday, Friday)"></textarea>
     import { supabase } from '../assets/js/supabase-client.js';
     import { requireAdmin } from '../assets/js/admin-guard.js';
     import { mountNav, mountFooter } from '../assets/js/nav.js';
+  import { wireDraftHelper, wireAdminPostGenerator } from '../assets/js/ai.js?v=2';
 
     mountNav();
     mountFooter();
@@ -644,22 +657,43 @@ Preferred meeting day (multiple_choice: Monday, Wednesday, Friday)"></textarea>
       return typed || null;
     }
 
-document.getElementById('news-form').addEventListener('submit', async (e) => {
+    document.getElementById('news-cancel-edit')?.addEventListener('click', () => {
+      document.getElementById('news-form').reset();
+      document.getElementById('news-edit-id').value = '';
+      document.getElementById('news-submit-btn').textContent = 'Publish News';
+      document.getElementById('news-cancel-edit').hidden = true;
+    });
+
+    document.getElementById('news-form').addEventListener('submit', async (e) => {
       e.preventDefault();
       try {
         const image_url = await resolveMediaFields('news-image', 'news-image-file', 'news');
         const document_url = await resolveMediaFields('news-document', 'news-document-file', 'news-docs');
-        const { error } = await supabase.from('news').insert({
+        const editId = document.getElementById('news-edit-id')?.value || '';
+        const newsPayload = {
           title: document.getElementById('news-title').value.trim(),
           content: document.getElementById('news-content').value.trim(),
           image_url,
           document_url,
           external_url: document.getElementById('news-external').value.trim() || null,
           is_featured: document.getElementById('news-featured').checked,
-          author_id: me.id,
-        });
+          starts_at: document.getElementById('news-starts-at')?.value ? new Date(document.getElementById('news-starts-at').value).toISOString() : null,
+          ends_at: document.getElementById('news-ends-at')?.value ? new Date(document.getElementById('news-ends-at').value).toISOString() : null,
+          show_on_calendar: document.getElementById('news-on-calendar')?.checked !== false,
+        };
+        let error;
+        if (editId) {
+          ({ error } = await supabase.from('news').update(newsPayload).eq('id', editId));
+        } else {
+          newsPayload.author_id = me.id;
+          ({ error } = await supabase.from('news').insert(newsPayload));
+        }
         if (error) return alert(error.message);
         e.target.reset();
+        document.getElementById('news-edit-id').value = '';
+        document.getElementById('news-submit-btn').textContent = 'Publish News';
+        const cancelBtn = document.getElementById('news-cancel-edit');
+        if (cancelBtn) cancelBtn.hidden = true;
         await loadNews();
       } catch (err) {
         alert(err.message || String(err));
@@ -669,14 +703,44 @@ document.getElementById('news-form').addEventListener('submit', async (e) => {
     async function loadNews() {
       const { data } = await supabase.from('news').select('*').order('published_at', { ascending: false }).limit(15);
       document.getElementById('news-list').innerHTML = (data || []).map(n => `
-        <div style="padding:0.75rem 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;gap:1rem;align-items:center;">
-          <div><strong>${escapeHtml(n.title)}</strong><div style="font-size:0.8rem;color:var(--text-muted);">${new Date(n.published_at).toLocaleDateString()}</div></div>
-          <button class="mini-btn bad" data-del-news="${n.id}">Delete</button>
+        <div style="padding:0.75rem 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;gap:1rem;align-items:center;flex-wrap:wrap;">
+          <div><strong>${escapeHtml(n.title)}</strong><div style="font-size:0.8rem;color:var(--text-muted);">${new Date(n.published_at).toLocaleDateString()}${n.ends_at ? ' · ends ' + new Date(n.ends_at).toLocaleDateString() : ''}</div></div>
+          <div style="display:flex;gap:0.4rem;">
+            <button type="button" class="mini-btn" data-edit-news="${n.id}">Edit</button>
+            <button type="button" class="mini-btn bad" data-del-news="${n.id}">Delete</button>
+          </div>
         </div>`).join('') || '<p style="color:var(--text-muted);">No news yet.</p>';
       document.querySelectorAll('[data-del-news]').forEach(btn => btn.addEventListener('click', async () => {
         if (!confirm('Delete this news post?')) return;
         await supabase.from('news').delete().eq('id', btn.dataset.delNews);
         await loadNews();
+      }));
+      document.querySelectorAll('[data-edit-news]').forEach(btn => btn.addEventListener('click', () => {
+        const n = (data || []).find(x => x.id === btn.dataset.editNews);
+        if (!n) return;
+        document.getElementById('news-edit-id').value = n.id;
+        document.getElementById('news-title').value = n.title || '';
+        document.getElementById('news-content').value = n.content || '';
+        document.getElementById('news-image').value = n.image_url || '';
+        document.getElementById('news-document').value = n.document_url || '';
+        document.getElementById('news-external').value = n.external_url || '';
+        document.getElementById('news-featured').checked = !!n.is_featured;
+        const toLocal = (iso) => {
+          if (!iso) return '';
+          const d = new Date(iso);
+          if (Number.isNaN(d.getTime())) return '';
+          const pad = (x) => String(x).padStart(2, '0');
+          return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+        };
+        const s = document.getElementById('news-starts-at');
+        const e = document.getElementById('news-ends-at');
+        if (s) s.value = toLocal(n.starts_at || n.published_at);
+        if (e) e.value = toLocal(n.ends_at);
+        const oc = document.getElementById('news-on-calendar');
+        if (oc) oc.checked = n.show_on_calendar !== false;
+        document.getElementById('news-submit-btn').textContent = 'Save changes';
+        document.getElementById('news-cancel-edit').hidden = false;
+        document.getElementById('news-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
       }));
     }
 
@@ -686,19 +750,31 @@ document.getElementById('news-form').addEventListener('submit', async (e) => {
       try {
         const image_url = await resolveMediaFields('activity-image', 'activity-image-file', 'activities');
         const document_url = await resolveMediaFields('activity-document', 'activity-document-file', 'activity-docs');
-        const { error } = await supabase.from('activities').insert({
+        const editId = document.getElementById('activity-edit-id')?.value || '';
+        const actPayload = {
           title: document.getElementById('activity-title').value.trim(),
           description: document.getElementById('activity-description').value.trim() || null,
-          activity_date: new Date(document.getElementById('activity-date').value).toISOString(),
+          activity_date: document.getElementById('activity-date').value ? new Date(document.getElementById('activity-date').value).toISOString() : null,
+          ends_at: document.getElementById('activity-ends-at')?.value ? new Date(document.getElementById('activity-ends-at').value).toISOString() : null,
           location: document.getElementById('activity-location').value.trim() || null,
           max_participants: document.getElementById('activity-max').value ? Number(document.getElementById('activity-max').value) : null,
           image_url,
           document_url,
           external_url: document.getElementById('activity-external').value.trim() || null,
-          created_by: me.id,
-        });
+        };
+        let error;
+        if (editId) {
+          ({ error } = await supabase.from('activities').update(actPayload).eq('id', editId));
+        } else {
+          actPayload.created_by = me.id;
+          ({ error } = await supabase.from('activities').insert(actPayload));
+        }
         if (error) return alert(error.message);
         e.target.reset();
+        document.getElementById('activity-edit-id').value = '';
+        document.getElementById('activity-submit-btn').textContent = 'Create Activity';
+        const ac = document.getElementById('activity-cancel-edit');
+        if (ac) ac.hidden = true;
         await loadActivities();
       } catch (err) {
         alert(err.message || String(err));
@@ -706,16 +782,40 @@ document.getElementById('news-form').addEventListener('submit', async (e) => {
     });
 
     async function loadActivities() {
-      const { data } = await supabase.from('activities').select('id, title, activity_date, location').order('activity_date', { ascending: false }).limit(15);
+      const { data } = await supabase.from('activities').select('id, title, description, activity_date, ends_at, location, max_participants').order('activity_date', { ascending: false }).limit(15);
       const withCounts = await Promise.all((data || []).map(async a => {
         const { count } = await supabase.from('activity_participants').select('*', { count: 'exact', head: true }).eq('activity_id', a.id);
         return { ...a, count };
       }));
       document.getElementById('activities-list').innerHTML = withCounts.map(a => `
-        <div style="padding:0.75rem 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;gap:1rem;align-items:center;">
+        <div style="padding:0.75rem 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;gap:1rem;align-items:center;flex-wrap:wrap;">
           <div><strong>${escapeHtml(a.title)}</strong><div style="font-size:0.8rem;color:var(--text-muted);">${new Date(a.activity_date).toLocaleString()} · ${a.count || 0} RSVPs</div></div>
-          <button class="mini-btn bad" data-del-activity="${a.id}">Delete</button>
+          <div style="display:flex;gap:0.4rem;">
+            <button type="button" class="mini-btn" data-edit-activity="${a.id}">Edit</button>
+            <button type="button" class="mini-btn bad" data-del-activity="${a.id}">Delete</button>
+          </div>
         </div>`).join('') || '<p style="color:var(--text-muted);">No activities yet.</p>';
+      document.querySelectorAll('[data-edit-activity]').forEach(btn => btn.addEventListener('click', () => {
+        const a = withCounts.find(x => x.id === btn.dataset.editActivity);
+        if (!a) return;
+        const toLocal = (iso) => {
+          if (!iso) return '';
+          const d = new Date(iso);
+          if (Number.isNaN(d.getTime())) return '';
+          const pad = (x) => String(x).padStart(2, '0');
+          return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+        };
+        document.getElementById('activity-edit-id').value = a.id;
+        document.getElementById('activity-title').value = a.title || '';
+        document.getElementById('activity-description').value = a.description || '';
+        document.getElementById('activity-date').value = toLocal(a.activity_date);
+        const ends = document.getElementById('activity-ends-at');
+        if (ends) ends.value = toLocal(a.ends_at);
+        document.getElementById('activity-location').value = a.location || '';
+        document.getElementById('activity-submit-btn').textContent = 'Save changes';
+        document.getElementById('activity-cancel-edit').hidden = false;
+        document.getElementById('activity-form').scrollIntoView({ behavior: 'smooth' });
+      }));
       document.querySelectorAll('[data-del-activity]').forEach(btn => btn.addEventListener('click', async () => {
         if (!confirm('Delete this activity?')) return;
         await supabase.from('activities').delete().eq('id', btn.dataset.delActivity);
@@ -737,12 +837,25 @@ document.getElementById('news-form').addEventListener('submit', async (e) => {
           document_url,
           external_url: document.getElementById('project-external').value.trim() || null,
           created_by: me.id,
+          starts_at: new Date().toISOString(),
+          ends_at: document.getElementById('project-ends-at')?.value ? new Date(document.getElementById('project-ends-at').value).toISOString() : null,
+          show_on_calendar: document.getElementById('project-on-calendar')?.checked !== false,
         };
-        const startEl = document.getElementById('project-start');
-        const endEl = document.getElementById('project-end');
-        if (startEl?.value) payload.start_date = startEl.value;
-        if (endEl?.value) payload.end_date = endEl.value;
-        const { error } = await supabase.from('projects').insert(payload);
+        const pedit = document.getElementById('project-edit-id')?.value || '';
+        let error;
+        if (pedit) {
+          delete payload.created_by;
+          ({ error } = await supabase.from('projects').update(payload).eq('id', pedit));
+        } else {
+          ({ error } = await supabase.from('projects').insert(payload));
+        }
+        if (!error) {
+          document.getElementById('project-edit-id').value = '';
+          const ps = document.getElementById('project-submit-btn');
+          if (ps) ps.textContent = 'Create Project';
+          const pc = document.getElementById('project-cancel-edit');
+          if (pc) pc.hidden = true;
+        }
         if (error) return alert(error.message);
         e.target.reset();
         await loadProjects();
@@ -1213,7 +1326,7 @@ document.getElementById('news-form').addEventListener('submit', async (e) => {
         return;
       }
       leadershipPositions = data || [];
-      // Prefer "Secretary for …" / General Secretary over old Minister titles
+      // Prefer "Secretary for ..." / General Secretary over old Minister titles
       const names = new Set(leadershipPositions.map(p => p.name));
       const oldMinisterAliases = {
         'Information Minister': 'Secretary for Information',
@@ -1583,6 +1696,48 @@ document.getElementById('news-form').addEventListener('submit', async (e) => {
       loadAdminSettings().catch(e => console.error('settings', e)),
     ]);
 
-  </script>
+  
+  // AI helpers that simplify admin content work
+  const wireAdminAI = () => {
+    wireAdminPostGenerator({
+      kind: 'news',
+      titleEl: document.getElementById('news-title'),
+      bodyEl: document.getElementById('news-content'),
+      hint: 'e.g. Announce election nominations open next week; remind members to complete profiles',
+    });
+    wireAdminPostGenerator({
+      kind: 'activity',
+      titleEl: document.getElementById('activity-title'),
+      bodyEl: document.getElementById('activity-description'),
+      extraEls: { location: document.getElementById('activity-location') },
+      hint: 'e.g. Cultural night next Saturday at Main Hall, 5pm, traditional dance and food',
+    });
+    wireAdminPostGenerator({
+      kind: 'project',
+      titleEl: document.getElementById('project-title'),
+      bodyEl: document.getElementById('project-description'),
+      hint: 'e.g. Tree planting drive on campus; need 30 volunteers over three weekends',
+    });
+    wireAdminPostGenerator({
+      kind: 'feedback',
+      titleEl: document.getElementById('fb-title'),
+      bodyEl: document.getElementById('fb-description'),
+      extraEls: { questions: document.getElementById('fb-questions') },
+      hint: 'e.g. Feedback on last general assembly and communication from leaders',
+    });
+    // Generic improve buttons on any remaining content textareas
+    document.querySelectorAll('textarea').forEach((ta) => {
+      if (ta.id && /content|body|description|message|bio|summary|questions/i.test(ta.id + (ta.name || ''))) {
+        if (!ta.dataset.aiWired && !ta.dataset.aiPostWired) {
+          wireDraftHelper(ta, { hint: 'Write clear UMUNSA content for members.' });
+        }
+      }
+    });
+  };
+  wireAdminAI();
+  document.querySelectorAll('.tab-btn, [data-tab]').forEach((b) => {
+    b.addEventListener('click', () => setTimeout(wireAdminAI, 300));
+  });
+</script>
 </body>
 </html>

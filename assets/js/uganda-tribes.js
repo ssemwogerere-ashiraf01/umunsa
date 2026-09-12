@@ -3,6 +3,7 @@
  * Falls back to empty lists if offline; forms still allow "Other".
  */
 import { supabase } from './supabase-client.js';
+import { refreshSelects, syncSelectDisplay } from './ns-select.js';
 
 let _cache = null; // { tribes: [{id,name,ethnic_group}], clansByTribeId: Map<id, string[]> }
 
@@ -116,6 +117,11 @@ export async function wireTribeClanSelects(root = document, initial = {}) {
     if (clanOther) clanOther.required = isOther;
   };
   syncClans();
+  try {
+    syncSelectDisplay(tribeEl);
+    syncSelectDisplay(clanEl);
+    refreshSelects(root);
+  } catch (_) {}
   return cache;
 }
 

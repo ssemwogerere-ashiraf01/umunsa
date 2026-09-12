@@ -1,0 +1,79 @@
+/* Vision-style legal document frame (UMUNSA content) */
+.legal-frame {
+  max-width: 820px;
+  margin: 2rem auto;
+  border: 10px solid #b71c1c;
+  border-radius: 4px;
+  background: #fff;
+  color: #1a1a1a;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+  overflow: hidden;
+}
+.legal-frame-header {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 0;
+  min-height: 120px;
+  border-bottom: 4px solid #b71c1c;
+}
+.legal-frame-header .photo {
+  background: #f5f5f5 center/cover no-repeat;
+  min-height: 120px;
+}
+.legal-frame-header .titles {
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.legal-frame-header h1 {
+  margin: 0;
+  color: #b71c1c;
+  font-size: 1.75rem;
+  line-height: 1.15;
+}
+.legal-frame-header h2 {
+  margin: 0.25rem 0 0;
+  font-weight: 500;
+  color: #333;
+  font-size: 1.15rem;
+}
+.legal-frame-body {
+  padding: 1.5rem 1.75rem 2rem;
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+.legal-frame-body ol {
+  padding-left: 1.25rem;
+  margin: 0;
+}
+.legal-frame-body li {
+  margin-bottom: 0.85rem;
+}
+.legal-frame-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 0.85rem 1.25rem;
+  border-top: 4px solid #b71c1c;
+  background: #fff;
+  font-size: 0.85rem;
+  color: #444;
+}
+.legal-frame-footer .brand {
+  font-weight: 800;
+  color: #b71c1c;
+  letter-spacing: 0.02em;
+}
+@media (max-width: 640px) {
+  .legal-frame-header { grid-template-columns: 1fr; }
+  .legal-frame-header .photo { min-height: 90px; }
+}
+[data-theme="dark"] .legal-frame {
+  background: #1a1f26;
+  color: #e8eef5;
+}
+[data-theme="dark"] .legal-frame-header .titles h2 { color: #cfd8e3; }
+[data-theme="dark"] .legal-frame-body { color: #e8eef5; }

@@ -324,7 +324,7 @@
         await drawCardBack(backCanvas, member);
         document.getElementById('preview-wrap').scrollIntoView({ behavior: 'smooth', block: 'start' });
 
-        const fileBase = `NSA-ID-${String(member.membership_card_number).replace(/\s+/g, '_')}`;
+        const fileBase = `UMUNSA-ID-${String(member.membership_card_number).replace(/\s+/g, '_')}`;
         document.getElementById('dl-combined').onclick = () =>
           downloadCombined(frontCanvas, backCanvas, `${fileBase}.png`);
         document.getElementById('dl-front').onclick = () =>

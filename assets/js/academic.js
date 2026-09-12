@@ -3,7 +3,7 @@
  * Uses native <select> so enhanceAllSelects / ns-select can style them.
  */
 import { supabase } from './supabase-client.js';
-import { refreshSelects } from './ns-select.js';
+import { refreshSelects, syncSelectDisplay, setSelectValue } from './ns-select.js';
 
 let cache = null;
 
@@ -25,15 +25,6 @@ export async function loadAcademicCatalog() {
   return cache;
 }
 
-function fillSelect(sel, options, placeholder, current) {
-  if (!sel) return;
-  const cur = current ?? sel.value;
-  sel.innerHTML =
-    `<option value="">${placeholder}</option>` +
-    options.map(o => `<option value="${escapeAttr(o.value)}">${escapeAttr(o.label)}</option>`).join('');
-  if (cur && [...sel.options].some(o => o.value === cur)) sel.value = cur;
-}
-
 function escapeAttr(s) {
   return String(s ?? '')
     .replace(/&/g, '&amp;')
@@ -41,11 +32,48 @@ function escapeAttr(s) {
     .replace(/</g, '&lt;');
 }
 
-/** Current academic year label e.g. 2025/2026 based on August boundary */
+/**
+ * Fill a native <select>, always preserving the current/profile value even if
+ * it is not in the catalog (adds a custom option). Then sync custom ns-select UI.
+ */
+function fillSelect(sel, options, placeholder, current) {
+  if (!sel) return;
+  const cur = String(current ?? sel.value ?? '').trim();
+  const opts = Array.isArray(options) ? options.slice() : [];
+  if (cur && !opts.some((o) => String(o.value) === cur)) {
+    opts.unshift({ value: cur, label: cur });
+  }
+  sel.innerHTML =
+    `<option value="">${placeholder}</option>` +
+    opts.map((o) => `<option value="${escapeAttr(o.value)}">${escapeAttr(o.label)}</option>`).join('');
+  if (cur) {
+    sel.value = cur;
+    // Force selected attribute for stubborn browsers / custom UIs
+    [...sel.options].forEach((o) => {
+      if (o.value === cur) o.selected = true;
+    });
+  } else {
+    sel.value = '';
+  }
+  // Notify ns-select mutation observer + change listeners
+  sel.dispatchEvent(new Event('change', { bubbles: true }));
+  try {
+    if (typeof syncSelectDisplay === 'function') syncSelectDisplay(sel);
+    else if (sel.__nsSelect) {
+      const next = Array.from(sel.options).map((opt) => ({
+        value: opt.value,
+        label: (opt.textContent || '').trim() || opt.value || '—',
+      }));
+      sel.__nsSelect.setOptions(next.filter((o, i) => !(i === 0 && o.value === '')));
+      sel.__nsSelect.value = sel.value;
+    }
+  } catch (_) { /* */ }
+}
+
 export function defaultAcademicYear() {
   const now = new Date();
   const y = now.getFullYear();
-  const start = now.getMonth() >= 7 ? y : y - 1; // Aug–Jul cycle
+  const start = now.getMonth() >= 7 ? y : y - 1;
   return `${start}/${start + 1}`;
 }
 
@@ -61,8 +89,6 @@ export function academicYearOptions(count = 6) {
 
 /**
  * Wire cascading campus / faculty / programme (+ year, semester, year_of_study).
- * Elements: #campus, #faculty, #programme, optional #academic_year, #semester, #year_of_study
- * @param {{ campus?: string, faculty?: string, programme?: string, academic_year?: string, semester?: number|string, year_of_study?: number|string }} initial
  */
 export async function mountAcademicFields(root = document, initial = {}) {
   const campusEl = root.querySelector('#campus') || root.querySelector('[name="campus"]');
@@ -74,10 +100,13 @@ export async function mountAcademicFields(root = document, initial = {}) {
 
   const catalog = await loadAcademicCatalog();
 
+  // Enhance selects first so hosts exist, then fill values
+  try { refreshSelects(root); } catch (_) {}
+
   if (campusEl && campusEl.tagName === 'SELECT') {
     fillSelect(
       campusEl,
-      catalog.campuses.map(c => ({ value: c.name, label: c.name })),
+      catalog.campuses.map((c) => ({ value: c.name, label: c.name })),
       'Select campus',
       initial.campus || ''
     );
@@ -86,40 +115,37 @@ export async function mountAcademicFields(root = document, initial = {}) {
   if (facultyEl && facultyEl.tagName === 'SELECT') {
     fillSelect(
       facultyEl,
-      catalog.faculties.map(f => ({ value: f.name, label: f.name })),
+      catalog.faculties.map((f) => ({ value: f.name, label: f.name })),
       'Select faculty',
       initial.faculty || ''
     );
   }
 
-  function syncProgrammes() {
+  function syncProgrammes(preserveProgramme) {
     if (!programmeEl || programmeEl.tagName !== 'SELECT') return;
     const fname = facultyEl?.value || initial.faculty || '';
-    const fac = catalog.faculties.find(f => f.name === fname);
-    const list = fac
-      ? catalog.programmes.filter(p => p.faculty_id === fac.id)
-      : [];
+    const fac = catalog.faculties.find((f) => f.name === fname);
+    const list = fac ? catalog.programmes.filter((p) => p.faculty_id === fac.id) : [];
     fillSelect(
       programmeEl,
-      list.map(p => ({ value: p.name, label: p.name })),
+      list.map((p) => ({ value: p.name, label: p.name })),
       fac ? 'Select programme' : 'Select faculty first',
-      initial.programme || programmeEl.value || ''
+      preserveProgramme != null ? preserveProgramme : (initial.programme || programmeEl.value || '')
     );
-    try { refreshSelects(root); } catch (_) {}
   }
 
   if (facultyEl) {
     facultyEl.addEventListener('change', () => {
       initial.programme = '';
-      syncProgrammes();
+      syncProgrammes('');
     });
   }
-  syncProgrammes();
+  syncProgrammes(initial.programme || '');
 
   if (yearEl && yearEl.tagName === 'SELECT') {
     fillSelect(
       yearEl,
-      academicYearOptions().map(y => ({ value: y, label: y })),
+      academicYearOptions().map((y) => ({ value: y, label: y })),
       'Academic year',
       initial.academic_year || defaultAcademicYear()
     );
@@ -133,24 +159,46 @@ export async function mountAcademicFields(root = document, initial = {}) {
         { value: '2', label: 'Semester 2' },
       ],
       'Semester',
-      initial.semester != null ? String(initial.semester) : ''
+      initial.semester != null && initial.semester !== '' ? String(initial.semester) : ''
     );
   }
 
   if (yosEl && yosEl.tagName === 'SELECT') {
     fillSelect(
       yosEl,
-      [1, 2, 3, 4, 5, 6].map(n => ({ value: String(n), label: `Year ${n}` })),
+      [1, 2, 3, 4, 5, 6].map((n) => ({ value: String(n), label: `Year ${n}` })),
       'Year of study',
-      initial.year_of_study != null ? String(initial.year_of_study) : ''
+      initial.year_of_study != null && initial.year_of_study !== '' ? String(initial.year_of_study) : ''
     );
   }
 
+  // Final pass: rebuild custom UIs with filled options + values
   try { refreshSelects(root); } catch (_) {}
+  // And force values again after any rebuild
+  requestAnimationFrame(() => {
+    const pairs = [
+      [campusEl, initial.campus],
+      [facultyEl, initial.faculty],
+      [programmeEl, initial.programme],
+      [yearEl, initial.academic_year || (yearEl && yearEl.value)],
+      [semesterEl, initial.semester != null ? String(initial.semester) : ''],
+      [yosEl, initial.year_of_study != null ? String(initial.year_of_study) : ''],
+    ];
+    pairs.forEach(([el, val]) => {
+      if (!el || val == null || val === '') return;
+      try { setSelectValue(el, val); } catch (_) {
+        if ([...el.options].some((o) => o.value === String(val))) {
+          el.value = String(val);
+          el.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      }
+    });
+    try { refreshSelects(root); } catch (_) {}
+  });
+
   return catalog;
 }
 
-/** Read academic fields from a form root into a plain object for profile update */
 export function readAcademicFields(root = document) {
   const g = (id) => root.querySelector(`#${id}`)?.value?.trim() || null;
   const yos = g('year_of_study');
