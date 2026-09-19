@@ -73,8 +73,7 @@ insert into public.faculties (name, display_order) values
   ('Mother Kevin Postgraduate Medical School', 10),
   ('Directorate of Graduate Studies, Research and Enterprise', 11),
   ('Institute of Ethics', 12),
-  ('Institute of Languages and Communication Studies', 13),
-  ('Other', 99)
+  ('Institute of Languages and Communication Studies', 13)
 on conflict (name) do nothing;
 
 -- Helper: insert programme by faculty name
@@ -264,8 +263,4 @@ cross join (values
 where f.name = 'Directorate of Graduate Studies, Research and Enterprise'
 on conflict (faculty_id, name) do nothing;
 
--- Other catch-all
-insert into public.programmes (faculty_id, name, level)
-select f.id, 'Other (specify in profile notes)', 'other'
-from public.faculties f where f.name = 'Other'
-on conflict (faculty_id, name) do nothing;
+-- (No catch-all "Other" faculty — real faculties only)

@@ -65,6 +65,8 @@ function buildUserPrompt(task: string, prompt: string, context: string) {
   ].join('\n');
 }
 
+type Attachment = { type: string; name?: string; mime?: string; data?: string };
+
 function parseBodyFields(body: Record<string, unknown>) {
   const task = String(body.task || 'general').toLowerCase();
   const prompt = String(body.prompt || body.question || body.text || '').trim();
@@ -77,7 +79,17 @@ function parseBodyFields(body: Record<string, unknown>) {
       role: m.role === 'assistant' ? 'assistant' : 'user',
       content: String(m.content).slice(0, 2000),
     }));
-  return { task, prompt, context, history };
+  const attachmentsRaw = Array.isArray(body.attachments) ? body.attachments : [];
+  const attachments: Attachment[] = attachmentsRaw
+    .filter((a: Attachment) => a && a.type === 'image' && typeof a.data === 'string' && a.data.length > 20)
+    .slice(0, 4)
+    .map((a: Attachment) => ({
+      type: 'image',
+      name: String(a.name || 'image').slice(0, 120),
+      mime: String(a.mime || 'image/jpeg').slice(0, 64),
+      data: String(a.data).slice(0, 3_500_000),
+    }));
+  return { task, prompt, context, history, attachments };
 }
 
 async function resolveAuth(req: Request) {
@@ -248,14 +260,31 @@ function geminiModels(): string[] {
   return defaults;
 }
 
-async function callGemini(apiKey: string, model: string, fullPrompt: string, temperature: number) {
+async function callGemini(
+  apiKey: string,
+  model: string,
+  fullPrompt: string,
+  temperature: number,
+  attachments: Attachment[] = [],
+) {
   const url =
     `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${apiKey}`;
+  const parts: Array<Record<string, unknown>> = [{ text: fullPrompt }];
+  for (const att of attachments) {
+    if (att.type === 'image' && att.data) {
+      parts.push({
+        inline_data: {
+          mime_type: att.mime || 'image/jpeg',
+          data: att.data,
+        },
+      });
+    }
+  }
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      contents: [{ role: 'user', parts: [{ text: fullPrompt }] }],
+      contents: [{ role: 'user', parts }],
       generationConfig: { temperature, maxOutputTokens: 1024 },
     }),
   });
@@ -263,8 +292,8 @@ async function callGemini(apiKey: string, model: string, fullPrompt: string, tem
   if (!res.ok) {
     return { ok: false as const, error: data?.error?.message || `Gemini error (${res.status})` };
   }
-  const parts = data?.candidates?.[0]?.content?.parts || [];
-  const text = parts.map((p: { text?: string }) => p.text || '').join('').trim();
+  const outParts = data?.candidates?.[0]?.content?.parts || [];
+  const text = outParts.map((p: { text?: string }) => p.text || '').join('').trim();
   if (!text) return { ok: false as const, error: 'Gemini returned an empty response.' };
   return { ok: true as const, text, provider: 'gemini', model };
 }
@@ -275,6 +304,7 @@ async function generateOnce(
   context: string,
   history: Array<{ role: string; content: string }>,
   temperature: number,
+  attachments: Attachment[] = [],
 ) {
   const groqKey = (Deno.env.get('GROQ_API_KEY') || '').trim();
   const geminiKey = (Deno.env.get('GEMINI_API_KEY') || Deno.env.get('GOOGLE_AI_API_KEY') || '').trim();
@@ -283,8 +313,18 @@ async function generateOnce(
     : '';
   const fullPrompt = buildUserPrompt(task, prompt, context + historyBlock);
   const errors: string[] = [];
+  const hasImages = attachments.some((a) => a.type === 'image' && a.data);
 
-  if (groqKey) {
+  // Prefer Gemini when images are attached (vision support)
+  if (geminiKey && hasImages) {
+    for (const model of geminiModels()) {
+      const result = await callGemini(geminiKey, model, fullPrompt, temperature, attachments);
+      if (result.ok) return result;
+      errors.push(`Gemini/${model}: ${result.error}`);
+    }
+  }
+
+  if (groqKey && !hasImages) {
     const preferred = (Deno.env.get('GROQ_MODEL') || '').trim();
     const discovered = await discoverGroqModels(groqKey);
     const tried = new Set<string>();
@@ -296,10 +336,24 @@ async function generateOnce(
       errors.push(`Groq/${model}: ${result.error}`);
       if (tried.size >= 8) break;
     }
+  } else if (groqKey && hasImages) {
+    // Groq path cannot see images; still try text-only with note already in context
+    const preferred = (Deno.env.get('GROQ_MODEL') || '').trim();
+    const discovered = await discoverGroqModels(groqKey);
+    const tried = new Set<string>();
+    for (const model of groqModelList(preferred, discovered)) {
+      if (tried.has(model)) continue;
+      tried.add(model);
+      const result = await callGroq(groqKey, model, fullPrompt, temperature, history);
+      if (result.ok) return result;
+      errors.push(`Groq/${model}: ${result.error}`);
+      if (tried.size >= 4) break;
+    }
   }
-  if (geminiKey) {
+
+  if (geminiKey && !hasImages) {
     for (const model of geminiModels()) {
-      const result = await callGemini(geminiKey, model, fullPrompt, temperature);
+      const result = await callGemini(geminiKey, model, fullPrompt, temperature, []);
       if (result.ok) return result;
       errors.push(`Gemini/${model}: ${result.error}`);
     }
@@ -312,7 +366,7 @@ async function generateOnce(
   };
 }
 
-/** Stream via Groq only (WebSocket path). */
+/** Stream via Groq only (WebSocket path). Falls back to full reply when images present. */
 async function generateStream(
   task: string,
   prompt: string,
@@ -320,11 +374,13 @@ async function generateStream(
   history: Array<{ role: string; content: string }>,
   temperature: number,
   onToken: (t: string) => void,
+  attachments: Attachment[] = [],
 ) {
   const groqKey = (Deno.env.get('GROQ_API_KEY') || '').trim();
-  if (!groqKey) {
-    // Fall back to non-stream full reply as one "token"
-    const once = await generateOnce(task, prompt, context, history, temperature);
+  const hasImages = attachments.some((a) => a.type === 'image' && a.data);
+  if (!groqKey || hasImages) {
+    // Fall back to non-stream full reply as one "token" (Gemini vision or no Groq)
+    const once = await generateOnce(task, prompt, context, history, temperature, attachments);
     if (!once.ok) return once;
     onToken(once.text);
     return { ok: true as const, text: once.text, provider: once.provider, model: once.model };
@@ -346,7 +402,7 @@ async function generateStream(
     if (tried.size >= 6) break;
   }
   // Last resort non-stream
-  const once = await generateOnce(task, prompt, context, history, temperature);
+  const once = await generateOnce(task, prompt, context, history, temperature, attachments);
   if (once.ok) {
     onToken(once.text);
     return once;
@@ -380,7 +436,7 @@ function handleWebSocket(req: Request): Response {
       return;
     }
 
-    const { task, prompt, context, history } = parseBodyFields(body);
+    const { task, prompt, context, history, attachments } = parseBodyFields(body);
     if (!prompt || prompt.length < 2) {
       socket.send(JSON.stringify({ type: 'error', error: 'Please provide a message.' }));
       return;
@@ -419,7 +475,7 @@ function handleWebSocket(req: Request): Response {
         } catch {
           /* closed */
         }
-      });
+      }, attachments);
       if (!result.ok) {
         socket.send(JSON.stringify({ type: 'error', error: result.error }));
         return;
@@ -475,7 +531,7 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json().catch(() => ({}));
-    const { task, prompt, context, history } = parseBodyFields(body);
+    const { task, prompt, context, history, attachments } = parseBodyFields(body);
     if (!prompt || prompt.length < 2) return json(400, { error: 'Please provide a question or some text.' });
     if (prompt.length > 8000) return json(400, { error: 'Text is too long.' });
 
@@ -516,7 +572,7 @@ Deno.serve(async (req) => {
             send({ type: 'start' });
             const result = await generateStream(task, prompt, context, history, temperature, (token) => {
               send({ type: 'token', text: token });
-            });
+            }, attachments);
             if (!result.ok) {
               send({ type: 'error', error: result.error });
             } else {
@@ -543,7 +599,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const result = await generateOnce(task, prompt, context, history, temperature);
+    const result = await generateOnce(task, prompt, context, history, temperature, attachments);
     if (!result.ok) return json(502, { error: result.error });
     return json(200, {
       text: result.text,

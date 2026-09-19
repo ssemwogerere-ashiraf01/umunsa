@@ -52,6 +52,7 @@ declare
     'Angels hostel',
     'Wamala hostel',
     'Mugagga hostel',
+    'Acalise hostel',
     'Micheal hall',
     'Onyango hall',
     'Campbell hall',
