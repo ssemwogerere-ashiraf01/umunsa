@@ -231,7 +231,11 @@
         </form>
       </div>
       <div class="card">
-        <h3 style="margin-top:0;">Recent News</h3>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:0.75rem;flex-wrap:wrap;margin-bottom:0.5rem;">
+          <h3 style="margin:0;">Recent News</h3>
+          <button type="button" class="mini-btn good" id="news-pdf-all-btn">Download all news (PDF)</button>
+        </div>
+        <div id="news-pdf-alert"></div>
         <div id="news-list"></div>
       </div>
     </div>
@@ -354,6 +358,11 @@ Preferred meeting day (multiple_choice: Monday, Wednesday, Friday)"></textarea>
         <h3 style="margin-top:0;">Leadership · Current term 2025/26</h3>
         <p style="font-size:0.85rem;color:var(--text-muted);">Add or edit current and previous executive members shown on the public Leadership page. Mark <strong>Current</strong> for the 2025/26 committee; uncheck it for past terms.</p>
         <div id="leadership-alert"></div>
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;margin-bottom:0.75rem;">
+          <button type="button" class="mini-btn good" id="report-vacant-btn">Download vacant positions (PDF)</button>
+          <button type="button" class="mini-btn good" id="report-filled-btn">Download filled positions (PDF)</button>
+        </div>
+        <div id="report-alert"></div>
         <form id="leader-form" class="form-row-2" style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:1rem;">
           <input type="hidden" id="leader-id" value="" />
           <div class="form-group" style="grid-column:1/-1;">
@@ -432,7 +441,7 @@ Preferred meeting day (multiple_choice: Monday, Wednesday, Friday)"></textarea>
     import { supabase } from '../assets/js/supabase-client.js';
     import { requireAdmin } from '../assets/js/admin-guard.js';
     import { mountNav, mountFooter } from '../assets/js/nav.js';
-  import { wireDraftHelper, wireAdminPostGenerator } from '../assets/js/ai.js?v=2';
+  import { wireDraftHelper, wireAdminPostGenerator } from '../assets/js/ai.js?v=3';
 
     mountNav();
     mountFooter();
@@ -700,12 +709,51 @@ Preferred meeting day (multiple_choice: Monday, Wednesday, Friday)"></textarea>
       }
     });
 
+    // ---------- PDF downloads (report-pdf.js is loaded on demand so it can never break the dashboard) ----------
+    async function runPdfJob(btn, alertId, job) {
+      const original = btn.textContent;
+      const box = document.getElementById(alertId);
+      if (box) box.innerHTML = '';
+      btn.disabled = true;
+      btn.textContent = 'Preparing…';
+      try {
+        const mod = await import('../assets/js/report-pdf.js');
+        await job(mod);
+      } catch (err) {
+        console.error('PDF download failed', err);
+        if (box) box.innerHTML = `<div class="alert alert-error">Could not create the PDF: ${escapeHtml(err?.message || String(err))}</div>`;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = original;
+      }
+    }
+
+    document.getElementById('report-vacant-btn')?.addEventListener('click', (e) => {
+      runPdfJob(e.currentTarget, 'report-alert', async (m) => {
+        const report = await m.fetchLeadershipReport(supabase, defaultLeadershipTermDates().label);
+        await m.downloadVacantPositionsPdf(report);
+      });
+    });
+    document.getElementById('report-filled-btn')?.addEventListener('click', (e) => {
+      runPdfJob(e.currentTarget, 'report-alert', async (m) => {
+        const report = await m.fetchLeadershipReport(supabase, defaultLeadershipTermDates().label);
+        await m.downloadFilledPositionsPdf(report);
+      });
+    });
+    document.getElementById('news-pdf-all-btn')?.addEventListener('click', (e) => {
+      runPdfJob(e.currentTarget, 'news-pdf-alert', async (m) => {
+        const posts = await m.fetchAllNews(supabase);
+        await m.downloadNewsPdf(posts, { heading: 'NSA News', filename: 'nsa-news.pdf' });
+      });
+    });
+
     async function loadNews() {
       const { data } = await supabase.from('news').select('*').order('published_at', { ascending: false }).limit(15);
       document.getElementById('news-list').innerHTML = (data || []).map(n => `
         <div style="padding:0.75rem 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;gap:1rem;align-items:center;flex-wrap:wrap;">
           <div><strong>${escapeHtml(n.title)}</strong><div style="font-size:0.8rem;color:var(--text-muted);">${new Date(n.published_at).toLocaleDateString()}${n.ends_at ? ' · ends ' + new Date(n.ends_at).toLocaleDateString() : ''}</div></div>
           <div style="display:flex;gap:0.4rem;">
+            <button type="button" class="mini-btn" data-pdf-news="${n.id}">PDF</button>
             <button type="button" class="mini-btn" data-edit-news="${n.id}">Edit</button>
             <button type="button" class="mini-btn bad" data-del-news="${n.id}">Delete</button>
           </div>
@@ -714,6 +762,11 @@ Preferred meeting day (multiple_choice: Monday, Wednesday, Friday)"></textarea>
         if (!confirm('Delete this news post?')) return;
         await supabase.from('news').delete().eq('id', btn.dataset.delNews);
         await loadNews();
+      }));
+      document.querySelectorAll('[data-pdf-news]').forEach(btn => btn.addEventListener('click', () => {
+        const n = (data || []).find(x => x.id === btn.dataset.pdfNews);
+        if (!n) return;
+        runPdfJob(btn, 'news-pdf-alert', (m) => m.downloadNewsPdf([n]));
       }));
       document.querySelectorAll('[data-edit-news]').forEach(btn => btn.addEventListener('click', () => {
         const n = (data || []).find(x => x.id === btn.dataset.editNews);
@@ -1333,7 +1386,7 @@ Preferred meeting day (multiple_choice: Monday, Wednesday, Friday)"></textarea>
         'Deputy Information Minister': 'Deputy Secretary for Information',
         'Ethics Minister': 'Secretary for Ethics',
         'Deputy Ethics Minister': 'Deputy Secretary for Ethics',
-        'Games & Sports Minister': 'Secretary for Games and Sports',
+        'Games & Sports Minister': 'Secretary for Games & Sports',
         'Projects Minister': 'Secretary for Projects',
         'Minister of Public Relations': 'Secretary for Public Relations',
         'Deputy Minister of Public Relations': 'Deputy Secretary for Public Relations',

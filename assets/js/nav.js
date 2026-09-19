@@ -360,14 +360,15 @@ async function wireNotifications() {
   if (!btn || !panel) return;
   const { data: { session } } = await supabase.auth.getSession();
   if (!session?.user) return;
+  const uid = session.user.id;
 
   const load = async () => {
     const { data } = await supabase
       .from('user_notifications')
       .select('id, title, body, link, read_at, created_at')
-      .eq('user_id', session.user.id)
+      .eq('user_id', uid)
       .order('created_at', { ascending: false })
-      .limit(20);
+      .limit(30);
     const items = data || [];
     const unread = items.filter((n) => !n.read_at).length;
     if (badge) {
@@ -378,15 +379,51 @@ async function wireNotifications() {
         badge.hidden = true;
       }
     }
-    panel.innerHTML = items.length
-      ? items.map((n) => {
-          const href = n.link || '#';
-          return `<div class="nav-notify-item">${n.link ? `<a href="${href}">${n.title}</a>` : `<strong>${n.title}</strong>`}
-            ${n.body ? `<div style="font-size:0.8rem;color:var(--text-muted);margin-top:0.2rem;">${n.body}</div>` : ''}
-            <div style="font-size:0.72rem;color:var(--text-muted);margin-top:0.25rem;">${new Date(n.created_at).toLocaleString()}</div>
-          </div>`;
-        }).join('')
-      : `<div class="nav-notify-item" style="color:var(--text-muted);">No notifications yet. Likes, tags, elections and activities will appear here.</div>`;
+    if (!items.length) {
+      panel.innerHTML = `<div class="nav-notify-item" style="color:var(--text-muted);">No notifications yet. Likes, tags, elections and activities will appear here.</div>`;
+      return;
+    }
+    const header = `<div class="nav-notify-toolbar">
+      <span style="font-size:0.78rem;color:var(--text-muted);">${items.length} notification${items.length === 1 ? '' : 's'}</span>
+      <button type="button" class="nav-notify-clear-all" data-clear-all title="Remove all notifications">Clear all</button>
+    </div>`;
+    const rows = items.map((n) => {
+      const href = n.link || '#';
+      const unreadCls = n.read_at ? '' : ' is-unread';
+      return `<div class="nav-notify-item${unreadCls}" data-id="${n.id}">
+        <div class="nav-notify-item-main">
+          ${n.link ? `<a href="${href}">${escapeHtml(n.title)}</a>` : `<strong>${escapeHtml(n.title)}</strong>`}
+          ${n.body ? `<div style="font-size:0.8rem;color:var(--text-muted);margin-top:0.2rem;">${escapeHtml(n.body)}</div>` : ''}
+          <div style="font-size:0.72rem;color:var(--text-muted);margin-top:0.25rem;">${new Date(n.created_at).toLocaleString()}</div>
+        </div>
+        <button type="button" class="nav-notify-dismiss" data-dismiss="${n.id}" title="Clear this notification" aria-label="Clear notification">×</button>
+      </div>`;
+    }).join('');
+    panel.innerHTML = header + rows;
+
+    panel.querySelector('[data-clear-all]')?.addEventListener('click', async (ev) => {
+      ev.stopPropagation();
+      const { error } = await supabase.from('user_notifications').delete().eq('user_id', uid);
+      if (error) {
+        console.warn('clear notifications', error.message);
+        return;
+      }
+      if (badge) badge.hidden = true;
+      await load();
+    });
+    panel.querySelectorAll('[data-dismiss]').forEach((b) => {
+      b.addEventListener('click', async (ev) => {
+        ev.stopPropagation();
+        const id = b.getAttribute('data-dismiss');
+        if (!id) return;
+        const { error } = await supabase.from('user_notifications').delete().eq('id', id).eq('user_id', uid);
+        if (error) {
+          console.warn('dismiss notification', error.message);
+          return;
+        }
+        await load();
+      });
+    });
   };
 
   btn.addEventListener('click', async (e) => {
@@ -394,7 +431,7 @@ async function wireNotifications() {
     panel.hidden = !panel.hidden;
     if (!panel.hidden) {
       await load();
-      await supabase.from('user_notifications').update({ read_at: new Date().toISOString() }).eq('user_id', session.user.id).is('read_at', null);
+      await supabase.from('user_notifications').update({ read_at: new Date().toISOString() }).eq('user_id', uid).is('read_at', null);
       if (badge) badge.hidden = true;
     }
   });

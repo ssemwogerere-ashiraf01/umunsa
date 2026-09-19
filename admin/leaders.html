@@ -53,7 +53,7 @@
   import { supabase } from '../assets/js/supabase-client.js';
   import { mountNav, mountFooter } from '../assets/js/nav.js';
   import { requireAdmin } from '../assets/js/admin-guard.js';
-  import { enrichLeadersForPdf, previewAndDownloadLeadershipPdf } from '../assets/js/leadership-pdf.js';
+  import { fetchLeadershipReport, downloadVacantPositionsPdf, downloadFilledPositionsPdf } from '../assets/js/report-pdf.js';
 
   mountNav();
   mountFooter();
@@ -106,42 +106,15 @@
     leadersList.querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', () => openEditor(b.dataset.edit)));
   }
 
-  async function loadReportData() {
-    const [{ data: positions, error: posError }, { data: leaders, error: leaderError }, { data: setting }] = await Promise.all([
-      supabase.from('positions').select('id, name, name_luganda, category, display_order').order('display_order'),
-      supabase.from('leaders').select('id, user_id, full_name, position, faculty, programme, phone, email, photo_url, avatar_url, term_label, display_order').eq('is_current', true).order('display_order'),
-      supabase.from('club_settings').select('value').eq('key', 'current_leadership_term').maybeSingle(),
-    ]);
-    if (posError) throw posError;
-    if (leaderError) throw leaderError;
-    const term = setting?.value ? String(setting.value).replace(/^"|"$/g, '') : 'Current term';
-    const uniquePositions = [];
-    const seen = new Set();
-    for (const p of (positions || [])) {
-      const key = (p.name || '').trim().toLowerCase();
-      if (key && !seen.has(key)) { seen.add(key); uniquePositions.push(p); }
-    }
-    const current = await enrichLeadersForPdf(supabase, leaders || []);
-    const filledNames = new Set(current.map(l => (l.position || '').trim().toLowerCase()).filter(Boolean));
-    const vacant = uniquePositions.filter(p => !filledNames.has((p.name || '').trim().toLowerCase())).map(p => ({
-      full_name: 'Vacant', position: p.name, faculty: p.category || '—', term_label: term, display_order: p.display_order,
-    }));
-    return { term, current, vacant };
-  }
-
   async function downloadReport(kind) {
     const button = document.getElementById(`download-${kind}`);
     const original = button.textContent;
     button.disabled = true; button.textContent = 'Preparing…';
+    alertBox.innerHTML = '';
     try {
-      const { term, current, vacant } = await loadReportData();
-      const isVacant = kind === 'vacant';
-      const rows = isVacant ? vacant : current;
-      await previewAndDownloadLeadershipPdf(rows, {
-        title: isVacant ? `Vacant Leadership Positions · ${term}` : `Filled Leadership Positions · ${term}`,
-        subtitle: `Nkobazambogo Students' Association · ${term}`,
-        filename: isVacant ? 'nsa-vacant-leadership-positions.pdf' : 'nsa-filled-leadership-positions.pdf',
-      });
+      const report = await fetchLeadershipReport(supabase);
+      if (kind === 'vacant') await downloadVacantPositionsPdf(report);
+      else await downloadFilledPositionsPdf(report);
     } catch (error) {
       alertBox.innerHTML = `<div class="alert alert-error">Could not prepare PDF: ${escapeHtml(error.message || error)}</div>`;
     } finally { button.disabled = false; button.textContent = original; }

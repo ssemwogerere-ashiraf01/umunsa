@@ -11,23 +11,23 @@ function wsUrl() {
   return u.toString();
 }
 
-export async function askAI({ task = 'general', prompt, context = '', history = [], onToken } = {}) {
+export async function askAI({ task = 'general', prompt, context = '', history = [], attachments = [], onToken } = {}) {
   const clean = String(prompt || '').trim();
   if (!clean) return { error: 'Enter a question or some text first.' };
 
   // Prefer WebSocket streaming when onToken provided
   if (typeof onToken === 'function') {
-    const streamed = await askAIWebSocket({ task, prompt: clean, context, history, onToken });
+    const streamed = await askAIWebSocket({ task, prompt: clean, context, history, attachments, onToken });
     if (!streamed.error || !/WebSocket|failed to connect|not allowed/i.test(streamed.error || '')) {
       return streamed;
     }
     // Fall through to SSE / HTTP
   }
 
-  const sse = await askAISSE({ task, prompt: clean, context, history, onToken });
+  const sse = await askAISSE({ task, prompt: clean, context, history, attachments, onToken });
   if (!sse.error) return sse;
 
-  return askAIHttp({ task, prompt: clean, context, history });
+  return askAIHttp({ task, prompt: clean, context, history, attachments });
 }
 
 async function getAuthToken() {
@@ -36,7 +36,7 @@ async function getAuthToken() {
 }
 
 /** WebSocket real-time token stream */
-export function askAIWebSocket({ task = 'faq', prompt, context = '', history = [], onToken } = {}) {
+export function askAIWebSocket({ task = 'faq', prompt, context = '', history = [], attachments = [], onToken } = {}) {
   return new Promise(async (resolve) => {
     let settled = false;
     let full = '';
@@ -66,6 +66,7 @@ export function askAIWebSocket({ task = 'faq', prompt, context = '', history = [
           prompt: String(prompt).slice(0, 8000),
           context: String(context || '').slice(0, 12000),
           history: (history || []).slice(-MAX_TURNS * 2),
+          attachments: Array.isArray(attachments) ? attachments.slice(0, 4) : [],
           authorization: `Bearer ${token}`,
         }));
       };
@@ -103,7 +104,7 @@ export function askAIWebSocket({ task = 'faq', prompt, context = '', history = [
 }
 
 /** SSE streaming over HTTP POST */
-async function askAISSE({ task, prompt, context, history, onToken }) {
+async function askAISSE({ task, prompt, context, history, attachments = [], onToken }) {
   try {
     const token = await getAuthToken();
     const res = await fetch(AI_URL, {
@@ -119,6 +120,7 @@ async function askAISSE({ task, prompt, context, history, onToken }) {
         prompt: String(prompt).slice(0, 8000),
         context: String(context || '').slice(0, 12000),
         history: (history || []).slice(-MAX_TURNS * 2),
+        attachments: Array.isArray(attachments) ? attachments.slice(0, 4) : [],
         stream: true,
       }),
     });
@@ -173,7 +175,7 @@ async function askAISSE({ task, prompt, context, history, onToken }) {
   }
 }
 
-async function askAIHttp({ task, prompt, context, history }) {
+async function askAIHttp({ task, prompt, context, history, attachments = [] }) {
   const token = await getAuthToken();
   try {
     const res = await fetch(AI_URL, {
@@ -188,6 +190,7 @@ async function askAIHttp({ task, prompt, context, history }) {
         prompt: String(prompt).slice(0, 8000),
         context: String(context || '').slice(0, 12000),
         history: (history || []).slice(-MAX_TURNS * 2),
+        attachments: Array.isArray(attachments) ? attachments.slice(0, 4) : [],
       }),
     });
     const data = await res.json().catch(() => ({}));
@@ -634,10 +637,19 @@ export function wireAdminPostGenerator(opts) {
   box.innerHTML = `
     <div style="font-weight:700;margin-bottom:0.35rem;">✨ AI write this ${kindLabel}</div>
     <p style="margin:0 0 0.5rem;font-size:0.82rem;color:var(--text-muted);">
-      Type a short outline (who, what, when, where). AI fills the title and full text — review before publishing.
+      Type a short outline (who, what, when, where). Optionally attach images, text, or documents so the AI understands the request better. AI fills the title and full text — review before publishing.
     </p>
     <textarea data-ai-outline rows="2" placeholder="${hint || 'e.g. Welcome new first-year members this semester; mention orientation on Friday at Main Hall'}"
       style="width:100%;margin-bottom:0.45rem;border-radius:8px;padding:0.5rem 0.65rem;border:1px solid var(--border,#444);background:transparent;color:inherit;font:inherit;"></textarea>
+    <div style="margin-bottom:0.45rem;">
+      <label style="font-size:0.82rem;color:var(--text-muted);display:block;margin-bottom:0.25rem;">
+        Attachments (optional) — images, .txt, .md, .csv, .pdf, .doc/.docx
+      </label>
+      <input type="file" data-ai-files multiple
+        accept="image/*,.txt,.md,.csv,.json,.pdf,.doc,.docx,text/plain,application/pdf"
+        style="width:100%;font-size:0.85rem;" />
+      <div data-ai-files-list style="font-size:0.78rem;color:var(--text-muted);margin-top:0.25rem;"></div>
+    </div>
     <div style="display:flex;flex-wrap:wrap;gap:0.4rem;align-items:center;">
       <button type="button" class="mini-btn good" data-ai-gen>Generate</button>
       <button type="button" class="mini-btn" data-ai-improve-body>Improve body only</button>
@@ -651,6 +663,75 @@ export function wireAdminPostGenerator(opts) {
   const status = box.querySelector('[data-ai-status]');
   const genBtn = box.querySelector('[data-ai-gen]');
   const improveBtn = box.querySelector('[data-ai-improve-body]');
+  const filesInput = box.querySelector('[data-ai-files]');
+  const filesList = box.querySelector('[data-ai-files-list]');
+
+  filesInput?.addEventListener('change', () => {
+    const files = Array.from(filesInput.files || []);
+    if (!files.length) {
+      filesList.textContent = '';
+      return;
+    }
+    filesList.textContent = files.map((f) => `${f.name} (${Math.round(f.size / 1024)} KB)`).join(' · ');
+  });
+
+  /** Read selected files into text context + image attachments for the AI. */
+  async function collectAttachments() {
+    const files = Array.from(filesInput?.files || []).slice(0, 4);
+    const attachments = [];
+    const textParts = [];
+    const MAX_TEXT = 8000;
+    const MAX_IMAGE = 2.5 * 1024 * 1024; // ~2.5 MB base64-friendly
+
+    for (const file of files) {
+      const name = file.name || 'file';
+      const mime = file.type || '';
+      const isImage = mime.startsWith('image/') || /\.(jpe?g|png|gif|webp|bmp)$/i.test(name);
+      const isText = mime.startsWith('text/') || /\.(txt|md|csv|json|log)$/i.test(name);
+
+      if (isImage && file.size <= MAX_IMAGE) {
+        try {
+          const dataUrl = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(String(reader.result || ''));
+            reader.onerror = () => reject(new Error('read failed'));
+            reader.readAsDataURL(file);
+          });
+          const base64 = dataUrl.includes(',') ? dataUrl.split(',')[1] : dataUrl;
+          if (base64) {
+            attachments.push({
+              type: 'image',
+              name,
+              mime: mime || 'image/jpeg',
+              data: base64.slice(0, 3_500_000),
+            });
+            textParts.push(`[Attached image: ${name}]`);
+          }
+        } catch {
+          textParts.push(`[Could not read image: ${name}]`);
+        }
+      } else if (isText && file.size < 200_000) {
+        try {
+          const text = await file.text();
+          textParts.push(`--- Attached file: ${name} ---\n${text.slice(0, MAX_TEXT)}\n--- end ${name} ---`);
+        } catch {
+          textParts.push(`[Could not read text file: ${name}]`);
+        }
+      } else if (/\.pdf$/i.test(name) || mime === 'application/pdf') {
+        textParts.push(
+          `[Attached PDF: ${name} (${Math.round(file.size / 1024)} KB). ` +
+            'The AI cannot read PDF binary content here; summarise key points in the outline if needed.]'
+        );
+      } else if (/\.(docx?|rtf)$/i.test(name)) {
+        textParts.push(
+          `[Attached document: ${name}. Text extraction is limited — paste key excerpts into the outline if important.]`
+        );
+      } else {
+        textParts.push(`[Attached file: ${name} (${mime || 'unknown type'}, ${Math.round(file.size / 1024)} KB)]`);
+      }
+    }
+    return { attachments, extraContext: textParts.join('\n\n') };
+  }
 
   const parseStructured = (text) => {
     const out = { title: '', body: '', location: '', questions: '' };
@@ -695,16 +776,32 @@ export function wireAdminPostGenerator(opts) {
 
   genBtn.addEventListener('click', async () => {
     const idea = (outline.value || '').trim() || (bodyEl?.value || '').trim() || (titleEl?.value || '').trim();
-    if (!idea) {
-      status.textContent = 'Add a short outline first.';
+    const hasFiles = (filesInput?.files?.length || 0) > 0;
+    if (!idea && !hasFiles) {
+      status.textContent = 'Add a short outline or attach a file first.';
       return;
     }
     genBtn.disabled = true;
-    status.textContent = 'Generating…';
+    status.textContent = hasFiles ? 'Reading attachments…' : 'Generating…';
     let live = '';
+    let attachments = [];
+    let extraContext = '';
+    try {
+      const collected = await collectAttachments();
+      attachments = collected.attachments;
+      extraContext = collected.extraContext;
+    } catch (e) {
+      status.textContent = 'Could not read one or more files.';
+      genBtn.disabled = false;
+      return;
+    }
+    status.textContent = 'Generating…';
+    const outlineText = idea || '(See attached files for context.)';
     const result = await askAI({
       task: 'draft',
-      prompt: instructionFor('gen') + '\n\nOutline from admin:\n' + idea,
+      prompt: instructionFor('gen') + '\n\nOutline from admin:\n' + outlineText,
+      context: extraContext,
+      attachments,
       onToken: (_p, full) => { live = full; },
     });
     genBtn.disabled = false;
@@ -719,7 +816,10 @@ export function wireAdminPostGenerator(opts) {
     if (extraEls.questions && parsed.questions) extraEls.questions.value = parsed.questions;
     titleEl?.dispatchEvent(new Event('input', { bubbles: true }));
     bodyEl?.dispatchEvent(new Event('input', { bubbles: true }));
-    status.textContent = 'Filled — review and publish when ready.';
+    const nAtt = attachments.length + (extraContext ? 1 : 0);
+    status.textContent = nAtt
+      ? `Filled using ${nAtt} attachment(s) — review and publish when ready.`
+      : 'Filled — review and publish when ready.';
   });
 
   improveBtn.addEventListener('click', async () => {

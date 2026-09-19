@@ -2,7 +2,7 @@
  * Generate a printable PDF of NSA leadership for a term (or set of terms).
  * Avatars are cropped to clean circles (face-centred) before embedding.
  */
-import { BASE_URL, SITE_SHORT_SEAL } from './site-config.js';
+import { CANONICAL_ORIGIN, SITE_SHORT_SEAL } from './site-config.js';
 
 const JSPDF_SOURCES = [
   'https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js',
@@ -129,7 +129,7 @@ export async function downloadLeadershipPdf(leaders, opts = {}) {
   const margin = 14;
   const contentW = pageW - margin * 2;
 
-  const title = opts.title || 'NSA Leadership';
+  const title = opts.title || 'UMUNSA Leadership';
   const subtitle = opts.subtitle || "Nkobazambogo Students' Association · Uganda Martyrs University, Nkozi";
   const filename = opts.filename || 'nsa-leadership.pdf';
 
@@ -158,7 +158,7 @@ export async function downloadLeadershipPdf(leaders, opts = {}) {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
     doc.setTextColor(212, 175, 55);
-    doc.text(SITE_SHORT_SEAL || 'NSA', pageW - margin, 12, { align: 'right' });
+    doc.text(SITE_SHORT_SEAL || 'UMUNSA', pageW - margin, 12, { align: 'right' });
     doc.setTextColor(230, 230, 230);
     doc.setFontSize(8);
     doc.text(subtitle, margin, 20);
@@ -172,7 +172,7 @@ export async function downloadLeadershipPdf(leaders, opts = {}) {
     doc.line(margin, pageH - 12, pageW - margin, pageH - 12);
     doc.setFontSize(7);
     doc.setTextColor(100, 100, 100);
-    doc.text(`Generated ${new Date().toLocaleString()} · ${BASE_URL || 'umunsa.vercel.app'}`, margin, pageH - 7);
+    doc.text(`Generated ${new Date().toLocaleString('en-GB')} · ${CANONICAL_ORIGIN}`, margin, pageH - 7);
     doc.text('Confidential — for Association records', pageW - margin, pageH - 7, { align: 'right' });
   }
 
@@ -271,8 +271,9 @@ export async function downloadLeadershipPdf(leaders, opts = {}) {
     doc.setTextColor(90, 90, 90);
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8.5);
-    const faculty = l.faculty || l.programme || '—';
-    doc.text(`Faculty: ${String(faculty).slice(0, 85)}`, tx, cy + 22, { maxWidth: maxTextW });
+    // Label matches the value: a leader with no faculty on file shows their programme, not a mislabelled "Faculty".
+    const acadLine = l.faculty ? `Faculty: ${l.faculty}` : l.programme ? `Programme: ${l.programme}` : 'Faculty: -';
+    doc.text(String(acadLine).slice(0, 95), tx, cy + 22, { maxWidth: maxTextW });
 
     const phone = (l.phone || '').trim() || '—';
     const email = (l.email || '').trim() || '—';
@@ -343,6 +344,7 @@ export function openLeadershipPreview(leaders, opts = {}) {
       const photo = l.photo_url || l.avatar_url || '';
       const name = l.full_name || '—';
       const initials = name.trim().split(/\s+/).slice(0, 2).map(w => w[0]?.toUpperCase() || '').join('') || '?';
+      const acadLabel = l.faculty ? 'Faculty' : (l.programme ? 'Programme' : 'Faculty');
       const faculty = l.faculty || l.programme || '—';
       const phone = (l.phone || '').trim() || '—';
       const email = (l.email || '').trim() || '—';
@@ -354,7 +356,7 @@ export function openLeadershipPreview(leaders, opts = {}) {
         <div class="nsa-pdf-meta">
           <div class="nsa-pdf-name">${esc(name)}</div>
           <div class="nsa-pdf-pos">${esc(l.position || '—')}</div>
-          <div class="nsa-pdf-line"><span>Faculty</span> ${esc(faculty)}</div>
+          <div class="nsa-pdf-line"><span>${acadLabel}</span> ${esc(faculty)}</div>
           <div class="nsa-pdf-line"><span>Phone</span> ${esc(phone)}</div>
           <div class="nsa-pdf-line"><span>Email</span> ${esc(email)}</div>
           ${l.term_label ? `<div class="nsa-pdf-term">Term: ${esc(l.term_label)}</div>` : ''}
