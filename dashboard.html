@@ -214,7 +214,7 @@
     <div class="live-sessions" id="live-sessions"></div>
   </div>
 </div>
-<div id="ai-dashboard-slot" style="max-width:960px;margin:1.5rem auto;padding:0 1rem;"></div>
+<!-- <div id="ai-dashboard-slot" style="max-width:960px;margin:1.5rem auto;padding:0 1rem;"></div> -->
 <div id="app-footer"></div>
 
 <script type="module">
@@ -560,23 +560,46 @@
           });
         });
 
-        // Live sessions strip
+        // Live sessions strip — only current / not-yet-due items
+        const nowTs = Date.now();
+        const stillActive = (endsAt) => {
+          if (!endsAt) return true;
+          const t = new Date(endsAt).getTime();
+          return Number.isFinite(t) ? t >= nowTs : true;
+        };
         const live = [];
         (elections || []).forEach((e) => {
           const st = (e.status || '').toLowerCase();
+          // Drop closed elections; for voting window use closes if set
+          if (st === 'closed' || st === 'ended') return;
+          if (e.voting_closes && new Date(e.voting_closes).getTime() < nowTs && (st.includes('vote') || st === 'voting')) return;
+          if (e.nominations_close && new Date(e.nominations_close).getTime() < nowTs && (st.includes('nomin') || st === 'nominations')) return;
           if (st.includes('vote') || st === 'voting' || st === 'open') {
             live.push({ label: e.title || 'Election', badge: 'LIVE VOTE', href: 'elections/index.html' });
           } else if (st.includes('nomin') || st === 'nominations') {
             live.push({ label: e.title || 'Nominations', badge: 'APPLY', href: 'elections/index.html' });
           }
         });
-        (acts || []).filter((a) => new Date(a.activity_date) >= new Date()).slice(0, 4).forEach((a) => {
+        (acts || []).filter((a) => {
+          const start = new Date(a.activity_date).getTime();
+          const end = a.ends_at ? new Date(a.ends_at).getTime() : start;
+          return Number.isFinite(end) ? end >= nowTs : start >= nowTs;
+        }).slice(0, 4).forEach((a) => {
           live.push({ label: a.title + (a.location ? ' · ' + a.location : ''), badge: 'EVENT', href: 'activities.html' });
         });
-        (newsItems || []).slice(0, 3).forEach((n) => {
+        // News: hide when deadline (ends_at) has passed; if no ends_at, only show recent (14 days)
+        (newsItems || []).filter((n) => {
+          if (n.ends_at) return stillActive(n.ends_at);
+          if (!n.published_at) return true;
+          const pub = new Date(n.published_at).getTime();
+          return Number.isFinite(pub) ? (nowTs - pub) <= 14 * 24 * 60 * 60 * 1000 : true;
+        }).slice(0, 3).forEach((n) => {
           live.push({ label: n.title, badge: 'NEWS', href: 'news-detail.html?id=' + n.id });
         });
-        (projects || []).filter((p) => (p.status || '') !== 'completed').slice(0, 3).forEach((p) => {
+        (projects || []).filter((p) => {
+          if ((p.status || '') === 'completed') return false;
+          return stillActive(p.ends_at);
+        }).slice(0, 3).forEach((p) => {
           live.push({ label: p.title, badge: 'PROJECT', href: 'projects.html' });
         });
         live.push({ label: 'Vacant positions (current year)', badge: 'OPEN', href: 'elections/vacant.html' });
